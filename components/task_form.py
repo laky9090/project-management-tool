@@ -1,11 +1,14 @@
 import streamlit as st
-from database.connection import execute_query
+from database.connection import get_connection
+from psycopg2.extras import RealDictCursor
 from datetime import datetime
 import logging
 
 logger = logging.getLogger(__name__)
 
 def create_task_form(project_id):
+    conn = None
+    cur = None
     try:
         logger.info(f"Creating task form for project_id: {project_id}")
         with st.form("task_form"):
@@ -25,8 +28,18 @@ def create_task_form(project_id):
                     return False
                 
                 try:
+                    conn = get_connection()
+                    if not conn:
+                        st.error("Could not connect to database")
+                        return False
+                        
+                    cur = conn.cursor(cursor_factory=RealDictCursor)
+                    
+                    # Start transaction
+                    cur.execute("BEGIN")
+                    
                     logger.info(f"Creating task: {title} for project {project_id}")
-                    result = execute_query('''
+                    cur.execute('''
                         INSERT INTO tasks 
                         (project_id, title, description, status, priority, assignee, due_date)
                         VALUES 
@@ -34,22 +47,33 @@ def create_task_form(project_id):
                         RETURNING id
                     ''', (project_id, title, description, status, priority, assignee, due_date))
                     
-                    if result and len(result) > 0:
-                        task_id = result[0]['id']
+                    result = cur.fetchone()
+                    if result:
+                        task_id = result['id']
+                        # Commit transaction
+                        conn.commit()
                         logger.info(f"Task created successfully with ID: {task_id}")
                         st.success("Task created successfully!")
-                        # Clear form fields by triggering a rerun
                         st.rerun()
                         return True
                     else:
+                        conn.rollback()
                         logger.error("Task creation failed: No ID returned")
                         st.error("Failed to create task. Please try again.")
                         return False
                         
                 except Exception as e:
+                    if conn:
+                        conn.rollback()
                     logger.error(f"Task creation failed: {str(e)}")
                     st.error(f"Failed to create task: {str(e)}")
                     return False
+                finally:
+                    if cur:
+                        cur.close()
+                    if conn:
+                        conn.close()
+                        
     except Exception as e:
         logger.error(f"Error in create_task_form: {str(e)}")
         st.error("An error occurred while creating the task")

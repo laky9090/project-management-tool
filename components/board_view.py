@@ -25,6 +25,13 @@ def render_board(project_id):
             st.error("Invalid project selection")
             return
             
+        # Verify project exists
+        project = execute_query("SELECT id FROM projects WHERE id = %s", (project_id,))
+        if not project:
+            logger.error(f"Project {project_id} not found")
+            st.error("Selected project not found")
+            return
+            
         st.write("## Kanban Board")
         
         cols = st.columns(3)
@@ -49,7 +56,6 @@ def render_board(project_id):
                 """, unsafe_allow_html=True)
                 
                 try:
-                    # Before executing the query
                     logger.info(f"Fetching tasks for project_id={project_id}, status={status}")
                     
                     tasks = execute_query('''
@@ -60,7 +66,8 @@ def render_board(project_id):
                         ORDER BY priority DESC, created_at DESC
                     ''', (project_id, status))
                     
-                    # After executing the query
+                    # Log task query results
+                    logger.info(f"Task query result: {tasks}")
                     if not tasks:
                         logger.warning(f"No tasks found for project_id={project_id}, status={status}")
                     else:
