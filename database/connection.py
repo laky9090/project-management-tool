@@ -34,9 +34,13 @@ def execute_query(query, params=None):
             return None
         
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        logger.info(f"Executing query: {query}")
+        
+        # Log the full query with parameters
         if params:
-            logger.info(f"Query parameters: {params}")
+            cur.mogrify(query, params)
+            logger.info(f"Executing query: {cur.mogrify(query, params).decode('utf-8')}")
+        else:
+            logger.info(f"Executing query: {query}")
         
         cur.execute(query, params)
         
@@ -50,6 +54,14 @@ def execute_query(query, params=None):
         # For INSERT/UPDATE queries
         conn.commit()
         logger.info("Transaction committed successfully")
+        if query.strip().upper().startswith('INSERT'):
+            # For INSERT queries, try to get the inserted ID
+            try:
+                cur.execute("SELECT lastval()")
+                last_id = cur.fetchone()['lastval']
+                logger.info(f"Last inserted ID: {last_id}")
+            except Exception as e:
+                logger.warning(f"Could not get last inserted ID: {e}")
         return []
         
     except Exception as e:
