@@ -1,84 +1,85 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const db = require('../db/connection');
+const { authMiddleware } = require('../middleware/auth');
 
-// Register endpoint
+// Register new user
 router.post('/register', async (req, res) => {
   const { username, password, email } = req.body;
   try {
-    // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
     
+    await db.query('BEGIN');
+    
     // Create user
-    const { rows: [user] } = await db.query(
+    const userResult = await db.query(
       'INSERT INTO users (username, password_hash, email) VALUES ($1, $2, $3) RETURNING id',
       [username, hashedPassword, email]
     );
     
     // Assign default team_member role
     await db.query(
-      `INSERT INTO user_roles (user_id, role_id) 
+      `INSERT INTO user_roles (user_id, role_id)
        SELECT $1, id FROM roles WHERE name = 'team_member'`,
-      [user.id]
+      [userResult.rows[0].id]
     );
     
-    res.status(201).json({ success: true });
+    await db.query('COMMIT');
+    res.status(201).json({ message: 'User registered successfully' });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to register user' });
+    await db.query('ROLLBACK');
+    res.status(500).json({ error: 'Registration failed' });
   }
 });
 
-// Login endpoint
+// Login
 router.post('/login', async (req, res) => {
   const { username, password } = req.body;
   try {
-    const { rows: [user] } = await db.query(
+    const result = await db.query(
       'SELECT id, password_hash FROM users WHERE username = $1',
       [username]
     );
     
-    if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+    if (result.rows.length === 0) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     
-    // Set user session
-    req.session.userId = user.id;
-    res.json({ success: true });
+    const validPassword = await bcrypt.compare(password, result.rows[0].password_hash);
+    if (!validPassword) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    
+    const token = jwt.sign(
+      { userId: result.rows[0].id },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+    
+    res.json({ token });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to login' });
+    res.status(500).json({ error: 'Login failed' });
   }
 });
 
-// Logout endpoint
-router.post('/logout', (req, res) => {
-  req.session.destroy();
-  res.json({ success: true });
-});
-
-// Get current user
-router.get('/me', async (req, res) => {
-  if (!req.session.userId) {
-    return res.status(401).json({ error: 'Not authenticated' });
-  }
-  
+// Get current user with roles
+router.get('/me', authMiddleware, async (req, res) => {
   try {
-    const { rows: [user] } = await db.query(
+    const result = await db.query(
       `SELECT u.id, u.username, u.email, array_agg(r.name) as roles
        FROM users u
        LEFT JOIN user_roles ur ON u.id = ur.user_id
        LEFT JOIN roles r ON ur.role_id = r.id
        WHERE u.id = $1
-       GROUP BY u.id`,
-      [req.session.userId]
+       GROUP BY u.id, u.username, u.email`,
+      [req.userId]
     );
     
-    res.json(user);
+    res.json(result.rows[0]);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: 'Failed to fetch user data' });
   }
 });

@@ -19,6 +19,10 @@ args = "Streamlit App"
 task = "workflow.run"
 args = "Frontend Dev Server"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Backend Server"
+
 [[workflows.workflow]]
 name = "Streamlit App"
 author = "agent"
@@ -49,12 +53,31 @@ task = "shell.exec"
 args = "cd frontend && npm start"
 waitForPort = 3000
 
+[[workflows.workflow]]
+name = "Backend Server"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd backend && node server.js"
+waitForPort = 3001
+
 [deployment]
 run = ["sh", "-c", "streamlit run main.py"]
 
 [[ports]]
 localPort = 3000
 externalPort = 3000
+
+[[ports]]
+localPort = 3001
+externalPort = 3001
 
 [[ports]]
 localPort = 5000
