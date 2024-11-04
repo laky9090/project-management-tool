@@ -41,40 +41,57 @@ def execute_query(query, params=None):
         
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
-        # Log the full query with parameters
+        # Log the query and parameters
         if params:
-            cur.mogrify(query, params)
-            logger.info(f"Executing query: {cur.mogrify(query, params).decode('utf-8')}")
+            formatted_query = cur.mogrify(query, params).decode('utf-8')
+            logger.info(f"Executing query: {formatted_query}")
         else:
             logger.info(f"Executing query: {query}")
         
         cur.execute(query, params)
         
-        if cur.description:  # If the query returns results
+        # For SELECT queries
+        if query.strip().upper().startswith('SELECT'):
             results = cur.fetchall()
-            logger.info(f"Query returned {len(results)} rows")
+            logger.info(f"SELECT query returned {len(results)} rows")
             if results:
-                logger.info(f"First row sample: {results[0]}")
+                logger.info(f"First row: {results[0]}")
             return results
-        
-        # For INSERT/UPDATE queries
-        conn.commit()
-        logger.info("Transaction committed successfully")
-        if query.strip().upper().startswith('INSERT'):
-            # For INSERT queries, try to get the inserted ID
+            
+        # For INSERT queries
+        elif query.strip().upper().startswith('INSERT'):
             try:
-                cur.execute("SELECT lastval()")
-                last_id = cur.fetchone()['lastval']
-                logger.info(f"Last inserted ID: {last_id}")
+                # Get the inserted row if RETURNING clause is used
+                if 'RETURNING' in query.upper():
+                    result = cur.fetchall()
+                    if result:
+                        logger.info(f"INSERT query returned: {result}")
+                        conn.commit()
+                        return result
+                    else:
+                        logger.error("INSERT query didn't return any results")
+                        conn.rollback()
+                        return None
+                else:
+                    # For INSERT without RETURNING clause
+                    conn.commit()
+                    logger.info("INSERT query executed successfully")
+                    return []
             except Exception as e:
-                logger.warning(f"Could not get last inserted ID: {e}")
-        return []
-        
+                logger.error(f"Error processing INSERT results: {str(e)}")
+                conn.rollback()
+                return None
+                
+        # For UPDATE/DELETE queries
+        else:
+            conn.commit()
+            logger.info(f"Query executed successfully (affected rows: {cur.rowcount})")
+            return []
+            
     except Exception as e:
         logger.error(f"Query execution error: {str(e)}")
         if conn:
             conn.rollback()
-            logger.info("Transaction rolled back due to error")
         return None
     finally:
         if cur:
