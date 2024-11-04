@@ -20,6 +20,10 @@ init_database()
 with open("styles/main.css") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
+# Initialize session state for view if not exists
+if 'current_view' not in st.session_state:
+    st.session_state['current_view'] = 'create_project'
+
 # Sidebar
 with st.sidebar:
     st.title("Project Management")
@@ -40,12 +44,13 @@ with st.sidebar:
             key="view_selector",
             format_func=lambda x: f"📋 {x}" if x == "Board" else f"📑 {x}" if x == "List" else f"📅 {x}"
         )
-        st.session_state['current_view'] = view
+        
+        # Update view and trigger rerun if view changed
+        if view != st.session_state.get('current_view'):
+            st.session_state['current_view'] = view
+            st.rerun()
 
 # Main content
-if 'current_view' not in st.session_state:
-    st.session_state['current_view'] = 'create_project'
-
 if st.session_state['current_view'] == 'create_project':
     if create_project_form():
         st.session_state['current_view'] = 'Board'
@@ -59,9 +64,9 @@ elif 'selected_project' in st.session_state:
     # Render selected view
     if st.session_state['current_view'] == 'Board':
         render_board(st.session_state['selected_project'])
-    elif st.session_state['current_view'] == 'Timeline':
-        render_timeline(st.session_state['selected_project'])
     elif st.session_state['current_view'] == 'List':
         render_task_list(st.session_state['selected_project'])
+    elif st.session_state['current_view'] == 'Timeline':
+        render_timeline(st.session_state['selected_project'])
 else:
     st.info("Please select or create a project to get started!")
