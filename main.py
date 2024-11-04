@@ -24,15 +24,17 @@ except Exception as e:
 with open("styles/main.css") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-# Initialize session state for view if not exists
+# Initialize session states
 if 'current_view' not in st.session_state:
-    st.session_state['current_view'] = 'Board'
+    st.session_state.current_view = 'Board'
+if 'selected_project' not in st.session_state:
+    st.session_state.selected_project = None
 
 # Sidebar
 with st.sidebar:
     st.title("Project Management")
     if st.button("Create New Project"):
-        st.session_state['current_view'] = 'create_project'
+        st.session_state.current_view = 'create_project'
         st.rerun()
     
     st.write("---")
@@ -40,38 +42,40 @@ with st.sidebar:
     selected_project = list_projects()
     
     if selected_project:
-        st.session_state['selected_project'] = selected_project
+        st.session_state.selected_project = selected_project
         st.write("---")
         st.write("## Project Views")
         
+        view_options = ["Board", "List", "Timeline"]
+        current_view_index = view_options.index(st.session_state.current_view) if st.session_state.current_view in view_options else 0
+        
         new_view = st.radio(
             "Select View",
-            ["Board", "List", "Timeline"],
-            index=["Board", "List", "Timeline"].index(st.session_state.get('current_view', 'Board'))
+            view_options,
+            index=current_view_index
         )
         
-        if new_view != st.session_state.get('current_view'):
-            st.session_state['current_view'] = new_view
+        if new_view != st.session_state.current_view:
+            st.session_state.current_view = new_view
             st.rerun()
 
 # Main content
-if st.session_state.get('current_view') == 'create_project':
+if st.session_state.current_view == 'create_project':
     if create_project_form():
-        st.session_state['current_view'] = 'Board'
+        st.session_state.current_view = 'Board'
         st.rerun()
 
-elif 'selected_project' in st.session_state:
+elif st.session_state.selected_project:
     # Add task button
     if st.button("➕ Add Task"):
-        create_task_form(st.session_state['selected_project'])
+        create_task_form(st.session_state.selected_project)
     
     # Render selected view
-    current_view = st.session_state.get('current_view')
-    if current_view == 'Board':
-        render_board(st.session_state['selected_project'])
-    elif current_view == 'List':
-        render_task_list(st.session_state['selected_project'])
-    elif current_view == 'Timeline':
-        render_timeline(st.session_state['selected_project'])
+    if st.session_state.current_view == 'Board':
+        render_board(st.session_state.selected_project)
+    elif st.session_state.current_view == 'List':
+        render_task_list(st.session_state.selected_project)
+    elif st.session_state.current_view == 'Timeline':
+        render_timeline(st.session_state.selected_project)
 else:
     st.info("Please select or create a project to get started!")
