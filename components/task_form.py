@@ -44,6 +44,7 @@ def create_task_form(project_id):
                             VALUES (%s, %s, %s, %s, %s, %s, %s)
                             RETURNING id, title, status;
                         '''
+                        logger.info(f"Executing insert query with parameters: project_id={project_id}, title={title}, status={status}")
                         cur.execute(insert_query, (
                             project_id, title, description, 
                             status, priority, assignee, due_date
@@ -58,11 +59,27 @@ def create_task_form(project_id):
                             st.error("Failed to create task")
                             return False
                         
+                        # Verify task was created
+                        verify_query = '''
+                            SELECT id, title, status 
+                            FROM tasks 
+                            WHERE id = %s AND project_id = %s
+                        '''
+                        cur.execute(verify_query, (result['id'], project_id))
+                        verify_result = cur.fetchone()
+                        logger.info(f"Verification result: {verify_result}")
+                        
+                        if not verify_result:
+                            logger.error("Task verification failed")
+                            conn.rollback()
+                            st.error("Failed to verify task creation")
+                            return False
+                        
                         # Commit transaction
                         conn.commit()
                         logger.info(f"Task created successfully with ID: {result['id']}")
                         st.success(f"Task '{title}' created successfully!")
-                        time.sleep(1)  # Give the database a moment to complete the transaction
+                        time.sleep(0.5)  # Short delay before refresh
                         st.rerun()
                         return True
                         
@@ -75,6 +92,7 @@ def create_task_form(project_id):
                 finally:
                     if conn:
                         conn.close()
+                        logger.info("Database connection closed")
                         
     except Exception as e:
         logger.error(f"Form error: {str(e)}")
