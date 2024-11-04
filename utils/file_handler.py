@@ -2,6 +2,9 @@ import os
 import uuid
 import streamlit as st
 from database.connection import execute_query
+import logging
+
+logger = logging.getLogger(__name__)
 
 def save_uploaded_file(uploaded_file, task_id):
     try:
@@ -37,23 +40,24 @@ def save_uploaded_file(uploaded_file, task_id):
         ))
 
         if result:
+            logger.info(f"File attachment created with ID: {result[0]['id']}")
             return result[0]['id']
         return None
 
     except Exception as e:
-        st.error(f"Error saving file: {str(e)}")
+        logger.error(f"Error saving file: {str(e)}")
         return None
 
 def get_task_attachments(task_id):
     try:
         return execute_query("""
-            SELECT id, filename, file_path, file_type, file_size, created_at
+            SELECT id, filename, file_path, file_type, file_size
             FROM file_attachments
             WHERE task_id = %s
-            ORDER BY created_at DESC
+            ORDER BY id DESC
         """, (task_id,))
     except Exception as e:
-        st.error(f"Error fetching attachments: {str(e)}")
+        logger.error(f"Error fetching attachments: {str(e)}")
         return []
 
 def delete_attachment(attachment_id):
@@ -80,5 +84,5 @@ def delete_attachment(attachment_id):
             return True
         return False
     except Exception as e:
-        st.error(f"Error deleting attachment: {str(e)}")
+        logger.error(f"Error deleting attachment: {str(e)}")
         return False
