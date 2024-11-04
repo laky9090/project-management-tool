@@ -19,33 +19,36 @@ def create_project_form():
                 # Start transaction
                 execute_query("BEGIN")
                 
-                # Create project with owner
+                # Create project
                 result = execute_query(
-                    """
-                    INSERT INTO projects (name, description, deadline, owner_id)
-                    VALUES (%s, %s, %s, %s)
+                    '''
+                    INSERT INTO projects (name, description, deadline)
+                    VALUES (%s, %s, %s)
                     RETURNING id
-                    """,
-                    (name, description, deadline, st.session_state.user_id)
+                    ''',
+                    (name, description, deadline)
                 )
                 
                 if result:
                     project_id = result[0]['id']
                     # Add creator as project admin
-                    execute_query(
-                        """
+                    member_result = execute_query(
+                        '''
                         INSERT INTO project_members (project_id, user_id, role)
                         VALUES (%s, %s, %s)
-                        """,
+                        ''',
                         (project_id, st.session_state.user_id, 'project_admin')
                     )
                     
-                    execute_query("COMMIT")
-                    st.success("Project created successfully!")
-                    return True
-                else:
-                    execute_query("ROLLBACK")
-                    st.error("Failed to create project!")
+                    if member_result is not None:
+                        execute_query("COMMIT")
+                        st.success("Project created successfully!")
+                        return True
+                
+                execute_query("ROLLBACK")
+                st.error("Failed to create project - database error")
+                return False
+                
             except Exception as e:
                 execute_query("ROLLBACK")
                 logger.error(f"Error creating project: {str(e)}")
