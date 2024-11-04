@@ -95,3 +95,94 @@ div.stRadio > label {
 div.stRadio > label:hover {
     background: #F3F4F6;
 }
+
+/* Modern Table Styles */
+.modern-table {
+    font-family: 'Inter', sans-serif;
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    margin: 1rem 0;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.modern-table th {
+    background: #F9FAFB;
+    color: #1F2937;
+    font-weight: 600;
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 2px solid #E5E7EB;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    cursor: pointer;
+}
+
+.modern-table th:hover {
+    background: #F3F4F6;
+}
+
+.modern-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #E5E7EB;
+    color: #4B5563;
+}
+
+.modern-table tr:nth-child(even) {
+    background: #F9FAFB;
+}
+
+.modern-table tr:hover {
+    background: #F3F4F6;
+}
+
+/* Status Badge Styles */
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.status-badge.todo {
+    background: #F3F4F6;
+    color: #4B5563;
+    border: 1px solid #9CA3AF;
+}
+
+.status-badge.progress {
+    background: #FEF3C7;
+    color: #92400E;
+    border: 1px solid #F59E0B;
+}
+
+.status-badge.done {
+    background: #D1FAE5;
+    color: #065F46;
+    border: 1px solid #10B981;
+}
+
+/* Priority Indicator Styles */
+.priority-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+}
+
+.priority-indicator.high {
+    background: #EF4444;
+}
+
+.priority-indicator.medium {
+    background: #F59E0B;
+}
+
+.priority-indicator.low {
+    background: #10B981;
+}
