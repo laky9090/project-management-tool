@@ -17,11 +17,17 @@ def get_connection():
             password=os.environ['PGPASSWORD'],
             port=os.environ['PGPORT']
         )
-        logger.info("Database connection established successfully")
+        
+        # Verify connection is working
+        with conn.cursor() as cur:
+            cur.execute('SELECT 1')
+            if cur.fetchone()[0] != 1:
+                raise Exception("Connection test failed")
+        
+        logger.info("Database connection established and verified")
         return conn
     except Exception as e:
         logger.error(f"Database connection error: {str(e)}")
-        st.error(f"Database connection error: {str(e)}")
         return None
 
 def execute_query(query, params=None):

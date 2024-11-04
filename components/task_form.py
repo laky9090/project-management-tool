@@ -28,70 +28,82 @@ def create_task_form(project_id):
                 conn = None
                 cur = None
                 try:
+                    # Get database connection
                     conn = get_connection()
+                    if not conn:
+                        logger.error("Failed to establish database connection")
+                        st.error("Database connection failed")
+                        return False
+                    
+                    # Create cursor
                     cur = conn.cursor(cursor_factory=RealDictCursor)
+                    logger.info("Database cursor created")
                     
                     # Start transaction
                     cur.execute("BEGIN")
                     logger.info("Transaction started")
                     
-                    # First verify project exists
-                    cur.execute("SELECT id FROM projects WHERE id = %s", (project_id,))
-                    if not cur.fetchone():
-                        raise Exception(f"Project {project_id} not found")
+                    # Log task creation attempt
+                    logger.info(f"Attempting to create task: Title='{title}', Project={project_id}, Status={status}")
                     
                     # Insert task
                     insert_query = '''
                         INSERT INTO tasks 
                         (project_id, title, description, status, priority, assignee, due_date)
                         VALUES (%s, %s, %s, %s, %s, %s, %s)
-                        RETURNING id, title, status;
+                        RETURNING id;
                     '''
                     
                     values = (project_id, title, description, status, priority, assignee, due_date)
-                    logger.info(f"Inserting task with values: {values}")
                     
+                    # Log the exact query being executed
+                    logger.info(f"Executing query: {cur.mogrify(insert_query, values).decode('utf-8')}")
+                    
+                    # Execute insert
                     cur.execute(insert_query, values)
                     result = cur.fetchone()
-                    logger.info(f"Insert result: {result}")
                     
                     if not result:
+                        logger.error("Insert did not return an ID")
                         raise Exception("Task creation failed - no ID returned")
                     
-                    # Verify task was created
-                    cur.execute('''
-                        SELECT id, title, status FROM tasks 
-                        WHERE id = %s
-                    ''', (result['id'],))
+                    task_id = result['id']
+                    logger.info(f"Task inserted with ID: {task_id}")
                     
+                    # Verify the task exists
+                    verify_query = "SELECT * FROM tasks WHERE id = %s"
+                    cur.execute(verify_query, (task_id,))
                     verify_result = cur.fetchone()
-                    logger.info(f"Verification result: {verify_result}")
                     
                     if not verify_result:
+                        logger.error(f"Could not verify task {task_id} exists")
                         raise Exception("Task verification failed")
+                    
+                    logger.info(f"Task verified: {verify_result}")
                     
                     # Commit transaction
                     conn.commit()
-                    logger.info(f"Transaction committed. Task created with ID: {result['id']}")
+                    logger.info("Transaction committed successfully")
                     
                     st.success(f"Task '{title}' created successfully!")
-                    time.sleep(0.5)  # Brief pause before refresh
+                    time.sleep(0.1)  # Brief pause
                     st.rerun()
                     return True
                     
                 except Exception as e:
+                    logger.error(f"Error creating task: {str(e)}")
                     if conn:
                         conn.rollback()
-                        logger.error(f"Transaction rolled back: {str(e)}")
-                    raise
+                        logger.info("Transaction rolled back")
+                    st.error(f"Failed to create task: {str(e)}")
+                    return False
                 finally:
                     if cur:
                         cur.close()
                     if conn:
                         conn.close()
                         logger.info("Database connection closed")
-                        
     except Exception as e:
-        logger.error(f"Task creation error: {str(e)}")
-        st.error(f"Failed to create task: {str(e)}")
+        logger.error(f"Form error: {str(e)}")
+        st.error(f"An error occurred: {str(e)}")
         return False
