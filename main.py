@@ -22,7 +22,7 @@ with open("styles/main.css") as f:
 
 # Initialize session state for view if not exists
 if 'current_view' not in st.session_state:
-    st.session_state['current_view'] = 'create_project'
+    st.session_state['current_view'] = 'Board'  # Default to Board view
 
 # Sidebar
 with st.sidebar:
@@ -42,13 +42,9 @@ with st.sidebar:
             "Select View",
             ["Board", "List", "Timeline"],
             key="view_selector",
+            index=["Board", "List", "Timeline"].index(st.session_state['current_view']),
             format_func=lambda x: f"📋 {x}" if x == "Board" else f"📑 {x}" if x == "List" else f"📅 {x}"
         )
-        
-        # Update view and trigger rerun if view changed
-        if view != st.session_state.get('current_view'):
-            st.session_state['current_view'] = view
-            st.rerun()
 
 # Main content
 if st.session_state['current_view'] == 'create_project':
@@ -61,12 +57,12 @@ elif 'selected_project' in st.session_state:
     if st.button("➕ Add Task"):
         create_task_form(st.session_state['selected_project'])
     
-    # Render selected view
-    if st.session_state['current_view'] == 'Board':
+    # Render selected view based on radio selection
+    if view == 'Board':
         render_board(st.session_state['selected_project'])
-    elif st.session_state['current_view'] == 'List':
+    elif view == 'List':
         render_task_list(st.session_state['selected_project'])
-    elif st.session_state['current_view'] == 'Timeline':
+    elif view == 'Timeline':
         render_timeline(st.session_state['selected_project'])
 else:
     st.info("Please select or create a project to get started!")
