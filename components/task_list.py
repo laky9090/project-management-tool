@@ -14,8 +14,7 @@ def format_status(status):
 def format_priority(priority):
     priority_class = priority.lower()
     return f"""
-        <span>
-            <span class="priority-indicator {priority_class}"></span>
+        <span class="priority-indicator {priority_class}">
             {priority}
         </span>
     """
@@ -57,26 +56,15 @@ def render_task_list(project_id):
         if priority_filter:
             df = df[df['priority'].isin(priority_filter)]
         
-        # Add row numbers
-        df.index = range(1, len(df) + 1)
-        
         # Format the data
         df['status'] = df['status'].apply(format_status)
         df['priority'] = df['priority'].apply(format_priority)
         df['due_date'] = df['due_date'].apply(format_date)
         
-        # Create the styled table
+        # Create the Excel-like table container
         st.markdown("""
-            <style>
-                .dataframe {
-                    font-family: 'Inter', sans-serif !important;
-                }
-                .dataframe td {
-                    white-space: nowrap;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                }
-            </style>
+            <div class="task-list-container">
+                <div style="overflow-x: auto;">
         """, unsafe_allow_html=True)
         
         # Display the table with custom styling
@@ -84,39 +72,106 @@ def render_task_list(project_id):
             df[['title', 'status', 'priority', 'assignee', 'due_date']].to_html(
                 escape=False,
                 index=True,
-                classes=['modern-table'],
+                classes=['task-list-table'],
                 table_id='task-table'
             ),
             unsafe_allow_html=True
         )
         
-        # Add JavaScript for sorting
+        st.markdown("</div></div>", unsafe_allow_html=True)
+        
+        # Add JavaScript for sorting and column resizing
         st.markdown("""
             <script>
-                const table = document.getElementById('task-table');
-                const headers = table.getElementsByTagName('th');
-                
-                for (let i = 0; i < headers.length; i++) {
-                    headers[i].addEventListener('click', () => {
-                        const column = headers[i].textContent.toLowerCase();
-                        sortTable(i, column);
+                // Sorting functionality
+                document.querySelectorAll('#task-table th').forEach((header, index) => {
+                    header.addEventListener('click', () => {
+                        const table = document.getElementById('task-table');
+                        const tbody = table.querySelector('tbody');
+                        const rows = Array.from(tbody.querySelectorAll('tr'));
+                        
+                        const isAscending = header.classList.contains('asc');
+                        
+                        // Remove sorting classes from all headers
+                        table.querySelectorAll('th').forEach(th => {
+                            th.classList.remove('asc', 'desc');
+                        });
+                        
+                        // Sort the rows
+                        rows.sort((rowA, rowB) => {
+                            const cellA = rowA.cells[index].textContent.trim();
+                            const cellB = rowB.cells[index].textContent.trim();
+                            
+                            return isAscending ? 
+                                cellB.localeCompare(cellA) : 
+                                cellA.localeCompare(cellB);
+                        });
+                        
+                        // Update sorting indicator
+                        header.classList.toggle('desc', isAscending);
+                        header.classList.toggle('asc', !isAscending);
+                        
+                        // Rerender the sorted rows
+                        tbody.innerHTML = '';
+                        rows.forEach(row => tbody.appendChild(row));
                     });
-                }
+                });
                 
-                function sortTable(column, columnName) {
-                    const tbody = table.getElementsByTagName('tbody')[0];
-                    const rows = Array.from(tbody.getElementsByTagName('tr'));
+                // Column resizing functionality
+                let isResizing = false;
+                let currentHeader = null;
+                let startX, startWidth;
+                
+                document.querySelectorAll('#task-table th').forEach(header => {
+                    const resizeHandle = document.createElement('div');
+                    resizeHandle.className = 'resize-handle';
+                    header.appendChild(resizeHandle);
                     
-                    const sortedRows = rows.sort((a, b) => {
-                        const aVal = a.getElementsByTagName('td')[column].textContent;
-                        const bVal = b.getElementsByTagName('td')[column].textContent;
-                        return aVal.localeCompare(bVal);
+                    resizeHandle.addEventListener('mousedown', e => {
+                        isResizing = true;
+                        currentHeader = header;
+                        startX = e.pageX;
+                        startWidth = header.offsetWidth;
+                        
+                        document.addEventListener('mousemove', handleMouseMove);
+                        document.addEventListener('mouseup', () => {
+                            isResizing = false;
+                            document.removeEventListener('mousemove', handleMouseMove);
+                        });
                     });
-                    
-                    tbody.innerHTML = '';
-                    sortedRows.forEach(row => tbody.appendChild(row));
+                });
+                
+                function handleMouseMove(e) {
+                    if (isResizing) {
+                        const width = startWidth + (e.pageX - startX);
+                        currentHeader.style.width = `${width}px`;
+                    }
                 }
             </script>
+            
+            <style>
+                .resize-handle {
+                    position: absolute;
+                    right: 0;
+                    top: 0;
+                    bottom: 0;
+                    width: 4px;
+                    cursor: col-resize;
+                    background: transparent;
+                }
+                
+                .resize-handle:hover {
+                    background: #e2e8f0;
+                }
+                
+                #task-table th.asc::after {
+                    content: ' ↑';
+                }
+                
+                #task-table th.desc::after {
+                    content: ' ↓';
+                }
+            </style>
         """, unsafe_allow_html=True)
         
     else:

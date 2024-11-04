@@ -36,8 +36,9 @@ with st.sidebar:
         st.write("## Project Views")
         view = st.radio(
             "Select View",
-            ["Board", "Timeline", "Task List"],
-            key="view_selector"
+            ["Board", "List", "Timeline"],
+            key="view_selector",
+            format_func=lambda x: f"📋 {x}" if x == "Board" else f"📑 {x}" if x == "List" else f"📅 {x}"
         )
         st.session_state['current_view'] = view
 
@@ -60,7 +61,7 @@ elif 'selected_project' in st.session_state:
         render_board(st.session_state['selected_project'])
     elif st.session_state['current_view'] == 'Timeline':
         render_timeline(st.session_state['selected_project'])
-    elif st.session_state['current_view'] == 'Task List':
+    elif st.session_state['current_view'] == 'List':
         render_task_list(st.session_state['selected_project'])
 else:
     st.info("Please select or create a project to get started!")
