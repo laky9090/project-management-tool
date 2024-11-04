@@ -1,0 +1,53 @@
+INFO:database.connection:Executing query: SELECT * FROM projects ORDER BY created_at DESC
+INFO:database.connection:Query returned 2 rows
+INFO:database.connection:First row sample: RealDictRow([('id', 2), ('name', 'Projet 2'), ('description', 'bakjndjlksdknkfn'), ('deadline', datetime.date(2025, 1, 23)), ('created_at', datetime.datetime(2024, 11, 4, 14, 12, 19, 321477))])
+INFO:database.connection:Database connection closed
+INFO:__main__:Rendering Board view for project 2
+INFO:components.board_view:Rendering board for project 2
+INFO:database.connection:Database connection established and verified
+INFO:database.connection:Executing query: 
+            SELECT p.id, 
+                   (SELECT COUNT(*) FROM tasks t WHERE t.project_id = p.id) as task_count
+            FROM projects p 
+            WHERE p.id = 2
+        
+INFO:database.connection:Query returned 1 rows
+INFO:database.connection:First row sample: RealDictRow([('id', 2), ('task_count', 0)])
+INFO:database.connection:Database connection closed
+INFO:components.board_view:Project has 0 total tasks
+INFO:components.board_view:Fetching tasks for project_id=2, status=To Do
+INFO:database.connection:Database connection established and verified
+INFO:database.connection:Executing query: 
+                        SELECT id, title, description, status, priority, 
+                               assignee, due_date, created_at 
+                        FROM tasks 
+                        WHERE project_id = 2 AND status = 'To Do'
+                        ORDER BY priority DESC, created_at DESC
+                    
+INFO:database.connection:Query returned 0 rows
+INFO:database.connection:Database connection closed
+INFO:components.board_view:Found 0 tasks with status 'To Do'
+INFO:components.board_view:Fetching tasks for project_id=2, status=In Progress
+INFO:database.connection:Database connection established and verified
+INFO:database.connection:Executing query: 
+                        SELECT id, title, description, status, priority, 
+                               assignee, due_date, created_at 
+                        FROM tasks 
+                        WHERE project_id = 2 AND status = 'In Progress'
+                        ORDER BY priority DESC, created_at DESC
+                    
+INFO:database.connection:Query returned 0 rows
+INFO:database.connection:Database connection closed
+INFO:components.board_view:Found 0 tasks with status 'In Progress'
+INFO:components.board_view:Fetching tasks for project_id=2, status=Done
+INFO:database.connection:Database connection established and verified
+INFO:database.connection:Executing query: 
+                        SELECT id, title, description, status, priority, 
+                               assignee, due_date, created_at 
+                        FROM tasks 
+                        WHERE project_id = 2 AND status = 'Done'
+                        ORDER BY priority DESC, created_at DESC
+                    
+INFO:database.connection:Query returned 0 rows
+INFO:database.connection:Database connection closed
+INFO:components.board_view:Found 0 tasks with status 'Done'
