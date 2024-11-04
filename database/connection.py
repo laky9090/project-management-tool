@@ -43,20 +43,24 @@ def execute_query(query, params=None):
         if cur.description:  # If the query returns results
             results = cur.fetchall()
             logger.info(f"Query returned {len(results)} rows")
+            if results:
+                logger.info(f"First row sample: {results[0]}")
             return results
         
-        # For INSERT/UPDATE queries, commit changes
+        # For INSERT/UPDATE queries
         conn.commit()
-        logger.info("Query executed successfully (no results)")
+        logger.info("Transaction committed successfully")
         return []
         
     except Exception as e:
+        logger.error(f"Query execution error: {str(e)}")
         if conn:
             conn.rollback()
-        logger.error(f"Database query error: {str(e)}")
+            logger.info("Transaction rolled back due to error")
         return None
     finally:
         if cur:
             cur.close()
         if conn:
             conn.close()
+            logger.info("Database connection closed")

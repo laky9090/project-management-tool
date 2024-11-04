@@ -1,0 +1,125 @@
+INFO:database.connection:Query executed successfully (no results)
+INFO:database.connection:Database connection established successfully
+INFO:database.connection:Executing query: SELECT * FROM projects ORDER BY created_at DESC
+INFO:database.connection:Query returned 2 rows
+INFO:__main__:Opening task form for project 1
+INFO:components.task_form:Creating task form for project_id: 1
+INFO:__main__:Rendering Board view for project 1
+INFO:components.board_view:Rendering board for project 1
+INFO:database.connection:Database connection established successfully
+INFO:database.connection:Executing query: SELECT id FROM projects WHERE id = %s
+INFO:database.connection:Query parameters: (1,)
+INFO:database.connection:Query returned 1 rows
+INFO:components.board_view:Fetching tasks for project_id=1, status=To Do
+INFO:database.connection:Database connection established successfully
+INFO:database.connection:Executing query: 
+                        SELECT id, title, description, status, priority, 
+                               assignee, due_date, created_at 
+                        FROM tasks 
+                        WHERE project_id = %s AND status = %s
+                        ORDER BY priority DESC, created_at DESC
+                    
+INFO:database.connection:Query parameters: (1, 'To Do')
+INFO:database.connection:Query returned 0 rows
+INFO:components.board_view:Task query result: []
+WARNING:components.board_view:No tasks found for project_id=1, status=To Do
+INFO:components.board_view:Fetching tasks for project_id=1, status=In Progress
+INFO:database.connection:Database connection established successfully
+INFO:database.connection:Executing query: 
+                        SELECT id, title, description, status, priority, 
+                               assignee, due_date, created_at 
+                        FROM tasks 
+                        WHERE project_id = %s AND status = %s
+                        ORDER BY priority DESC, created_at DESC
+                    
+INFO:database.connection:Query parameters: (1, 'In Progress')
+INFO:database.connection:Query returned 0 rows
+INFO:components.board_view:Task query result: []
+WARNING:components.board_view:No tasks found for project_id=1, status=In Progress
+INFO:components.board_view:Fetching tasks for project_id=1, status=Done
+INFO:database.connection:Database connection established successfully
+INFO:database.connection:Executing query: 
+                        SELECT id, title, description, status, priority, 
+                               assignee, due_date, created_at 
+                        FROM tasks 
+                        WHERE project_id = %s AND status = %s
+                        ORDER BY priority DESC, created_at DESC
+                    
+INFO:database.connection:Query parameters: (1, 'Done')
+INFO:database.connection:Query returned 0 rows
+INFO:components.board_view:Task query result: []
+WARNING:components.board_view:No tasks found for project_id=1, status=Done
+INFO:database.connection:Database connection established successfully
+INFO:database.connection:Executing query: 
+            CREATE TABLE IF NOT EXISTS projects (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
+                description TEXT,
+                deadline DATE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        
+INFO:database.connection:Query executed successfully (no results)
+INFO:database.connection:Database connection established successfully
+INFO:database.connection:Executing query: 
+            CREATE TABLE IF NOT EXISTS tasks (
+                id SERIAL PRIMARY KEY,
+                project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+                title VARCHAR(100) NOT NULL,
+                description TEXT,
+                status VARCHAR(50) DEFAULT 'To Do',
+                priority VARCHAR(20) DEFAULT 'Medium',
+                assignee VARCHAR(100),
+                due_date DATE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        
+INFO:database.connection:Query executed successfully (no results)
+INFO:database.connection:Database connection established successfully
+INFO:database.connection:Executing query: SELECT * FROM projects ORDER BY created_at DESC
+INFO:database.connection:Query returned 2 rows
+INFO:__main__:Rendering Board view for project 1
+INFO:components.board_view:Rendering board for project 1
+INFO:database.connection:Database connection established successfully
+INFO:database.connection:Executing query: SELECT id FROM projects WHERE id = %s
+INFO:database.connection:Query parameters: (1,)
+INFO:database.connection:Query returned 1 rows
+INFO:components.board_view:Fetching tasks for project_id=1, status=To Do
+INFO:database.connection:Database connection established successfully
+INFO:database.connection:Executing query: 
+                        SELECT id, title, description, status, priority, 
+                               assignee, due_date, created_at 
+                        FROM tasks 
+                        WHERE project_id = %s AND status = %s
+                        ORDER BY priority DESC, created_at DESC
+                    
+INFO:database.connection:Query parameters: (1, 'To Do')
+INFO:database.connection:Query returned 0 rows
+INFO:components.board_view:Task query result: []
+WARNING:components.board_view:No tasks found for project_id=1, status=To Do
+INFO:components.board_view:Fetching tasks for project_id=1, status=In Progress
+INFO:database.connection:Database connection established successfully
+INFO:database.connection:Executing query: 
+                        SELECT id, title, description, status, priority, 
+                               assignee, due_date, created_at 
+                        FROM tasks 
+                        WHERE project_id = %s AND status = %s
+                        ORDER BY priority DESC, created_at DESC
+                    
+INFO:database.connection:Query parameters: (1, 'In Progress')
+INFO:database.connection:Query returned 0 rows
+INFO:components.board_view:Task query result: []
+WARNING:components.board_view:No tasks found for project_id=1, status=In Progress
+INFO:components.board_view:Fetching tasks for project_id=1, status=Done
+INFO:database.connection:Database connection established successfully
+INFO:database.connection:Executing query: 
+                        SELECT id, title, description, status, priority, 
+                               assignee, due_date, created_at 
+                        FROM tasks 
+                        WHERE project_id = %s AND status = %s
+                        ORDER BY priority DESC, created_at DESC
+                    
+INFO:database.connection:Query parameters: (1, 'Done')
+INFO:database.connection:Query returned 0 rows
+INFO:components.board_view:Task query result: []
+WARNING:components.board_view:No tasks found for project_id=1, status=Done

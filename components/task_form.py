@@ -10,7 +10,6 @@ def create_task_form(project_id):
     conn = None
     cur = None
     try:
-        logger.info(f"Creating task form for project_id: {project_id}")
         with st.form("task_form"):
             st.write("Create New Task")
             title = st.text_input("Task Title", key="task_title")
@@ -29,43 +28,41 @@ def create_task_form(project_id):
                 
                 try:
                     conn = get_connection()
-                    if not conn:
-                        st.error("Could not connect to database")
-                        return False
-                        
                     cur = conn.cursor(cursor_factory=RealDictCursor)
                     
-                    # Start transaction
+                    # Begin transaction
                     cur.execute("BEGIN")
+                    logger.info(f"Starting transaction for task creation: project_id={project_id}, title={title}")
                     
-                    logger.info(f"Creating task: {title} for project {project_id}")
+                    # Insert task
                     cur.execute('''
                         INSERT INTO tasks 
                         (project_id, title, description, status, priority, assignee, due_date)
                         VALUES 
                         (%s, %s, %s, %s, %s, %s, %s)
-                        RETURNING id
+                        RETURNING id, title, status
                     ''', (project_id, title, description, status, priority, assignee, due_date))
                     
+                    # Fetch and log the result
                     result = cur.fetchone()
                     if result:
-                        task_id = result['id']
-                        # Commit transaction
+                        logger.info(f"Task created successfully: {result}")
                         conn.commit()
-                        logger.info(f"Task created successfully with ID: {task_id}")
-                        st.success("Task created successfully!")
+                        logger.info("Transaction committed")
+                        st.success(f"Task '{title}' created successfully!")
                         st.rerun()
                         return True
                     else:
+                        logger.error("No result returned from INSERT")
                         conn.rollback()
-                        logger.error("Task creation failed: No ID returned")
-                        st.error("Failed to create task. Please try again.")
+                        st.error("Failed to create task: No result returned")
                         return False
                         
                 except Exception as e:
+                    logger.error(f"Error creating task: {str(e)}")
                     if conn:
                         conn.rollback()
-                    logger.error(f"Task creation failed: {str(e)}")
+                        logger.info("Transaction rolled back due to error")
                     st.error(f"Failed to create task: {str(e)}")
                     return False
                 finally:
@@ -73,8 +70,8 @@ def create_task_form(project_id):
                         cur.close()
                     if conn:
                         conn.close()
-                        
+                        logger.info("Database connection closed")
     except Exception as e:
-        logger.error(f"Error in create_task_form: {str(e)}")
+        logger.error(f"Form error: {str(e)}")
         st.error("An error occurred while creating the task")
         return False
