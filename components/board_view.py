@@ -19,6 +19,13 @@ def render_board(project_id):
     try:
         logger.info(f"Rendering board for project {project_id}")
         
+        # Verify task count for project
+        task_count = execute_query(
+            "SELECT COUNT(*) as count FROM tasks WHERE project_id = %s",
+            (project_id,)
+        )
+        logger.info(f"Total tasks for project: {task_count[0]['count'] if task_count else 0}")
+        
         # Add validation of project_id parameter
         if not project_id:
             logger.error("Project ID is missing or invalid")
@@ -66,15 +73,11 @@ def render_board(project_id):
                         ORDER BY priority DESC, created_at DESC
                     ''', (project_id, status))
                     
-                    # Log task query results
-                    logger.info(f"Task query result: {tasks}")
-                    if not tasks:
-                        logger.warning(f"No tasks found for project_id={project_id}, status={status}")
-                    else:
-                        logger.info(f"Found {len(tasks)} tasks for status {status}")
+                    logger.info(f"Found {len(tasks) if tasks else 0} tasks for status {status}")
                     
                     if tasks:
                         for task in tasks:
+                            logger.info(f"Rendering task: {task['id']} - {task['title']}")
                             priority_class = get_priority_class(task['priority'])
                             status_class = get_status_class(status)
                             
