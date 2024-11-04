@@ -10,20 +10,10 @@ def create_task_form(project_id):
     try:
         logger.info(f"Creating task form for project {project_id}")
         
-        # Add error message container
-        error_container = st.empty()
-        debug_container = st.empty()
+        # Add error message container at the top
+        error_placeholder = st.empty()
         
-        with st.form("task_form", clear_on_submit=True):
-            # Add form fields with current values for debugging
-            st.write("### Current Form Values:")
-            st.json({
-                "project_id": project_id,
-                "title": st.session_state.get("task_title", ""),
-                "status": st.session_state.get("task_status", "To Do"),
-                "priority": st.session_state.get("task_priority", "Medium")
-            })
-            
+        with st.form("task_form"):
             title = st.text_input("Task Title", key="task_title")
             description = st.text_area("Description", key="task_description")
             status = st.selectbox("Status", ["To Do", "In Progress", "Done"], key="task_status")
@@ -35,87 +25,53 @@ def create_task_form(project_id):
             
             if submitted:
                 if not title:
-                    error_container.error("⚠️ Task title is required!")
+                    error_placeholder.error("⚠️ Task title is required!")
                     return False
                 
                 try:
-                    # Show debug information
-                    debug_container.info("📝 Creating task...")
-                    debug_container.write("Form values:")
-                    debug_container.json({
-                        "project_id": project_id,
-                        "title": title,
-                        "description": description,
-                        "status": status,
-                        "priority": priority,
-                        "assignee": assignee,
-                        "due_date": due_date
-                    })
+                    # Log the attempt
+                    logger.info(f"Attempting to create task: {title} for project {project_id}")
                     
-                    # First verify project exists
-                    project = execute_query(
-                        "SELECT id FROM projects WHERE id = %s FOR UPDATE",
-                        (project_id,)
-                    )
-                    if not project:
-                        error_container.error(f"⚠️ Project {project_id} not found")
-                        return False
-                    
-                    debug_container.info(f"Creating task '{title}' for project {project_id}...")
-                    
-                    # Insert task
+                    # Create task with a simple insert
                     insert_query = '''
                         INSERT INTO tasks 
                             (project_id, title, description, status, priority, assignee, due_date)
                         VALUES 
                             (%s, %s, %s, %s, %s, %s, %s)
-                        RETURNING id, title, status;
+                        RETURNING id;
                     '''
                     
                     values = (project_id, title, description, status, priority, assignee, due_date)
                     
-                    # Show query information
-                    debug_container.code("SQL Query:", language="sql")
-                    debug_container.code(insert_query)
-                    debug_container.write("Values:")
-                    debug_container.json(values)
+                    # Show the exact query being executed
+                    logger.info(f"Executing query: {insert_query}")
+                    logger.info(f"With values: {values}")
                     
                     result = execute_query(insert_query, values)
-                    debug_container.info(f"Query result: {result}")
                     
                     if not result:
-                        error_container.error("⚠️ Task creation failed - no ID returned")
-                        debug_container.error("Database error - no result returned")
+                        error_msg = "Task creation failed - database error"
+                        logger.error(error_msg)
+                        error_placeholder.error(f"⚠️ {error_msg}")
                         return False
                     
-                    # Verify task exists
-                    debug_container.info("Verifying task creation...")
-                    verify_result = execute_query(
-                        "SELECT * FROM tasks WHERE id = %s AND project_id = %s",
-                        (result[0]['id'], project_id)
-                    )
+                    task_id = result[0]['id']
+                    success_msg = f"✅ Task '{title}' created successfully! (ID: {task_id})"
+                    st.success(success_msg)
+                    logger.info(success_msg)
                     
-                    if not verify_result:
-                        error_container.error("⚠️ Task verification failed")
-                        debug_container.error("Task not found after creation")
-                        return False
-                    
-                    st.success(f"✅ Task '{title}' created successfully!")
-                    debug_container.success(f"Task created with ID: {result[0]['id']}")
-                    
-                    time.sleep(1)  # Give user time to see the success message
+                    time.sleep(0.5)
                     st.rerun()
                     return True
                     
                 except Exception as e:
-                    error_container.error(f"⚠️ Error: {str(e)}")
-                    debug_container.error("Debug information:")
-                    debug_container.code(f"Error type: {type(e).__name__}")
-                    debug_container.code(f"Error details: {str(e)}")
-                    logger.error(f"Task creation failed: {str(e)}")
+                    error_msg = f"Error creating task: {str(e)}"
+                    logger.error(error_msg)
+                    error_placeholder.error(f"⚠️ {error_msg}")
                     return False
                     
     except Exception as e:
-        st.error(f"Form error: {str(e)}")
-        logger.error(f"Form error: {str(e)}")
+        error_msg = f"Form error: {str(e)}"
+        logger.error(error_msg)
+        st.error(f"⚠️ {error_msg}")
         return False
