@@ -38,16 +38,19 @@ with st.sidebar:
         st.session_state['selected_project'] = selected_project
         st.write("---")
         st.write("## Project Views")
-        view = st.radio(
+        # Update view in session state when radio button changes
+        current_view = st.radio(
             "Select View",
             ["Board", "List", "Timeline"],
             key="view_selector",
-            index=["Board", "List", "Timeline"].index(st.session_state['current_view']),
-            format_func=lambda x: f"📋 {x}" if x == "Board" else f"📑 {x}" if x == "List" else f"📅 {x}"
+            index=["Board", "List", "Timeline"].index(st.session_state['current_view'])
         )
+        if current_view != st.session_state['current_view']:
+            st.session_state['current_view'] = current_view
+            st.rerun()
 
 # Main content
-if st.session_state['current_view'] == 'create_project':
+if st.session_state.get('current_view') == 'create_project':
     if create_project_form():
         st.session_state['current_view'] = 'Board'
         st.rerun()
@@ -57,12 +60,12 @@ elif 'selected_project' in st.session_state:
     if st.button("➕ Add Task"):
         create_task_form(st.session_state['selected_project'])
     
-    # Render selected view based on radio selection
-    if view == 'Board':
+    # Render selected view based on session state
+    if st.session_state['current_view'] == 'Board':
         render_board(st.session_state['selected_project'])
-    elif view == 'List':
+    elif st.session_state['current_view'] == 'List':
         render_task_list(st.session_state['selected_project'])
-    elif view == 'Timeline':
+    elif st.session_state['current_view'] == 'Timeline':
         render_timeline(st.session_state['selected_project'])
 else:
     st.info("Please select or create a project to get started!")
