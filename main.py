@@ -83,6 +83,7 @@ with st.sidebar:
         st.write("---")
         st.write("## Project Views")
         
+        # Updated view options to ensure Team view is visible
         view_options = ["Board", "List", "Timeline", "Team"]
         current_view_index = view_options.index(st.session_state.current_view) if st.session_state.current_view in view_options else 0
         
@@ -111,18 +112,22 @@ try:
             logger.info(f"Opening task form for project {st.session_state.selected_project}")
             create_task_form(st.session_state.selected_project)
         
-        # Render selected view
+        # Render selected view with proper error handling
         current_view = st.session_state.current_view
         logger.info(f"Rendering {current_view} view for project {st.session_state.selected_project}")
         
-        if current_view == 'Board':
-            render_board(st.session_state.selected_project)
-        elif current_view == 'List':
-            render_task_list(st.session_state.selected_project)
-        elif current_view == 'Timeline':
-            render_timeline(st.session_state.selected_project)
-        elif current_view == 'Team':
-            render_team_management(st.session_state.selected_project)
+        try:
+            if current_view == 'Board':
+                render_board(st.session_state.selected_project)
+            elif current_view == 'List':
+                render_task_list(st.session_state.selected_project)
+            elif current_view == 'Timeline':
+                render_timeline(st.session_state.selected_project)
+            elif current_view == 'Team':
+                render_team_management(st.session_state.selected_project)
+        except Exception as e:
+            logger.error(f"Error rendering {current_view} view: {str(e)}")
+            st.error(f"An error occurred while loading the {current_view} view. Please try again.")
     else:
         st.info("Please select or create a project to get started!")
 except Exception as e:

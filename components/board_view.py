@@ -51,6 +51,7 @@ def render_board(project_id):
                     </div>
                 """, unsafe_allow_html=True)
                 
+                # Updated query to use assignee_id
                 tasks = execute_query('''
                     SELECT t.id, t.title, t.description, t.status, t.priority, 
                            u.username as assignee_name, t.due_date, t.created_at 
