@@ -18,6 +18,13 @@ def get_status_class(status):
 def render_board(project_id):
     try:
         logger.info(f"Rendering board for project {project_id}")
+        
+        # Add validation of project_id parameter
+        if not project_id:
+            logger.error("Project ID is missing or invalid")
+            st.error("Invalid project selection")
+            return
+            
         st.write("## Kanban Board")
         
         cols = st.columns(3)
@@ -42,6 +49,9 @@ def render_board(project_id):
                 """, unsafe_allow_html=True)
                 
                 try:
+                    # Before executing the query
+                    logger.info(f"Fetching tasks for project_id={project_id}, status={status}")
+                    
                     tasks = execute_query('''
                         SELECT id, title, description, status, priority, 
                                assignee, due_date, created_at 
@@ -50,7 +60,11 @@ def render_board(project_id):
                         ORDER BY priority DESC, created_at DESC
                     ''', (project_id, status))
                     
-                    logger.info(f"Found {len(tasks) if tasks else 0} tasks for status {status}")
+                    # After executing the query
+                    if not tasks:
+                        logger.warning(f"No tasks found for project_id={project_id}, status={status}")
+                    else:
+                        logger.info(f"Found {len(tasks)} tasks for status {status}")
                     
                     if tasks:
                         for task in tasks:
