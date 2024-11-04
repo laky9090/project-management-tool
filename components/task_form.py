@@ -3,6 +3,7 @@ from database.connection import get_connection
 from psycopg2.extras import RealDictCursor
 from datetime import datetime
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -24,63 +25,57 @@ def create_task_form(project_id):
                     st.error("Task title is required!")
                     return False
                 
-                conn = None
-                cur = None
                 try:
                     conn = get_connection()
-                    if not conn:
-                        st.error("Database connection failed")
-                        return False
-                    
-                    cur = conn.cursor(cursor_factory=RealDictCursor)
-                    
-                    # First verify the project exists
-                    cur.execute("SELECT id FROM projects WHERE id = %s", (project_id,))
-                    if not cur.fetchone():
-                        st.error("Selected project not found")
-                        return False
-                    
-                    # Insert task with explicit values
-                    insert_query = '''
-                        INSERT INTO tasks 
-                        (project_id, title, description, status, priority, assignee, due_date)
-                        VALUES 
-                        (%s, %s, %s, %s, %s, %s, %s)
-                        RETURNING id, title, status
-                    '''
-                    
-                    values = (project_id, title, description, status, priority, assignee, due_date)
-                    logger.info(f"Executing insert with values: {values}")
-                    
-                    cur.execute(insert_query, values)
-                    result = cur.fetchone()
-                    
-                    if not result:
-                        conn.rollback()
-                        st.error("Task creation failed - no ID returned")
-                        return False
-                    
-                    conn.commit()
-                    logger.info(f"Task created successfully with ID: {result['id']}")
-                    st.success(f"Task '{title}' created successfully!")
-                    
-                    # Force page refresh to show new task
-                    st.rerun()
-                    return True
-                    
+                    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                        # Start transaction
+                        cur.execute("BEGIN")
+                        
+                        # Insert task
+                        insert_query = '''
+                            INSERT INTO tasks 
+                            (project_id, title, description, status, priority, assignee, due_date)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s)
+                            RETURNING id
+                        '''
+                        
+                        values = (project_id, title, description, status, priority, assignee, due_date)
+                        logger.info(f"Executing insert with values: {values}")
+                        
+                        cur.execute(insert_query, values)
+                        result = cur.fetchone()
+                        
+                        if not result:
+                            conn.rollback()
+                            st.error("Task creation failed")
+                            return False
+                            
+                        task_id = result['id']
+                        
+                        # Verify task was created
+                        cur.execute('''
+                            SELECT id, title, status FROM tasks 
+                            WHERE id = %s AND project_id = %s
+                        ''', (task_id, project_id))
+                        
+                        verify_result = cur.fetchone()
+                        if not verify_result:
+                            conn.rollback()
+                            st.error("Task verification failed")
+                            return False
+                            
+                        conn.commit()
+                        logger.info(f"Task created and verified with ID: {task_id}")
+                        st.success(f"Task '{title}' created successfully!")
+                        time.sleep(0.5)  # Brief pause before refresh
+                        st.rerun()
+                        return True
+                        
                 except Exception as e:
-                    if conn:
-                        conn.rollback()
                     logger.error(f"Task creation error: {str(e)}")
                     st.error(f"Failed to create task: {str(e)}")
                     return False
-                finally:
-                    if cur:
-                        cur.close()
-                    if conn:
-                        conn.close()
-                        logger.info("Database connection closed")
-                        
+                    
     except Exception as e:
         logger.error(f"Form error: {str(e)}")
         st.error("An error occurred while creating the task")

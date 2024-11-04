@@ -19,26 +19,21 @@ def render_board(project_id):
     try:
         logger.info(f"Rendering board for project {project_id}")
         
-        # Verify task count for project
-        task_count = execute_query(
-            "SELECT COUNT(*) as count FROM tasks WHERE project_id = %s",
-            (project_id,)
-        )
-        logger.info(f"Total tasks for project: {task_count[0]['count'] if task_count else 0}")
+        # First verify project exists and has tasks
+        project_check = execute_query('''
+            SELECT p.id, 
+                   (SELECT COUNT(*) FROM tasks t WHERE t.project_id = p.id) as task_count
+            FROM projects p 
+            WHERE p.id = %s
+        ''', (project_id,))
         
-        # Add validation of project_id parameter
-        if not project_id:
-            logger.error("Project ID is missing or invalid")
-            st.error("Invalid project selection")
-            return
-            
-        # Verify project exists
-        project = execute_query("SELECT id FROM projects WHERE id = %s", (project_id,))
-        if not project:
+        if not project_check:
             logger.error(f"Project {project_id} not found")
             st.error("Selected project not found")
             return
             
+        logger.info(f"Project has {project_check[0]['task_count']} total tasks")
+        
         st.write("## Kanban Board")
         
         cols = st.columns(3)
@@ -73,11 +68,11 @@ def render_board(project_id):
                         ORDER BY priority DESC, created_at DESC
                     ''', (project_id, status))
                     
-                    logger.info(f"Found {len(tasks) if tasks else 0} tasks for status {status}")
-                    
+                    logger.info(f"Found {len(tasks) if tasks else 0} tasks with status '{status}'")
                     if tasks:
+                        logger.info(f"Sample task: {tasks[0]}")
+                        
                         for task in tasks:
-                            logger.info(f"Rendering task: {task['id']} - {task['title']}")
                             priority_class = get_priority_class(task['priority'])
                             status_class = get_status_class(status)
                             
