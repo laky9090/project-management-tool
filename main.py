@@ -13,8 +13,12 @@ st.set_page_config(
     layout="wide"
 )
 
-# Initialize database
-init_database()
+try:
+    # Initialize database
+    init_database()
+except Exception as e:
+    st.error(f"Failed to initialize database. Please try again.")
+    st.stop()
 
 # Load custom CSS
 with open("styles/main.css") as f:
@@ -29,6 +33,7 @@ with st.sidebar:
     st.title("Project Management")
     if st.button("Create New Project"):
         st.session_state['current_view'] = 'create_project'
+        st.rerun()
     
     st.write("---")
     st.write("## Select Project")
@@ -38,32 +43,30 @@ with st.sidebar:
         st.session_state['selected_project'] = selected_project
         st.write("---")
         st.write("## Project Views")
-        view_options = ["Board", "List", "Timeline"]
-        view_index = view_options.index(st.session_state['current_view'])
         
         new_view = st.radio(
             "Select View",
-            view_options,
-            index=view_index
+            ["Board", "List", "Timeline"],
+            index=["Board", "List", "Timeline"].index(st.session_state.get('current_view', 'Board'))
         )
         
-        if new_view != st.session_state['current_view']:
+        if new_view != st.session_state.get('current_view'):
             st.session_state['current_view'] = new_view
-            st.experimental_rerun()
+            st.rerun()
 
 # Main content
 if st.session_state.get('current_view') == 'create_project':
     if create_project_form():
         st.session_state['current_view'] = 'Board'
-        st.experimental_rerun()
+        st.rerun()
 
 elif 'selected_project' in st.session_state:
     # Add task button
     if st.button("➕ Add Task"):
         create_task_form(st.session_state['selected_project'])
     
-    # Render selected view based on session state
-    current_view = st.session_state['current_view']
+    # Render selected view
+    current_view = st.session_state.get('current_view')
     if current_view == 'Board':
         render_board(st.session_state['selected_project'])
     elif current_view == 'List':
