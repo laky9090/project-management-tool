@@ -1,6 +1,5 @@
 import streamlit as st
 from database.connection import get_connection
-from psycopg2.extras import RealDictCursor
 from datetime import datetime
 import logging
 import time
@@ -28,76 +27,68 @@ def create_task_form(project_id):
                 conn = None
                 cur = None
                 try:
+                    # Get database connection
                     conn = get_connection()
                     if not conn:
-                        st.error("Database connection failed")
+                        logger.error("Database connection failed")
+                        st.error("Could not connect to database")
                         return False
-                        
-                    # Use RealDictCursor for consistency
-                    cur = conn.cursor(cursor_factory=RealDictCursor)
                     
-                    # Start transaction
-                    cur.execute("BEGIN")
-                    logger.info("Transaction started")
+                    # Create cursor
+                    cur = conn.cursor()
+                    logger.info("Database cursor created")
                     
                     # First verify project exists
                     cur.execute("SELECT id FROM projects WHERE id = %s", (project_id,))
-                    if not cur.fetchone():
-                        st.error(f"Project {project_id} not found")
+                    project = cur.fetchone()
+                    if not project:
+                        logger.error(f"Project {project_id} not found")
+                        st.error("Selected project not found")
                         return False
                     
-                    # Insert task with explicit column names
+                    # Insert task
                     insert_query = '''
                         INSERT INTO tasks 
                             (project_id, title, description, status, priority, assignee, due_date)
                         VALUES 
                             (%s, %s, %s, %s, %s, %s, %s)
-                        RETURNING id, title, status;
+                        RETURNING id;
                     '''
                     
                     values = (project_id, title, description, status, priority, assignee, due_date)
-                    logger.info(f"Executing insert with values: {values}")
-                    
-                    # Log the exact query being executed
-                    logger.info(f"Full query: {cur.mogrify(insert_query, values).decode('utf-8')}")
+                    logger.info(f"Attempting to insert task with values: {values}")
                     
                     cur.execute(insert_query, values)
                     result = cur.fetchone()
                     
                     if not result:
-                        logger.error("Insert did not return an ID")
-                        conn.rollback()
-                        st.error("Task creation failed")
-                        return False
+                        logger.error("Task insert failed - no ID returned")
+                        raise Exception("Failed to create task")
                     
-                    logger.info(f"Insert successful, returned: {result}")
+                    task_id = result[0]
+                    logger.info(f"Task created with ID: {task_id}")
                     
                     # Verify task exists
-                    verify_query = "SELECT * FROM tasks WHERE id = %s"
-                    cur.execute(verify_query, (result['id'],))
-                    verify_result = cur.fetchone()
-                    
-                    if not verify_result:
-                        logger.error("Task verification failed")
-                        conn.rollback()
-                        st.error("Task verification failed")
-                        return False
-                        
-                    logger.info(f"Task verified: {verify_result}")
+                    cur.execute("SELECT id FROM tasks WHERE id = %s", (task_id,))
+                    verify = cur.fetchone()
+                    if not verify:
+                        logger.error(f"Could not verify task {task_id}")
+                        raise Exception("Task verification failed")
                     
                     # Commit transaction
                     conn.commit()
                     logger.info("Transaction committed successfully")
                     
+                    # Show success message
                     st.success(f"Task '{title}' created successfully!")
-                    time.sleep(0.5)  # Brief pause to ensure transaction completes
+                    time.sleep(0.1)  # Brief pause
                     st.rerun()
                     return True
                     
                 except Exception as e:
+                    logger.error(f"Task creation failed: {str(e)}")
                     if conn:
                         conn.rollback()
-                        logger.error(f"Transaction rolled back: {str(e)}")
                     st.error(f"Failed to create task: {str(e)}")
                     return False
                 finally:
