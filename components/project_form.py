@@ -16,10 +16,6 @@ def create_project_form():
         
         if submitted and name:
             try:
-                # Start transaction
-                execute_query("BEGIN")
-                
-                # Create project
                 result = execute_query(
                     '''
                     INSERT INTO projects (name, description, deadline)
@@ -30,41 +26,25 @@ def create_project_form():
                 )
                 
                 if result:
-                    project_id = result[0]['id']
-                    # Add creator as project admin
-                    member_result = execute_query(
-                        '''
-                        INSERT INTO project_members (project_id, user_id, role)
-                        VALUES (%s, %s, %s)
-                        ''',
-                        (project_id, st.session_state.user_id, 'project_admin')
-                    )
+                    st.success("Project created successfully!")
+                    return True
                     
-                    if member_result is not None:
-                        execute_query("COMMIT")
-                        st.success("Project created successfully!")
-                        return True
-                
-                execute_query("ROLLBACK")
                 st.error("Failed to create project - database error")
                 return False
-                
+                    
             except Exception as e:
-                execute_query("ROLLBACK")
                 logger.error(f"Error creating project: {str(e)}")
                 st.error(f"Error creating project: {str(e)}")
                 return False
     return False
 
 def list_projects():
-    # Get projects where user is a member
-    projects = execute_query("""
-        SELECT p.*, pm.role as user_role
+    # Get all projects without user filtering
+    projects = execute_query('''
+        SELECT p.*
         FROM projects p
-        JOIN project_members pm ON p.id = pm.project_id
-        WHERE pm.user_id = %s
         ORDER BY p.created_at DESC
-    """, (st.session_state.user_id,))
+    ''')
     
     selected_project = None
     
@@ -92,7 +72,6 @@ def list_projects():
                         <h3 style="margin: 0; color: #1F2937;">{project['name']}</h3>
                         <p style="margin: 0.5rem 0; color: #4B5563;">{project['description'] if project['description'] else 'No description'}</p>
                         <div style="color: #6B7280">Due: {project['deadline'].strftime('%b %d, %Y') if project['deadline'] else 'No deadline'}</div>
-                        <div style="color: #6B7280">Role: {project['user_role']}</div>
                     </div>
                 ''', unsafe_allow_html=True)
                 
