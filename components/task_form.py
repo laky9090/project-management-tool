@@ -14,22 +14,6 @@ def create_task_form(project_id):
             description = st.text_area("Description")
             status = st.selectbox("Status", ["To Do", "In Progress", "Done"])
             priority = st.selectbox("Priority", ["Low", "Medium", "High"])
-            
-            # Get list of project members for assignee selection
-            members = execute_query('''
-                SELECT u.id, u.username 
-                FROM users u
-                JOIN project_members pm ON u.id = pm.user_id
-                WHERE pm.project_id = %s
-            ''', (project_id,))
-            
-            member_options = [(None, "Unassigned")] + [(m['id'], m['username']) for m in members] if members else [(None, "Unassigned")]
-            assignee_id = st.selectbox(
-                "Assignee",
-                options=member_options,
-                format_func=lambda x: x[1]
-            )[0]
-            
             due_date = st.date_input("Due Date", min_value=datetime.today())
             submitted = st.form_submit_button("Create Task")
             
@@ -45,10 +29,9 @@ def create_task_form(project_id):
                     # Insert task
                     insert_query = '''
                         INSERT INTO tasks 
-                            (project_id, title, description, status, priority, 
-                             assignee_id, creator_id, due_date)
+                            (project_id, title, description, status, priority, due_date)
                         VALUES 
-                            (%s, %s, %s, %s, %s, %s, %s, %s)
+                            (%s, %s, %s, %s, %s, %s)
                         RETURNING id;
                     '''
                     
@@ -58,8 +41,6 @@ def create_task_form(project_id):
                         description,
                         status,
                         priority,
-                        assignee_id,
-                        st.session_state.user_id,
                         due_date
                     )
                     

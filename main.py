@@ -6,8 +6,6 @@ from components.task_form import create_task_form
 from components.board_view import render_board
 from components.timeline_view import render_timeline
 from components.task_list import render_task_list
-from components.auth_forms import render_auth_forms
-from components.team_management import render_team_management
 from database.connection import get_connection
 
 # Configure logging
@@ -46,14 +44,6 @@ except Exception as e:
     logger.error(f"Failed to load CSS: {str(e)}")
     st.warning("Some styles might not be loaded correctly.")
 
-# Check authentication
-if 'user_id' not in st.session_state:
-    st.session_state.user_id = None
-
-if not st.session_state.user_id:
-    render_auth_forms()
-    st.stop()
-
 # Initialize session states
 if 'current_view' not in st.session_state:
     st.session_state.current_view = 'Board'
@@ -63,12 +53,6 @@ if 'selected_project' not in st.session_state:
 # Sidebar
 with st.sidebar:
     st.title("Project Management")
-    
-    # Logout button
-    if st.button("Logout"):
-        st.session_state.user_id = None
-        st.session_state.stored_token = None  # Clear stored token on logout
-        st.rerun()
     
     if st.button("Create New Project"):
         st.session_state.current_view = 'create_project'
@@ -83,8 +67,7 @@ with st.sidebar:
         st.write("---")
         st.write("## Project Views")
         
-        # Updated view options to ensure Team view is visible
-        view_options = ["Board", "List", "Timeline", "Team"]
+        view_options = ["Board", "List", "Timeline"]
         current_view_index = view_options.index(st.session_state.current_view) if st.session_state.current_view in view_options else 0
         
         new_view = st.radio(
@@ -123,8 +106,6 @@ try:
                 render_task_list(st.session_state.selected_project)
             elif current_view == 'Timeline':
                 render_timeline(st.session_state.selected_project)
-            elif current_view == 'Team':
-                render_team_management(st.session_state.selected_project)
         except Exception as e:
             logger.error(f"Error rendering {current_view} view: {str(e)}")
             st.error(f"An error occurred while loading the {current_view} view. Please try again.")

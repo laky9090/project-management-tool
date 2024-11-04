@@ -51,12 +51,10 @@ def render_board(project_id):
                     </div>
                 """, unsafe_allow_html=True)
                 
-                # Updated query to use assignee_id
                 tasks = execute_query('''
-                    SELECT t.id, t.title, t.description, t.status, t.priority, 
-                           u.username as assignee_name, t.due_date, t.created_at 
+                    SELECT t.id, t.title, t.description, t.status, t.priority,
+                           t.due_date, t.created_at 
                     FROM tasks t
-                    LEFT JOIN users u ON t.assignee_id = u.id
                     WHERE t.project_id = %s AND t.status = %s
                     ORDER BY t.priority DESC, t.created_at DESC
                 ''', (project_id, status))
@@ -81,7 +79,6 @@ def render_board(project_id):
                                     font-size: 0.875rem;
                                     color: #4B5563;
                                 '>
-                                    <span>👤 {task['assignee_name'] or 'Unassigned'}</span>
                                     <span class='priority-{task['priority'].lower()}'>{task['priority']}</span>
                                     <span>📅 {task['due_date'].strftime('%b %d') if task['due_date'] else 'No due date'}</span>
                                 </div>
