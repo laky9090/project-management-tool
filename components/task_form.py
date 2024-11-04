@@ -23,48 +23,64 @@ def create_task_form(project_id):
                 if not title:
                     st.error("Task title is required!")
                     return False
-                    
+                
+                conn = None
+                cur = None
                 try:
-                    # Use with statement for automatic connection handling
-                    with get_connection() as conn:
-                        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                            # Start transaction
-                            cur.execute("BEGIN")
-                            
-                            # Insert task
-                            insert_query = '''
-                                INSERT INTO tasks 
-                                (project_id, title, description, status, priority, assignee, due_date)
-                                VALUES (%s, %s, %s, %s, %s, %s, %s)
-                                RETURNING id, title, status;
-                            '''
-                            
-                            logger.info(f"Creating task with data: project_id={project_id}, title={title}")
-                            cur.execute(insert_query, (
-                                project_id, title, description, 
-                                status, priority, assignee, due_date
-                            ))
-                            
-                            result = cur.fetchone()
-                            logger.info(f"Insert result: {result}")
-                            
-                            if not result:
-                                raise Exception("Task creation failed - no ID returned")
-                            
-                            # Commit transaction
-                            conn.commit()
-                            logger.info(f"Task created successfully with ID: {result['id']}")
-                            
-                            # Show success message
-                            st.success(f"Task '{title}' created successfully!")
-                            st.rerun()
-                            return True
-                            
+                    conn = get_connection()
+                    if not conn:
+                        st.error("Database connection failed")
+                        return False
+                    
+                    cur = conn.cursor(cursor_factory=RealDictCursor)
+                    
+                    # First verify the project exists
+                    cur.execute("SELECT id FROM projects WHERE id = %s", (project_id,))
+                    if not cur.fetchone():
+                        st.error("Selected project not found")
+                        return False
+                    
+                    # Insert task with explicit values
+                    insert_query = '''
+                        INSERT INTO tasks 
+                        (project_id, title, description, status, priority, assignee, due_date)
+                        VALUES 
+                        (%s, %s, %s, %s, %s, %s, %s)
+                        RETURNING id, title, status
+                    '''
+                    
+                    values = (project_id, title, description, status, priority, assignee, due_date)
+                    logger.info(f"Executing insert with values: {values}")
+                    
+                    cur.execute(insert_query, values)
+                    result = cur.fetchone()
+                    
+                    if not result:
+                        conn.rollback()
+                        st.error("Task creation failed - no ID returned")
+                        return False
+                    
+                    conn.commit()
+                    logger.info(f"Task created successfully with ID: {result['id']}")
+                    st.success(f"Task '{title}' created successfully!")
+                    
+                    # Force page refresh to show new task
+                    st.rerun()
+                    return True
+                    
                 except Exception as e:
+                    if conn:
+                        conn.rollback()
                     logger.error(f"Task creation error: {str(e)}")
                     st.error(f"Failed to create task: {str(e)}")
                     return False
-                    
+                finally:
+                    if cur:
+                        cur.close()
+                    if conn:
+                        conn.close()
+                        logger.info("Database connection closed")
+                        
     except Exception as e:
         logger.error(f"Form error: {str(e)}")
         st.error("An error occurred while creating the task")
