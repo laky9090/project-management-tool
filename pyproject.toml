@@ -5,9 +5,12 @@ description = "Add your description here"
 requires-python = ">=3.11"
 dependencies = [
     "bcrypt>=4.2.0",
+    "jwt",
     "pandas>=2.2.3",
     "plotly>=5.24.1",
     "psycopg2-binary>=2.9.10",
     "pyjwt>=2.9.0",
+    "python-jose",
+    "python-jwt",
     "streamlit>=1.39.0",
 ]
