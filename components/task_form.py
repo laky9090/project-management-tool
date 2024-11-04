@@ -1,8 +1,9 @@
 import streamlit as st
-from database.connection import execute_query
+from database.connection import execute_query, get_connection
 from datetime import datetime
 import logging
 import time
+from psycopg2.extras import RealDictCursor
 
 logger = logging.getLogger(__name__)
 
@@ -12,6 +13,7 @@ def create_task_form(project_id):
         
         # Add error message container at the top
         error_placeholder = st.empty()
+        debug_placeholder = st.empty()
         
         with st.form("task_form"):
             title = st.text_input("Task Title", key="task_title")
@@ -28,35 +30,67 @@ def create_task_form(project_id):
                     error_placeholder.error("⚠️ Task title is required!")
                     return False
                 
+                conn = None
+                cur = None
                 try:
-                    # Log the attempt
-                    logger.info(f"Attempting to create task: {title} for project {project_id}")
+                    # Get database connection
+                    conn = get_connection()
+                    if not conn:
+                        error_msg = "Database connection failed"
+                        logger.error(error_msg)
+                        error_placeholder.error(f"⚠️ {error_msg}")
+                        return False
                     
-                    # Create task with a simple insert
+                    # Create cursor
+                    cur = conn.cursor(cursor_factory=RealDictCursor)
+                    
+                    # Start transaction
+                    cur.execute("BEGIN")
+                    debug_placeholder.info("Transaction started...")
+                    
+                    # Insert task
                     insert_query = '''
                         INSERT INTO tasks 
                             (project_id, title, description, status, priority, assignee, due_date)
                         VALUES 
                             (%s, %s, %s, %s, %s, %s, %s)
-                        RETURNING id;
+                        RETURNING id, title;
                     '''
                     
                     values = (project_id, title, description, status, priority, assignee, due_date)
                     
-                    # Show the exact query being executed
-                    logger.info(f"Executing query: {insert_query}")
-                    logger.info(f"With values: {values}")
+                    # Log the exact query being executed
+                    formatted_query = cur.mogrify(insert_query, values).decode('utf-8')
+                    logger.info(f"Executing query: {formatted_query}")
+                    debug_placeholder.code(f"Executing query: {formatted_query}")
                     
-                    result = execute_query(insert_query, values)
+                    cur.execute(insert_query, values)
+                    result = cur.fetchone()
                     
                     if not result:
-                        error_msg = "Task creation failed - database error"
+                        error_msg = "Task creation failed - no ID returned"
                         logger.error(error_msg)
                         error_placeholder.error(f"⚠️ {error_msg}")
+                        conn.rollback()
+                        debug_placeholder.warning("Transaction rolled back")
                         return False
                     
-                    task_id = result[0]['id']
-                    success_msg = f"✅ Task '{title}' created successfully! (ID: {task_id})"
+                    # Verify task exists
+                    cur.execute("SELECT * FROM tasks WHERE id = %s", (result['id'],))
+                    verify = cur.fetchone()
+                    if not verify:
+                        error_msg = "Task verification failed"
+                        logger.error(error_msg)
+                        error_placeholder.error(f"⚠️ {error_msg}")
+                        conn.rollback()
+                        debug_placeholder.warning("Transaction rolled back")
+                        return False
+                    
+                    # Commit transaction
+                    conn.commit()
+                    debug_placeholder.success("Transaction committed successfully")
+                    
+                    success_msg = f"✅ Task '{title}' created successfully! (ID: {result['id']})"
                     st.success(success_msg)
                     logger.info(success_msg)
                     
@@ -67,8 +101,17 @@ def create_task_form(project_id):
                 except Exception as e:
                     error_msg = f"Error creating task: {str(e)}"
                     logger.error(error_msg)
+                    if conn:
+                        conn.rollback()
+                        debug_placeholder.warning("Transaction rolled back due to error")
                     error_placeholder.error(f"⚠️ {error_msg}")
                     return False
+                finally:
+                    if cur:
+                        cur.close()
+                    if conn:
+                        conn.close()
+                        logger.info("Database connection closed")
                     
     except Exception as e:
         error_msg = f"Form error: {str(e)}"
