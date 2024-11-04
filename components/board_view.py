@@ -4,19 +4,13 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def get_priority_class(priority):
-    return f"priority-{priority.lower()}"
-
-def get_status_class(status):
-    status_map = {
-        "To Do": "todo",
-        "In Progress": "progress",
-        "Done": "done"
-    }
-    return f"status-{status_map[status]}"
-
 def render_board(project_id):
     try:
+        # Clear task_created flag if exists
+        if 'task_created' in st.session_state:
+            del st.session_state.task_created
+            st.rerun()
+            
         logger.info(f"Rendering board for project {project_id}")
         
         # First verify project exists and has tasks
@@ -57,94 +51,67 @@ def render_board(project_id):
                     </div>
                 """, unsafe_allow_html=True)
                 
-                try:
-                    logger.info(f"Fetching tasks for project_id={project_id}, status={status}")
-                    
-                    tasks = execute_query('''
-                        SELECT id, title, description, status, priority, 
-                               assignee, due_date, created_at 
-                        FROM tasks 
-                        WHERE project_id = %s AND status = %s
-                        ORDER BY priority DESC, created_at DESC
-                    ''', (project_id, status))
-                    
-                    logger.info(f"Found {len(tasks) if tasks else 0} tasks with status '{status}'")
-                    if tasks:
-                        logger.info(f"Sample task: {tasks[0]}")
-                        
-                        for task in tasks:
-                            priority_class = get_priority_class(task['priority'])
-                            status_class = get_status_class(status)
-                            
-                            with st.container():
-                                st.markdown(f"""
-                                <div class='task-card {status_class}' style='
-                                    background: white;
-                                    border-radius: 12px;
-                                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-                                    margin: 0.75rem 0;
-                                    overflow: hidden;
-                                    transition: transform 0.2s ease;
-                                    &:hover {{
-                                        transform: translateY(-2px);
-                                    }}
+                tasks = execute_query('''
+                    SELECT t.id, t.title, t.description, t.status, t.priority, 
+                           u.username as assignee_name, t.due_date, t.created_at 
+                    FROM tasks t
+                    LEFT JOIN users u ON t.assignee_id = u.id
+                    WHERE t.project_id = %s AND t.status = %s
+                    ORDER BY t.priority DESC, t.created_at DESC
+                ''', (project_id, status))
+                
+                if tasks:
+                    for task in tasks:
+                        with st.container():
+                            st.markdown(f"""
+                            <div class='task-card' style='
+                                background: white;
+                                border-radius: 12px;
+                                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                                margin: 0.75rem 0;
+                                padding: 1rem;
+                            '>
+                                <h4 style='margin: 0 0 0.5rem 0;'>{task['title']}</h4>
+                                <p style='margin: 0 0 0.75rem 0; color: #6B7280;'>{task['description'][:100] + '...' if task['description'] and len(task['description']) > 100 else task['description'] or 'No description'}</p>
+                                <div style='
+                                    display: flex;
+                                    justify-content: space-between;
+                                    align-items: center;
+                                    font-size: 0.875rem;
+                                    color: #4B5563;
                                 '>
-                                    <div class='{priority_class}' style='
-                                        padding: 0.5rem 1rem;
-                                        font-weight: 500;
-                                        font-size: 0.875rem;
-                                        margin-bottom: 0.5rem;
-                                    '>
-                                        {task['priority']} Priority
-                                    </div>
-                                    <div style='padding: 1rem;'>
-                                        <h4 style='
-                                            margin: 0 0 0.5rem 0;
-                                            font-size: 1rem;
-                                            font-weight: 600;
-                                            color: #1F2937;
-                                        '>{task['title']}</h4>
-                                        <p style='
-                                            margin: 0 0 0.75rem 0;
-                                            color: #6B7280;
-                                            font-size: 0.875rem;
-                                        '>{task['description'][:100] + '...' if task['description'] and len(task['description']) > 100 else task['description'] or 'No description'}</p>
-                                        <div style='
-                                            display: flex;
-                                            justify-content: space-between;
-                                            align-items: center;
-                                            font-size: 0.875rem;
-                                            color: #4B5563;
-                                        '>
-                                            <span>👤 {task['assignee'] or 'Unassigned'}</span>
-                                            <span>📅 {task['due_date'].strftime('%b %d') if task['due_date'] else 'No due date'}</span>
-                                        </div>
-                                    </div>
+                                    <span>👤 {task['assignee_name'] or 'Unassigned'}</span>
+                                    <span class='priority-{task['priority'].lower()}'>{task['priority']}</span>
+                                    <span>📅 {task['due_date'].strftime('%b %d') if task['due_date'] else 'No due date'}</span>
                                 </div>
-                                """, unsafe_allow_html=True)
-                                
-                                new_status = st.selectbox(
-                                    "Move to",
-                                    statuses,
-                                    key=f"move_{task['id']}",
-                                    index=statuses.index(status)
-                                )
-                                
-                                if new_status != status:
-                                    logger.info(f"Moving task {task['id']} from {status} to {new_status}")
+                            </div>
+                            """, unsafe_allow_html=True)
+                            
+                            # Task actions
+                            new_status = st.selectbox(
+                                "Move to",
+                                statuses,
+                                key=f"move_{task['id']}",
+                                index=statuses.index(status)
+                            )
+                            
+                            if new_status != status:
+                                try:
+                                    execute_query("BEGIN")
                                     if execute_query(
                                         "UPDATE tasks SET status = %s WHERE id = %s",
                                         (new_status, task['id'])
                                     ) is not None:
+                                        execute_query("COMMIT")
                                         st.rerun()
                                     else:
+                                        execute_query("ROLLBACK")
                                         st.error("Failed to update task status")
-                    else:
-                        st.info(f"No tasks in {status}")
-                        
-                except Exception as e:
-                    logger.error(f"Error fetching tasks for status {status}: {str(e)}")
-                    st.error(f"Error loading tasks for {status}")
+                                except Exception as e:
+                                    execute_query("ROLLBACK")
+                                    st.error(f"Error updating task status: {str(e)}")
+                else:
+                    st.info(f"No tasks in {status}")
                     
     except Exception as e:
         logger.error(f"Error rendering board: {str(e)}")
