@@ -1,0 +1,26 @@
+div.stButton > button {
+    width: 100%;
+}
+
+div.stSelectbox > div[role="button"] {
+    margin-bottom: 10px;
+}
+
+.task-card {
+    padding: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-bottom: 0.5rem;
+}
+
+.priority-high {
+    border-left: 4px solid #ff4b4b;
+}
+
+.priority-medium {
+    border-left: 4px solid #ffa500;
+}
+
+.priority-low {
+    border-left: 4px solid #00ff00;
+}
