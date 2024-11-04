@@ -1,5 +1,6 @@
 import streamlit as st
 from database.connection import execute_query
+from utils.file_handler import get_task_attachments, delete_attachment
 import logging
 
 logger = logging.getLogger(__name__)
@@ -84,6 +85,24 @@ def render_board(project_id):
                                 </div>
                             </div>
                             """, unsafe_allow_html=True)
+                            
+                            # Display attachments
+                            attachments = get_task_attachments(task['id'])
+                            if attachments:
+                                st.write("📎 Attachments:")
+                                for attachment in attachments:
+                                    col1, col2 = st.columns([3, 1])
+                                    with col1:
+                                        st.download_button(
+                                            f"📄 {attachment['filename']}",
+                                            open(attachment['file_path'], 'rb'),
+                                            file_name=attachment['filename'],
+                                            mime=attachment['file_type']
+                                        )
+                                    with col2:
+                                        if st.button("🗑️", key=f"delete_{attachment['id']}"):
+                                            if delete_attachment(attachment['id']):
+                                                st.rerun()
                             
                             # Task actions
                             new_status = st.selectbox(
