@@ -30,6 +30,7 @@ def execute_query(query, params=None):
     try:
         conn = get_connection()
         if not conn:
+            logger.error("Failed to establish database connection")
             return None
         
         cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -38,24 +39,24 @@ def execute_query(query, params=None):
             logger.info(f"Query parameters: {params}")
         
         cur.execute(query, params)
-        conn.commit()
         
         if cur.description:  # If the query returns results
             results = cur.fetchall()
             logger.info(f"Query returned {len(results)} rows")
             return results
+        
+        # For INSERT/UPDATE queries, commit changes
+        conn.commit()
         logger.info("Query executed successfully (no results)")
-        return []  # Return empty list for non-SELECT queries
+        return []
         
     except Exception as e:
         if conn:
             conn.rollback()
         logger.error(f"Database query error: {str(e)}")
-        st.error(f"Database query error: {str(e)}")
         return None
     finally:
         if cur:
             cur.close()
         if conn:
             conn.close()
-            logger.info("Database connection closed")
