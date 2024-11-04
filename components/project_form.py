@@ -1,6 +1,9 @@
 import streamlit as st
 from database.connection import execute_query
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 def create_project_form():
     with st.form("project_form"):
@@ -12,16 +15,54 @@ def create_project_form():
         submitted = st.form_submit_button("Create Project")
         
         if submitted and name:
-            execute_query(
-                "INSERT INTO projects (name, description, deadline) VALUES (%s, %s, %s)",
-                (name, description, deadline)
-            )
-            st.success("Project created successfully!")
-            return True
+            try:
+                # Start transaction
+                execute_query("BEGIN")
+                
+                # Create project with owner
+                result = execute_query(
+                    """
+                    INSERT INTO projects (name, description, deadline, owner_id)
+                    VALUES (%s, %s, %s, %s)
+                    RETURNING id
+                    """,
+                    (name, description, deadline, st.session_state.user_id)
+                )
+                
+                if result:
+                    project_id = result[0]['id']
+                    # Add creator as project admin
+                    execute_query(
+                        """
+                        INSERT INTO project_members (project_id, user_id, role)
+                        VALUES (%s, %s, %s)
+                        """,
+                        (project_id, st.session_state.user_id, 'project_admin')
+                    )
+                    
+                    execute_query("COMMIT")
+                    st.success("Project created successfully!")
+                    return True
+                else:
+                    execute_query("ROLLBACK")
+                    st.error("Failed to create project!")
+            except Exception as e:
+                execute_query("ROLLBACK")
+                logger.error(f"Error creating project: {str(e)}")
+                st.error(f"Error creating project: {str(e)}")
+                return False
     return False
 
 def list_projects():
-    projects = execute_query("SELECT * FROM projects ORDER BY created_at DESC")
+    # Get projects where user is a member
+    projects = execute_query("""
+        SELECT p.*, pm.role as user_role
+        FROM projects p
+        JOIN project_members pm ON p.id = pm.project_id
+        WHERE pm.user_id = %s
+        ORDER BY p.created_at DESC
+    """, (st.session_state.user_id,))
+    
     selected_project = None
     
     if projects:
@@ -48,6 +89,7 @@ def list_projects():
                         <h3 style="margin: 0; color: #1F2937;">{project['name']}</h3>
                         <p style="margin: 0.5rem 0; color: #4B5563;">{project['description'] if project['description'] else 'No description'}</p>
                         <div style="color: #6B7280">Due: {project['deadline'].strftime('%b %d, %Y') if project['deadline'] else 'No deadline'}</div>
+                        <div style="color: #6B7280">Role: {project['user_role']}</div>
                     </div>
                 ''', unsafe_allow_html=True)
                 
