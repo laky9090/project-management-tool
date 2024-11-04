@@ -1,26 +1,97 @@
+/* Modern Font Import */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* Global Styles */
+.stApp {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Button Styles */
 div.stButton > button {
     width: 100%;
+    background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px -1px rgba(124, 58, 237, 0.2);
 }
 
+div.stButton > button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 8px -1px rgba(124, 58, 237, 0.3);
+}
+
+/* Select Box Styles */
 div.stSelectbox > div[role="button"] {
+    border-radius: 8px;
+    border: 1px solid #E5E7EB;
     margin-bottom: 10px;
+    transition: all 0.2s ease;
 }
 
+div.stSelectbox > div[role="button"]:hover {
+    border-color: #7C3AED;
+}
+
+/* Task Card Styles */
 .task-card {
-    padding: 1rem;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    margin-bottom: 0.5rem;
+    padding: 1.25rem;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    background: white;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
 }
 
+.task-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 12px -1px rgba(0, 0, 0, 0.15);
+}
+
+/* Priority Styles with Gradients */
 .priority-high {
-    border-left: 4px solid #ff4b4b;
+    background: linear-gradient(to right, #FF4B4B 0%, #FF6B6B 100%);
+    color: white;
 }
 
 .priority-medium {
-    border-left: 4px solid #ffa500;
+    background: linear-gradient(to right, #FFA500 0%, #FFB733 100%);
+    color: white;
 }
 
 .priority-low {
-    border-left: 4px solid #00ff00;
+    background: linear-gradient(to right, #10B981 0%, #34D399 100%);
+    color: white;
+}
+
+/* Status Indicators */
+.status-todo {
+    background: #F3F4F6;
+    border-left: 4px solid #9CA3AF;
+}
+
+.status-progress {
+    background: #FEF3C7;
+    border-left: 4px solid #F59E0B;
+}
+
+.status-done {
+    background: #D1FAE5;
+    border-left: 4px solid #10B981;
+}
+
+/* Custom Radio Buttons */
+div.stRadio > label {
+    background: white;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+}
+
+div.stRadio > label:hover {
+    background: #F3F4F6;
 }
