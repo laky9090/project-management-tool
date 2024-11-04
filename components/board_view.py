@@ -7,14 +7,19 @@ logger = logging.getLogger(__name__)
 
 def render_board(project_id):
     try:
-        # Clear task_created flag if exists
-        if 'task_created' in st.session_state:
-            del st.session_state.task_created
-            st.rerun()
-            
         logger.info(f"Rendering board for project {project_id}")
         
-        # First verify project exists and has tasks
+        # Debug info
+        st.write("### Debug Information")
+        
+        # Get task count
+        task_count = execute_query('''
+            SELECT COUNT(*) as count FROM tasks WHERE project_id = %s
+        ''', (project_id,))
+        
+        st.write(f"Total tasks for project: {task_count[0]['count']}")
+        
+        # Verify project exists and has tasks
         project_check = execute_query('''
             SELECT p.id, 
                    (SELECT COUNT(*) FROM tasks t WHERE t.project_id = p.id) as task_count
@@ -59,6 +64,8 @@ def render_board(project_id):
                     WHERE t.project_id = %s AND t.status = %s
                     ORDER BY t.priority DESC, t.created_at DESC
                 ''', (project_id, status))
+                
+                logger.info(f"Found {len(tasks) if tasks else 0} tasks with status '{status}'")
                 
                 if tasks:
                     for task in tasks:
