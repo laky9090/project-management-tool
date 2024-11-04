@@ -1,10 +1,15 @@
 import streamlit as st
+import logging
 from database.schema import init_database
 from components.project_form import create_project_form, list_projects
 from components.task_form import create_task_form
 from components.board_view import render_board
 from components.timeline_view import render_timeline
 from components.task_list import render_task_list
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Page config
 st.set_page_config(
@@ -56,11 +61,13 @@ with st.sidebar:
         )
         
         if new_view != st.session_state.current_view:
+            logger.info(f"Changing view from {st.session_state.current_view} to {new_view}")
             st.session_state.current_view = new_view
             st.rerun()
 
 # Main content
 if st.session_state.current_view == 'create_project':
+    logger.info("Rendering create project form")
     if create_project_form():
         st.session_state.current_view = 'Board'
         st.rerun()
@@ -68,14 +75,18 @@ if st.session_state.current_view == 'create_project':
 elif st.session_state.selected_project:
     # Add task button
     if st.button("➕ Add Task"):
+        logger.info(f"Opening task form for project {st.session_state.selected_project}")
         create_task_form(st.session_state.selected_project)
     
     # Render selected view
-    if st.session_state.current_view == 'Board':
+    current_view = st.session_state.current_view
+    logger.info(f"Rendering {current_view} view for project {st.session_state.selected_project}")
+    
+    if current_view == 'Board':
         render_board(st.session_state.selected_project)
-    elif st.session_state.current_view == 'List':
+    elif current_view == 'List':
         render_task_list(st.session_state.selected_project)
-    elif st.session_state.current_view == 'Timeline':
+    elif current_view == 'Timeline':
         render_timeline(st.session_state.selected_project)
 else:
     st.info("Please select or create a project to get started!")

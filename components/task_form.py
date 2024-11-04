@@ -1,6 +1,9 @@
 import streamlit as st
 from database.connection import execute_query
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 def create_task_form(project_id):
     with st.form("task_form"):
@@ -20,14 +23,18 @@ def create_task_form(project_id):
                 return False
                 
             try:
-                result = execute_query("""
-                    INSERT INTO tasks (project_id, title, description, status, 
-                                     priority, assignee, due_date)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                logger.info(f"Creating task for project {project_id} with title: {title}")
+                result = execute_query('''
+                    INSERT INTO tasks 
+                    (project_id, title, description, status, priority, assignee, due_date)
+                    VALUES 
+                    (%s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
-                """, (project_id, title, description, status, priority, assignee, due_date))
+                ''', (project_id, title, description, status, priority, assignee, due_date))
                 
                 if result:
+                    task_id = result[0]['id']
+                    logger.info(f"Created task with ID: {task_id}")
                     st.success("Task created successfully!")
                     return True
                 else:
@@ -35,6 +42,7 @@ def create_task_form(project_id):
                     return False
                     
             except Exception as e:
+                logger.error(f"Error creating task: {str(e)}")
                 st.error(f"Error creating task: {str(e)}")
                 return False
     return False

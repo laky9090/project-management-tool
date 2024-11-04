@@ -17,6 +17,7 @@ def get_status_class(status):
 
 def render_board(project_id):
     try:
+        logger.info(f"Rendering board for project {project_id}")
         st.write("## Kanban Board")
         
         cols = st.columns(3)
@@ -41,11 +42,15 @@ def render_board(project_id):
                 """, unsafe_allow_html=True)
                 
                 try:
-                    tasks = execute_query("""
-                        SELECT * FROM tasks 
-                        WHERE project_id = %s AND status = %s 
+                    tasks = execute_query('''
+                        SELECT id, title, description, status, priority, 
+                               assignee, due_date, created_at 
+                        FROM tasks 
+                        WHERE project_id = %s AND status = %s
                         ORDER BY priority DESC, created_at DESC
-                    """, (project_id, status))
+                    ''', (project_id, status))
+                    
+                    logger.info(f"Found {len(tasks) if tasks else 0} tasks for status {status}")
                     
                     if tasks:
                         for task in tasks:
@@ -107,6 +112,7 @@ def render_board(project_id):
                                 )
                                 
                                 if new_status != status:
+                                    logger.info(f"Moving task {task['id']} from {status} to {new_status}")
                                     if execute_query(
                                         "UPDATE tasks SET status = %s WHERE id = %s",
                                         (new_status, task['id'])
