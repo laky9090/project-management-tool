@@ -22,7 +22,7 @@ with open("styles/main.css") as f:
 
 # Initialize session state for view if not exists
 if 'current_view' not in st.session_state:
-    st.session_state['current_view'] = 'Board'  # Default to Board view
+    st.session_state['current_view'] = 'Board'
 
 # Sidebar
 with st.sidebar:
@@ -38,22 +38,24 @@ with st.sidebar:
         st.session_state['selected_project'] = selected_project
         st.write("---")
         st.write("## Project Views")
-        # Update view in session state when radio button changes
-        current_view = st.radio(
+        view_options = ["Board", "List", "Timeline"]
+        view_index = view_options.index(st.session_state['current_view'])
+        
+        new_view = st.radio(
             "Select View",
-            ["Board", "List", "Timeline"],
-            key="view_selector",
-            index=["Board", "List", "Timeline"].index(st.session_state['current_view'])
+            view_options,
+            index=view_index
         )
-        if current_view != st.session_state['current_view']:
-            st.session_state['current_view'] = current_view
-            st.rerun()
+        
+        if new_view != st.session_state['current_view']:
+            st.session_state['current_view'] = new_view
+            st.experimental_rerun()
 
 # Main content
 if st.session_state.get('current_view') == 'create_project':
     if create_project_form():
         st.session_state['current_view'] = 'Board'
-        st.rerun()
+        st.experimental_rerun()
 
 elif 'selected_project' in st.session_state:
     # Add task button
@@ -61,11 +63,12 @@ elif 'selected_project' in st.session_state:
         create_task_form(st.session_state['selected_project'])
     
     # Render selected view based on session state
-    if st.session_state['current_view'] == 'Board':
+    current_view = st.session_state['current_view']
+    if current_view == 'Board':
         render_board(st.session_state['selected_project'])
-    elif st.session_state['current_view'] == 'List':
+    elif current_view == 'List':
         render_task_list(st.session_state['selected_project'])
-    elif st.session_state['current_view'] == 'Timeline':
+    elif current_view == 'Timeline':
         render_timeline(st.session_state['selected_project'])
 else:
     st.info("Please select or create a project to get started!")
