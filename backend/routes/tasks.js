@@ -17,42 +17,61 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
+// Get tasks by project
+router.get('/project/:projectId', async (req, res) => {
+  console.log('Fetching tasks for project:', req.params.projectId);
+  try {
+    const { rows } = await db.query(
+      'SELECT * FROM tasks WHERE project_id = $1 ORDER BY created_at DESC',
+      [req.params.projectId]
+    );
+    console.log('Found tasks:', rows);
+    res.json(rows);
+  } catch (err) {
+    console.error('Error fetching tasks:', err);
+    res.status(500).json({ error: 'Failed to fetch tasks' });
+  }
+});
+
 // Create new task
 router.post('/', async (req, res) => {
-  console.log('Received task creation request with body:', req.body);
-  
+  console.log('Creating new task with data:', req.body);
   const { project_id, title, description, status, priority, assignee, due_date } = req.body;
-
+  
   // Validation
-  if (!project_id || !title) {
-    console.log('Missing required fields');
-    return res.status(400).json({ 
-      error: 'Missing required fields',
-      received: { project_id, title }
-    });
+  if (!project_id) {
+    console.error('Missing project_id');
+    return res.status(400).json({ error: 'project_id is required' });
   }
 
   try {
-    const query = `
-      INSERT INTO tasks 
-      (project_id, title, description, status, priority, assignee, due_date)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *
-    `;
+    // Verify project exists
+    const projectCheck = await db.query(
+      'SELECT id FROM projects WHERE id = $1',
+      [project_id]
+    );
+    
+    if (projectCheck.rows.length === 0) {
+      console.error('Project not found:', project_id);
+      return res.status(404).json({ error: 'Project not found' });
+    }
 
-    const values = [project_id, title, description, status, priority, assignee, due_date];
-    console.log('Executing query:', { query, values });
-
-    const { rows } = await db.query(query, values);
-    console.log('Query successful, returned row:', rows[0]);
-
-    res.status(201).json(rows[0]);
+    const result = await db.query(
+      `INSERT INTO tasks 
+       (project_id, title, description, status, priority, assignee, due_date)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING *`,
+      [project_id, title, description, status, priority, assignee, due_date]
+    );
+    
+    console.log('Task created:', result.rows[0]);
+    res.status(201).json(result.rows[0]);
   } catch (err) {
-    console.error('Database error:', err);
+    console.error('Error creating task:', err);
     res.status(500).json({ 
       error: 'Failed to create task',
       details: err.message,
-      code: err.code
+      sqlState: err.code
     });
   }
 });
@@ -63,10 +82,22 @@ router.post('/:taskId/attachments', upload.single('file'), async (req, res) => {
   const file = req.file;
 
   if (!file) {
+    console.error('No file uploaded for task:', taskId);
     return res.status(400).json({ error: 'No file uploaded' });
   }
 
   try {
+    // Ensure task exists
+    const taskCheck = await db.query(
+      'SELECT id FROM tasks WHERE id = $1',
+      [taskId]
+    );
+
+    if (taskCheck.rows.length === 0) {
+      console.error('Task not found:', taskId);
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
     // Ensure uploads directory exists
     await fs.mkdir('uploads', { recursive: true });
 
@@ -85,72 +116,39 @@ router.post('/:taskId/attachments', upload.single('file'), async (req, res) => {
       file.size
     ];
 
+    console.log('Saving file attachment:', {
+      taskId,
+      filename: file.originalname,
+      type: file.mimetype,
+      size: file.size
+    });
+
     const { rows } = await db.query(query, values);
+    console.log('File attachment saved:', rows[0]);
     res.status(201).json(rows[0]);
   } catch (err) {
     console.error('Error uploading file:', err);
     res.status(500).json({ 
       error: 'Failed to upload file',
-      details: err.message 
+      details: err.message,
+      code: err.code
     });
   }
 });
 
 // Get task attachments
 router.get('/:taskId/attachments', async (req, res) => {
+  console.log('Fetching attachments for task:', req.params.taskId);
   try {
     const { rows } = await db.query(
       'SELECT * FROM file_attachments WHERE task_id = $1',
       [req.params.taskId]
     );
+    console.log('Found attachments:', rows);
     res.json(rows);
   } catch (err) {
     console.error('Error fetching attachments:', err);
     res.status(500).json({ error: 'Failed to fetch attachments' });
-  }
-});
-
-// Check table structure
-router.get('/check-table', async (req, res) => {
-  try {
-    const tableCheck = await db.query(`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = 'tasks'
-      );
-    `);
-    
-    if (!tableCheck.rows[0].exists) {
-      await db.query(`
-        CREATE TABLE IF NOT EXISTS tasks (
-          id SERIAL PRIMARY KEY,
-          project_id INTEGER NOT NULL,
-          title VARCHAR(255) NOT NULL,
-          description TEXT,
-          status VARCHAR(50),
-          priority VARCHAR(50),
-          assignee VARCHAR(255),
-          due_date DATE,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-      `);
-      return res.json({ message: 'Tasks table created' });
-    }
-
-    const columns = await db.query(`
-      SELECT column_name, data_type 
-      FROM information_schema.columns 
-      WHERE table_name = 'tasks';
-    `);
-
-    res.json({ 
-      message: 'Tasks table exists',
-      structure: columns.rows 
-    });
-  } catch (err) {
-    console.error('Error checking table:', err);
-    res.status(500).json({ error: err.message });
   }
 });
 
