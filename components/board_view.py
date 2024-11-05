@@ -1,16 +1,15 @@
 import streamlit as st
 from database.connection import execute_query
 from utils.file_handler import get_task_attachments
-from components.task_form import create_task_form
 import logging
 
 logger = logging.getLogger(__name__)
 
 def render_board(project_id):
     try:
-        logger.info(f"Rendering board for project {project_id}")
+        st.write(f"### Project {project_id} Board")
         
-        # Get project info first to verify it exists
+        # Get project info with task count
         project = execute_query('''
             SELECT p.id, 
                    (SELECT COUNT(*) FROM tasks t WHERE t.project_id = p.id) as task_count
@@ -22,39 +21,35 @@ def render_board(project_id):
             st.error("Project not found")
             return
             
-        logger.info(f"Project has {project[0]['task_count']} total tasks")
+        st.write(f"Total tasks: {project[0]['task_count']}")
         
-        # Create task button with unique key
-        if st.button("➕ Add Task", key=f"add_task_btn_{project_id}"):
-            create_task_form(project_id)
-        
-        # Render board columns
+        # Create columns for task statuses
         cols = st.columns(3)
         
         for idx, status in enumerate(['To Do', 'In Progress', 'Done']):
             with cols[idx]:
                 st.subheader(status)
-                logger.info(f"Fetching tasks for project_id={project_id}, status={status}")
                 
+                # Get tasks for this status
                 tasks = execute_query('''
-                    SELECT id, title, description, status, priority, 
-                           due_date, created_at 
+                    SELECT id, title, description, status, priority,
+                           due_date, created_at
                     FROM tasks 
                     WHERE project_id = %s AND status = %s
                     ORDER BY priority DESC, created_at DESC
                 ''', (project_id, status))
                 
-                logger.info(f"Found {len(tasks) if tasks else 0} tasks with status '{status}'")
-                
                 if tasks:
                     for task in tasks:
                         with st.container():
-                            st.markdown(f"**{task['title']}**")
-                            if task['description']:
-                                st.write(task['description'])
-                            st.write(f"Priority: {task['priority']}")
-                            if task['due_date']:
-                                st.write(f"Due: {task['due_date']}")
+                            st.markdown(f'''
+                                <div style="border:1px solid #ddd; padding:10px; margin:5px 0; border-radius:5px;">
+                                    <h4>{task['title']}</h4>
+                                    <p>{task['description'] or ''}</p>
+                                    <div>Priority: {task['priority']}</div>
+                                    <div>Due: {task['due_date'].strftime('%Y-%m-%d') if task['due_date'] else 'No date'}</div>
+                                </div>
+                            ''', unsafe_allow_html=True)
                             
                             # Display attachments if any
                             attachments = get_task_attachments(task['id'])
@@ -68,7 +63,7 @@ def render_board(project_id):
                                                 f,
                                                 file_name=attachment['filename'],
                                                 mime=attachment['file_type'],
-                                                key=f"download_btn_{attachment['id']}"
+                                                key=f"download_{task['id']}_{attachment['id']}"
                                             )
                                     except Exception as e:
                                         logger.error(f"Error loading attachment: {str(e)}")
@@ -78,4 +73,4 @@ def render_board(project_id):
                     
     except Exception as e:
         logger.error(f"Error in board view: {str(e)}")
-        st.error("An error occurred while loading the Board view. Please try again.")
+        st.error("An error occurred while loading the board. Please try again.")
