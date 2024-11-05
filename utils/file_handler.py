@@ -54,7 +54,7 @@ def get_task_attachments(task_id):
             SELECT id, filename, file_path, file_type, file_size
             FROM file_attachments
             WHERE task_id = %s
-            ORDER BY id DESC
+            ORDER BY created_at DESC
         """, (task_id,))
     except Exception as e:
         logger.error(f"Error fetching attachments: {str(e)}")

@@ -10,7 +10,9 @@ dependencies = [
     "plotly>=5.24.1",
     "psycopg2-binary>=2.9.10",
     "pyjwt>=2.9.0",
+    "python-dotenv>=1.0.1",
     "python-jose",
     "python-jwt",
+    "python-multipart>=0.0.17",
     "streamlit>=1.39.0",
 ]

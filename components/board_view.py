@@ -9,16 +9,6 @@ def render_board(project_id):
     try:
         logger.info(f"Rendering board for project {project_id}")
         
-        # Debug info
-        st.write("### Debug Information")
-        
-        # Get task count
-        task_count = execute_query('''
-            SELECT COUNT(*) as count FROM tasks WHERE project_id = %s
-        ''', (project_id,))
-        
-        st.write(f"Total tasks for project: {task_count[0]['count']}")
-        
         # Verify project exists and has tasks
         project_check = execute_query('''
             SELECT p.id, 
@@ -41,28 +31,13 @@ def render_board(project_id):
         
         for idx, status in enumerate(statuses):
             with cols[idx]:
-                st.markdown(f"""
-                    <div style='
-                        background: #F9FAFB;
-                        padding: 1rem;
-                        border-radius: 12px;
-                        margin-bottom: 1rem;
-                    '>
-                        <h3 style='
-                            color: #1F2937;
-                            font-size: 1.25rem;
-                            font-weight: 600;
-                            margin-bottom: 1rem;
-                        '>{status}</h3>
-                    </div>
-                """, unsafe_allow_html=True)
+                st.subheader(status)
                 
                 tasks = execute_query('''
-                    SELECT t.id, t.title, t.description, t.status, t.priority,
-                           t.due_date, t.created_at 
-                    FROM tasks t
-                    WHERE t.project_id = %s AND t.status = %s
-                    ORDER BY t.priority DESC, t.created_at DESC
+                    SELECT id, title, description, status, created_at 
+                    FROM tasks 
+                    WHERE project_id = %s AND status = %s
+                    ORDER BY created_at DESC
                 ''', (project_id, status))
                 
                 logger.info(f"Found {len(tasks) if tasks else 0} tasks with status '{status}'")
@@ -71,25 +46,17 @@ def render_board(project_id):
                     for task in tasks:
                         with st.container():
                             st.markdown(f"""
-                            <div class='task-card' style='
+                            <div style='
                                 background: white;
-                                border-radius: 12px;
-                                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-                                margin: 0.75rem 0;
                                 padding: 1rem;
+                                border-radius: 8px;
+                                margin-bottom: 0.5rem;
+                                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
                             '>
                                 <h4 style='margin: 0 0 0.5rem 0;'>{task['title']}</h4>
-                                <p style='margin: 0 0 0.75rem 0; color: #6B7280;'>{task['description'][:100] + '...' if task['description'] and len(task['description']) > 100 else task['description'] or 'No description'}</p>
-                                <div style='
-                                    display: flex;
-                                    justify-content: space-between;
-                                    align-items: center;
-                                    font-size: 0.875rem;
-                                    color: #4B5563;
-                                '>
-                                    <span class='priority-{task['priority'].lower()}'>{task['priority']}</span>
-                                    <span>📅 {task['due_date'].strftime('%b %d') if task['due_date'] else 'No due date'}</span>
-                                </div>
+                                <p style='margin: 0 0 0.75rem 0; color: #666;'>
+                                    {task['description'][:100] + '...' if task['description'] and len(task['description']) > 100 else task['description'] or 'No description'}
+                                </p>
                             </div>
                             """, unsafe_allow_html=True)
                             

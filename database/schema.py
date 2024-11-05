@@ -16,7 +16,8 @@ def init_database():
                 id SERIAL PRIMARY KEY,
                 name VARCHAR(100) NOT NULL,
                 description TEXT,
-                deadline DATE
+                deadline DATE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
         
@@ -28,8 +29,7 @@ def init_database():
                 title VARCHAR(100) NOT NULL,
                 description TEXT,
                 status VARCHAR(50) DEFAULT 'To Do',
-                priority VARCHAR(20) DEFAULT 'Medium',
-                due_date DATE
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
         
@@ -41,7 +41,8 @@ def init_database():
                 filename VARCHAR(255) NOT NULL,
                 file_path VARCHAR(255) NOT NULL,
                 file_type VARCHAR(100),
-                file_size INTEGER
+                file_size INTEGER,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
         
