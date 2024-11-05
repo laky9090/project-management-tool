@@ -6,7 +6,16 @@ import logging
 logger = logging.getLogger(__name__)
 
 def render_board(project_id):
-    logger.info(f"Rendering board for project {project_id}")
+    st.write("### Project Board")
+    st.write(f"Viewing tasks for project {project_id}")
+    
+    # Get task count
+    count_result = execute_query('''
+        SELECT COUNT(*) as count FROM tasks WHERE project_id = %s
+    ''', (project_id,))
+    
+    if count_result:
+        st.write(f"Total tasks: {count_result[0]['count']}")
     
     # Display tasks by status
     for status in ["To Do", "In Progress", "Done"]:
@@ -18,28 +27,13 @@ def render_board(project_id):
             ORDER BY created_at DESC
         ''', (project_id, status))
         
-        logger.info(f"Found {len(tasks) if tasks else 0} tasks with status '{status}'")
-        
         if tasks:
             for task in tasks:
                 with st.container():
-                    st.markdown(f'''
-                        <div style="
-                            background: white;
-                            padding: 1rem;
-                            border-radius: 8px;
-                            margin-bottom: 0.5rem;
-                            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                        ">
-                            <h4 style="margin: 0 0 0.5rem 0;">{task['title']}</h4>
-                            <p style="margin: 0 0 0.75rem 0; color: #666;">
-                                {task['description'] if task['description'] else 'No description'}
-                            </p>
-                            <div style="color: #888; font-size: 0.9em;">
-                                Created: {task['created_at'].strftime('%Y-%m-%d %H:%M')}
-                            </div>
-                        </div>
-                    ''', unsafe_allow_html=True)
+                    st.write(f"**{task['title']}**")
+                    if task['description']:
+                        st.write(task['description'])
+                    st.write(f"Created: {task['created_at'].strftime('%Y-%m-%d %H:%M')}")
                     
                     # Display attachments
                     attachments = get_task_attachments(task['id'])

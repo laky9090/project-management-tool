@@ -6,11 +6,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 def create_task_form(project_id):
-    logger.info(f"Creating task form for project {project_id}")
-    
-    with st.form("task_form", clear_on_submit=True):
+    with st.form("task_form"):
         st.write("### Create Task")
-        st.write(f"Creating task for project ID: {project_id}")
+        
+        # Debug container
+        debug_container = st.empty()
         
         title = st.text_input("Title")
         description = st.text_area("Description")
@@ -23,14 +23,16 @@ def create_task_form(project_id):
         
         if submitted and title:
             try:
-                # Debug information
-                st.write("### Debug Info")
-                st.write(f"Creating task with title: {title}")
-                if uploaded_file:
-                    st.write(f"File to be attached: {uploaded_file.name}")
-                
-                # Start transaction
-                execute_query("BEGIN")
+                # Show debug info
+                with debug_container:
+                    st.write("### Debug Information")
+                    st.write(f"Creating task for project {project_id}")
+                    st.json({
+                        "title": title,
+                        "description": description,
+                        "status": status,
+                        "has_attachment": uploaded_file is not None
+                    })
                 
                 # Create task
                 result = execute_query('''
@@ -44,26 +46,21 @@ def create_task_form(project_id):
                     
                     # Handle file upload if present
                     if uploaded_file:
-                        logger.info(f"Saving attachment for task {task_id}")
                         attachment_id = save_uploaded_file(uploaded_file, task_id)
-                        if attachment_id is None:
-                            execute_query("ROLLBACK")
-                            st.error("Failed to save file attachment")
-                            return False
+                        if attachment_id:
+                            st.success(f"File '{uploaded_file.name}' attached successfully")
+                        else:
+                            st.warning("Failed to save file attachment")
                     
-                    execute_query("COMMIT")
                     st.success(f"Task '{title}' created successfully!")
-                    if uploaded_file:
-                        st.success(f"File '{uploaded_file.name}' attached to the task")
+                    st.write("Created task:", result[0])
                     st.rerun()
                     return True
                 
-                execute_query("ROLLBACK")
                 st.error("Failed to create task")
                 return False
                 
             except Exception as e:
-                execute_query("ROLLBACK")
                 logger.error(f"Error creating task: {str(e)}")
                 st.error(f"Error: {str(e)}")
                 return False
