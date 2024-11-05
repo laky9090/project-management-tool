@@ -1,5 +1,7 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import logging
+import os
 from database.schema import init_database
 from components.project_form import create_project_form, list_projects
 from components.task_form import create_task_form
@@ -7,6 +9,10 @@ from components.board_view import render_board
 from components.timeline_view import render_timeline
 from components.task_list import render_task_list
 from database.connection import get_connection
+
+# Configure Streamlit
+os.environ['STREAMLIT_SERVER_PORT'] = '8501'
+os.environ['STREAMLIT_SERVER_ADDRESS'] = '0.0.0.0'
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -35,14 +41,6 @@ except Exception as e:
     logger.error(f"Database initialization error: {str(e)}")
     st.error("Failed to initialize database. Please check the database configuration and try again.")
     st.stop()
-
-# Load custom CSS
-try:
-    with open("styles/main.css") as f:
-        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-except Exception as e:
-    logger.error(f"Failed to load CSS: {str(e)}")
-    st.warning("Some styles might not be loaded correctly.")
 
 # Initialize session states
 if 'current_view' not in st.session_state:
