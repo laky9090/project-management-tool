@@ -7,7 +7,11 @@ logger = logging.getLogger(__name__)
 
 def create_project_form():
     with st.form("project_form"):
-        st.write("Create New Project")
+        st.write("### Create Project")
+        
+        # Debug container
+        debug_container = st.empty()
+        
         name = st.text_input("Project Name")
         description = st.text_area("Description")
         deadline = st.date_input("Deadline", min_value=datetime.today())
@@ -16,17 +20,28 @@ def create_project_form():
         
         if submitted and name:
             try:
+                # Show debug info
+                with debug_container:
+                    st.write("### Debug Information")
+                    st.json({
+                        "name": name,
+                        "description": description,
+                        "deadline": str(deadline)
+                    })
+                
                 result = execute_query(
                     '''
                     INSERT INTO projects (name, description, deadline)
                     VALUES (%s, %s, %s)
-                    RETURNING id
+                    RETURNING id, name
                     ''',
                     (name, description, deadline)
                 )
                 
                 if result:
-                    st.success("Project created successfully!")
+                    st.success(f"Project '{name}' created successfully!")
+                    st.write("Created project:", result[0])
+                    st.rerun()
                     return True
                     
                 st.error("Failed to create project - database error")
@@ -39,7 +54,6 @@ def create_project_form():
     return False
 
 def list_projects():
-    # Get all projects without user filtering
     projects = execute_query('''
         SELECT p.*
         FROM projects p

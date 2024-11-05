@@ -5,11 +5,6 @@ logger = logging.getLogger(__name__)
 
 def init_database():
     try:
-        # Drop existing tables
-        execute_query("DROP TABLE IF EXISTS file_attachments CASCADE")
-        execute_query("DROP TABLE IF EXISTS tasks CASCADE")
-        execute_query("DROP TABLE IF EXISTS projects CASCADE")
-        
         # Create projects table with minimal structure
         execute_query('''
             CREATE TABLE IF NOT EXISTS projects (
