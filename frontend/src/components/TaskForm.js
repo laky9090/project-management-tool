@@ -11,11 +11,33 @@ const TaskForm = ({ projectId }) => {
     assignee: '',
     due_date: new Date().toISOString().split('T')[0]
   });
+  const [fileAttachment, setFileAttachment] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await api.createTask({ ...formData, project_id: projectId });
+      // Debug log before sending
+      console.log('Attempting to create task:', {
+        ...formData,
+        project_id: projectId
+      });
+
+      const response = await api.createTask({
+        ...formData,
+        project_id: projectId
+      });
+
+      console.log('Task created successfully:', response.data);
+
+      // Handle file upload if present
+      if (fileAttachment && response.data.id) {
+        const attachmentFormData = new FormData();
+        attachmentFormData.append('file', fileAttachment);
+        await api.uploadTaskAttachment(response.data.id, attachmentFormData);
+        console.log('File attachment uploaded successfully');
+      }
+
+      // Reset form
       setFormData({
         title: '',
         description: '',
@@ -24,13 +46,23 @@ const TaskForm = ({ projectId }) => {
         assignee: '',
         due_date: new Date().toISOString().split('T')[0]
       });
+      setFileAttachment(null);
+
+      alert('Task created successfully!');
+
     } catch (error) {
-      console.error('Error creating task:', error);
+      console.error('Detailed error:', error);
+      console.error('Error response:', error.response?.data);
+      alert(`Failed to create task: ${error.response?.data?.error || error.message}`);
     }
   };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleFileChange = (e) => {
+    setFileAttachment(e.target.files[0]);
   };
 
   return (
@@ -88,6 +120,13 @@ const TaskForm = ({ projectId }) => {
             onChange={handleChange}
           />
         </div>
+      </div>
+      <div className="form-group">
+        <input
+          type="file"
+          onChange={handleFileChange}
+          accept=".pdf,.txt,.doc,.docx,.png,.jpg,.jpeg"
+        />
       </div>
       <button type="submit">Create Task</button>
     </form>
