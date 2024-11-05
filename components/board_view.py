@@ -6,31 +6,46 @@ import logging
 logger = logging.getLogger(__name__)
 
 def render_board(project_id):
-    st.write("### Project Board")
-    st.write(f"Debug: Viewing tasks for project {project_id}")
-    
-    # Raw query to get all tasks
-    tasks = execute_query('SELECT * FROM tasks WHERE project_id = %s', (project_id,))
-    
-    st.write(f"Debug: Found {len(tasks) if tasks else 0} total tasks")
-    if tasks:
-        st.write("### Raw Task Data:")
-        for task in tasks:
-            st.write("---")
-            st.write("Task:", task)
+    try:
+        st.write(f"### Project {project_id} Board")
+        
+        # Get all tasks for debugging
+        st.write("### Debug: Querying tasks")
+        tasks = execute_query('''
+            SELECT * FROM tasks 
+            WHERE project_id = %s
+            ORDER BY created_at DESC
+        ''', (project_id,))
+        
+        st.write(f"Found {len(tasks) if tasks else 0} total tasks")
+        
+        if tasks:
+            st.write("### Task Data:")
+            for task in tasks:
+                with st.container():
+                    st.markdown(f'''
+                        <div style="border: 1px solid #ccc; padding: 10px; margin: 5px 0;">
+                            <h4>{task['title']}</h4>
+                            <p>{task['description']}</p>
+                            <p>Status: {task['status']}</p>
+                            <p>Created: {task['created_at']}</p>
+                        </div>
+                    ''', unsafe_allow_html=True)
+                    
+                    # Display attachments
+                    attachments = get_task_attachments(task['id'])
+                    if attachments:
+                        st.write("📎 Attachments:")
+                        for attachment in attachments:
+                            with open(attachment['file_path'], 'rb') as f:
+                                st.download_button(
+                                    f"📄 {attachment['filename']}",
+                                    f,
+                                    file_name=attachment['filename'],
+                                    mime=attachment['file_type']
+                                )
+        else:
+            st.info("No tasks found")
             
-            # Display attachments
-            attachments = get_task_attachments(task['id'])
-            if attachments:
-                st.write("Attachments:")
-                for attachment in attachments:
-                    st.write("Attachment data:", attachment)
-                    with open(attachment['file_path'], 'rb') as f:
-                        st.download_button(
-                            f"📄 {attachment['filename']}",
-                            f,
-                            file_name=attachment['filename'],
-                            mime=attachment['file_type']
-                        )
-    else:
-        st.info("No tasks found for this project")
+    except Exception as e:
+        st.error(f"Error rendering board: {str(e)}")
