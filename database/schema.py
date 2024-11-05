@@ -24,6 +24,7 @@ def init_database():
                 title VARCHAR(100) NOT NULL,
                 description TEXT,
                 status VARCHAR(50) DEFAULT 'To Do',
+                priority VARCHAR(20) DEFAULT 'Medium',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
@@ -40,6 +41,10 @@ def init_database():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+        
+        # Create uploads directory if it doesn't exist
+        import os
+        os.makedirs('uploads', exist_ok=True)
         
         return True
     except Exception as e:
