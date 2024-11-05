@@ -1,12 +1,18 @@
 import streamlit as st
 from database.connection import execute_query
 from utils.file_handler import get_task_attachments
+from components.task_form import create_task_form
 import logging
 
 logger = logging.getLogger(__name__)
 
 def render_board(project_id):
-    st.write(f"Tasks for Project {project_id}")
+    def refresh_tasks():
+        st.experimental_rerun()
+    
+    # Add task button with callback
+    if st.button("➕ Add Task"):
+        create_task_form(project_id, on_task_created=refresh_tasks)
     
     # Get tasks with their attachments
     tasks = execute_query('''
