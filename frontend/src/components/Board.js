@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import api from '../api/api';
+import TestTaskCreation from './TestTaskCreation';
 import './Board.css';
 
 const Board = ({ projectId }) => {
@@ -41,6 +42,7 @@ const Board = ({ projectId }) => {
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div className="board">
+        <TestTaskCreation projectId={projectId} />
         {Object.entries(tasks).map(([status, statusTasks]) => (
           <div key={status} className="column">
             <h3>{status}</h3>
