@@ -1,5 +1,6 @@
 from database.connection import execute_query
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +44,6 @@ def init_database():
         ''')
         
         # Create uploads directory if it doesn't exist
-        import os
         os.makedirs('uploads', exist_ok=True)
         
         return True

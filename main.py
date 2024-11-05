@@ -11,7 +11,7 @@ from components.task_list import render_task_list
 from database.connection import get_connection
 
 # Configure Streamlit
-os.environ['STREAMLIT_SERVER_PORT'] = '8501'
+os.environ['STREAMLIT_SERVER_PORT'] = '5000'
 os.environ['STREAMLIT_SERVER_ADDRESS'] = '0.0.0.0'
 
 # Configure logging
