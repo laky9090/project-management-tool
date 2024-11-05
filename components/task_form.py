@@ -9,8 +9,8 @@ def create_task_form(project_id):
     with st.form("task_form"):
         st.write("### Create Task")
         
-        # Debug container
-        debug_container = st.empty()
+        # Debug info at top
+        st.write(f"Debug: Creating task for project {project_id}")
         
         title = st.text_input("Title")
         description = st.text_area("Description")
@@ -23,18 +23,17 @@ def create_task_form(project_id):
         
         if submitted and title:
             try:
-                # Show debug info
-                with debug_container:
-                    st.write("### Debug Information")
-                    st.write(f"Creating task for project {project_id}")
-                    st.json({
-                        "title": title,
-                        "description": description,
-                        "status": status,
-                        "has_attachment": uploaded_file is not None
-                    })
+                # Show what we're about to insert
+                st.write("### Debug: Inserting task with data:")
+                st.json({
+                    "project_id": project_id,
+                    "title": title,
+                    "description": description,
+                    "status": status,
+                    "has_attachment": uploaded_file is not None
+                })
                 
-                # Create task
+                # Simple insert
                 result = execute_query('''
                     INSERT INTO tasks (project_id, title, description, status)
                     VALUES (%s, %s, %s, %s)
@@ -52,8 +51,8 @@ def create_task_form(project_id):
                         else:
                             st.warning("Failed to save file attachment")
                     
-                    st.success(f"Task '{title}' created successfully!")
-                    st.write("Created task:", result[0])
+                    st.success(f"Task created with ID: {task_id}")
+                    st.write("Debug: Created task:", result[0])
                     st.rerun()
                     return True
                 
@@ -61,7 +60,6 @@ def create_task_form(project_id):
                 return False
                 
             except Exception as e:
-                logger.error(f"Error creating task: {str(e)}")
                 st.error(f"Error: {str(e)}")
                 return False
     return False
