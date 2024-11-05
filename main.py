@@ -88,11 +88,6 @@ try:
             st.rerun()
 
     elif st.session_state.selected_project:
-        # Add task button
-        if st.button("➕ Add Task"):
-            logger.info(f"Opening task form for project {st.session_state.selected_project}")
-            create_task_form(st.session_state.selected_project)
-        
         # Render selected view with proper error handling
         current_view = st.session_state.current_view
         logger.info(f"Rendering {current_view} view for project {st.session_state.selected_project}")

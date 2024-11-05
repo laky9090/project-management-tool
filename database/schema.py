@@ -25,10 +25,21 @@ def init_database():
                 title VARCHAR(100) NOT NULL,
                 description TEXT,
                 status VARCHAR(50) DEFAULT 'To Do',
-                priority VARCHAR(20) DEFAULT 'Medium',
+                priority VARCHAR(50) DEFAULT 'Medium',
                 due_date DATE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
+            );
+
+            -- Add priority column if it doesn't exist
+            DO $$ 
+            BEGIN 
+                IF NOT EXISTS (
+                    SELECT FROM information_schema.columns 
+                    WHERE table_name = 'tasks' AND column_name = 'priority'
+                ) THEN
+                    ALTER TABLE tasks ADD COLUMN priority VARCHAR(50) DEFAULT 'Medium';
+                END IF;
+            END $$;
         ''')
         
         # Create file_attachments table
