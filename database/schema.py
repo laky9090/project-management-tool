@@ -17,7 +17,7 @@ def init_database():
             )
         ''')
         
-        # Create tasks table with minimal structure
+        # Create tasks table with complete structure
         execute_query('''
             CREATE TABLE IF NOT EXISTS tasks (
                 id SERIAL PRIMARY KEY,
@@ -27,17 +27,18 @@ def init_database():
                 status VARCHAR(50) DEFAULT 'To Do',
                 priority VARCHAR(50) DEFAULT 'Medium',
                 due_date DATE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
 
-            -- Add priority column if it doesn't exist
+            -- Ensure due_date column exists
             DO $$ 
             BEGIN 
                 IF NOT EXISTS (
                     SELECT FROM information_schema.columns 
-                    WHERE table_name = 'tasks' AND column_name = 'priority'
+                    WHERE table_name = 'tasks' AND column_name = 'due_date'
                 ) THEN
-                    ALTER TABLE tasks ADD COLUMN priority VARCHAR(50) DEFAULT 'Medium';
+                    ALTER TABLE tasks ADD COLUMN due_date DATE;
                 END IF;
             END $$;
         ''')
