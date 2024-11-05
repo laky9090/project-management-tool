@@ -30,7 +30,7 @@ def get_connection():
         logger.error(f"Database connection error: {str(e)}")
         return None
 
-def execute_query(query, params=None):
+def execute_query(query, params=None, use_cache=True):
     conn = None
     cur = None
     try:

@@ -9,21 +9,23 @@ def render_board(project_id):
     try:
         st.write(f"### Project {project_id} Board")
         
-        # Get all tasks for this project
+        # Force cache clear for tasks query
         tasks = execute_query('''
             SELECT * FROM tasks 
             WHERE project_id = %s
             ORDER BY created_at DESC
-        ''', (project_id,))
+        ''', (project_id,), use_cache=False)
         
-        # Debug information
-        st.write("### Debug Info")
-        st.write(f"Found {len(tasks) if tasks else 0} tasks")
+        st.write("### Debug Information")
+        st.write(f"Querying tasks for project {project_id}")
+        st.write(f"Total tasks in project: {len(tasks) if tasks else 0}")
         
         # Display tasks by status
         for status in ["To Do", "In Progress", "Done"]:
             st.subheader(status)
             status_tasks = [t for t in tasks if t['status'] == status] if tasks else []
+            
+            st.write(f"Found {len(status_tasks)} tasks in {status}")
             
             if status_tasks:
                 for task in status_tasks:

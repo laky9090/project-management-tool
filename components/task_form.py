@@ -11,7 +11,6 @@ def create_task_form(project_id):
             st.write("### Create Task")
             st.write(f"Debug: Creating task for project {project_id}")
             
-            # Form fields
             title = st.text_input("Title")
             description = st.text_area("Description")
             status = st.selectbox("Status", ["To Do", "In Progress", "Done"])
@@ -34,8 +33,8 @@ def create_task_form(project_id):
             submitted = st.form_submit_button("Create Task")
             
             if submitted and title:
-                # Show what we're about to insert
-                st.write("Debug: About to insert task with data:")
+                # Debug output before insert
+                st.write("Debug: Inserting task:")
                 st.json({
                     "project_id": project_id,
                     "title": title,
@@ -64,18 +63,21 @@ def create_task_form(project_id):
                             attachment_id = save_uploaded_file(uploaded_file, task_id)
                             
                             if attachment_id:
-                                st.success(f"✅ Task created and file '{uploaded_file.name}' attached successfully!")
+                                st.success(f"✅ Task '{title}' created and file '{uploaded_file.name}' attached successfully!")
                                 st.write("Debug: Attachment created with ID:", attachment_id)
                             else:
-                                st.warning("⚠️ Task created but file attachment failed")
+                                st.warning(f"⚠️ Task '{title}' created but file attachment failed")
                                 logger.error("File attachment failed - no attachment ID returned")
                         except Exception as e:
-                            st.warning("⚠️ Task created but file attachment failed")
+                            st.warning(f"⚠️ Task '{title}' created but file attachment failed")
                             logger.error(f"File attachment error: {str(e)}")
                     else:
-                        st.success("✅ Task created successfully!")
+                        st.success(f"✅ Task '{title}' created successfully!")
                     
-                    st.rerun()
+                    # Force session state update
+                    if 'task_created' not in st.session_state:
+                        st.session_state.task_created = True
+                    st.experimental_rerun()
                     return True
                 
                 st.error("Failed to create task - no result returned")
