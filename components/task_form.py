@@ -6,92 +6,86 @@ import logging
 logger = logging.getLogger(__name__)
 
 def create_task_form(project_id):
+    """Create a new task with optional file attachment."""
     try:
-        with st.form("task_form"):
-            st.write("### Create Task")
-            st.write(f"Debug: Creating task for project {project_id}")
+        # Verify project exists
+        project = execute_query("SELECT id FROM projects WHERE id = %s", (project_id,))
+        if not project:
+            st.error("Invalid project ID")
+            return False
+
+        with st.form("task_form", clear_on_submit=True):
+            st.write("### Create New Task")
             
-            # Form fields
-            title = st.text_input("Title")
-            description = st.text_area("Description")
-            status = st.selectbox("Status", ["To Do"])
+            # Basic task information
+            title = st.text_input("Title", key="task_title")
+            description = st.text_area("Description", key="task_description")
+            status = st.selectbox("Status", ["To Do", "In Progress", "Done"], key="task_status")
+            due_date = st.date_input("Due Date", key="task_due_date")
+            priority = st.selectbox("Priority", ["Low", "Medium", "High"], key="task_priority")
             
-            # File upload with validation
+            # File upload
             uploaded_file = st.file_uploader(
                 "Attach File",
                 type=['pdf', 'txt', 'png', 'jpg', 'jpeg', 'doc', 'docx', 'xlsx', 'csv'],
-                help="Supported formats: PDF, Text, Images, Word documents, Excel sheets"
+                help="Supported formats: PDF, Text, Images, Word documents, Excel sheets",
+                key="task_file"
             )
 
-            # Debug container before submit
-            debug_container = st.empty()
-            
-            # Show file details if uploaded
-            if uploaded_file:
-                st.write("Debug: File details:", {
-                    "filename": uploaded_file.name,
-                    "type": uploaded_file.type,
-                    "size": f"{uploaded_file.size/1024:.1f} KB"
-                })
-            
             submitted = st.form_submit_button("Create Task")
             
-            if submitted and title:
-                # Show debug info before insert
-                with debug_container:
-                    st.write("### Debug: Task Data")
-                    st.json({
-                        "project_id": project_id,
-                        "title": title,
-                        "description": description,
-                        "status": status,
-                        "has_attachment": uploaded_file is not None
-                    })
-                
-                # Insert with explicit error handling
-                try:
-                    result = execute_query('''
-                        INSERT INTO tasks (project_id, title, description, status) 
-                        VALUES (%s, %s, %s, %s) 
-                        RETURNING id, title, status;
-                    ''', (project_id, title, description, status))
-                    
-                    if result:
-                        task_id = result[0]['id']
-                        logger.info(f"Task created successfully with ID: {task_id}")
-                        
-                        # Handle file attachment if present
-                        if uploaded_file:
-                            st.write("Debug: Processing file attachment...")
-                            attachment_id = save_uploaded_file(uploaded_file, task_id)
-                            
-                            if attachment_id:
-                                st.success(f"✅ Task created and file '{uploaded_file.name}' attached successfully!")
-                                st.write("Debug: Attachment created with ID:", attachment_id)
-                            else:
-                                st.warning(f"⚠️ Task created but file attachment failed")
-                                logger.error("File attachment failed - no attachment ID returned")
-                        else:
-                            st.success("✅ Task created successfully!")
-                        
-                        st.write("Debug: Created task data:", result[0])
-                        st.experimental_rerun()
-                        return True
-                    
-                    st.error("Failed to create task - no result returned")
-                    logger.error("Task creation failed - database insert returned no result")
+            if submitted:
+                if not title:
+                    st.error("Please enter a task title")
                     return False
+                
+                try:
+                    # Start transaction
+                    execute_query("BEGIN")
+                    
+                    # Create task
+                    task_result = execute_query("""
+                        INSERT INTO tasks 
+                            (project_id, title, description, status, priority, due_date)
+                        VALUES 
+                            (%s, %s, %s, %s, %s, %s)
+                        RETURNING id
+                    """, (project_id, title, description, status, priority, due_date))
+                    
+                    if not task_result:
+                        execute_query("ROLLBACK")
+                        st.error("Failed to create task")
+                        return False
+                    
+                    task_id = task_result[0]['id']
+                    
+                    # Handle file attachment if present
+                    if uploaded_file:
+                        attachment_id = save_uploaded_file(uploaded_file, task_id)
+                        if not attachment_id:
+                            execute_query("ROLLBACK")
+                            st.error("Failed to save file attachment")
+                            return False
+                    
+                    # Commit transaction
+                    execute_query("COMMIT")
+                    
+                    # Success message
+                    st.success(f"Task '{title}' created successfully!")
+                    if uploaded_file:
+                        st.success(f"File '{uploaded_file.name}' attached successfully!")
+                    
+                    # Clear form
+                    st.experimental_rerun()
+                    return True
                     
                 except Exception as e:
-                    logger.error(f"Database error: {str(e)}")
-                    st.error(f"Database error: {str(e)}")
+                    execute_query("ROLLBACK")
+                    logger.error(f"Error creating task: {str(e)}")
+                    st.error("An error occurred while creating the task")
                     return False
-            
-            elif submitted:
-                st.error("Please enter a title for the task")
-                
+                    
     except Exception as e:
-        logger.error(f"Form error: {str(e)}")
-        st.error(f"Form error: {str(e)}")
+        logger.error(f"Task form error: {str(e)}")
+        st.error("An error occurred while displaying the task form")
         return False
-    return False

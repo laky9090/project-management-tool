@@ -26,6 +26,7 @@ def init_database():
                 description TEXT,
                 status VARCHAR(50) DEFAULT 'To Do',
                 priority VARCHAR(20) DEFAULT 'Medium',
+                due_date DATE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
@@ -46,7 +47,9 @@ def init_database():
         # Create uploads directory if it doesn't exist
         os.makedirs('uploads', exist_ok=True)
         
+        logger.info("Database schema initialized successfully")
         return True
+        
     except Exception as e:
         logger.error(f"Database initialization failed: {str(e)}")
-        raise e
+        return False
