@@ -1,6 +1,7 @@
 import streamlit as st
 from database.connection import execute_query
 from utils.file_handler import save_uploaded_file, get_task_attachments
+from components.task_form import create_task_form
 import logging
 
 logger = logging.getLogger(__name__)
@@ -57,9 +58,8 @@ def render_board(project_id):
     
     # Add task creation button at top
     if st.button('➕ Create New Task'):
-        if create_task_form(project_id):
-            st.rerun()
-            return
+        create_task_form(project_id)
+        return
 
     # Create columns for the board
     cols = st.columns([3, 2, 2, 2, 2])
