@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 
 def init_database():
     try:
-        # Create projects table with minimal structure
+        # Create projects table
         execute_query('''
             CREATE TABLE IF NOT EXISTS projects (
                 id SERIAL PRIMARY KEY,
@@ -17,7 +17,7 @@ def init_database():
             )
         ''')
         
-        # Create tasks table with complete structure
+        # Create tasks table
         execute_query('''
             CREATE TABLE IF NOT EXISTS tasks (
                 id SERIAL PRIMARY KEY,
@@ -29,18 +29,33 @@ def init_database():
                 due_date DATE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-
-            -- Ensure due_date column exists
-            DO $$ 
-            BEGIN 
-                IF NOT EXISTS (
-                    SELECT FROM information_schema.columns 
-                    WHERE table_name = 'tasks' AND column_name = 'due_date'
-                ) THEN
-                    ALTER TABLE tasks ADD COLUMN due_date DATE;
-                END IF;
-            END $$;
+            )
+        ''')
+        
+        # Create task_dependencies table
+        execute_query('''
+            CREATE TABLE IF NOT EXISTS task_dependencies (
+                id SERIAL PRIMARY KEY,
+                task_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE,
+                depends_on_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(task_id, depends_on_id),
+                CHECK (task_id != depends_on_id)
+            )
+        ''')
+        
+        # Create subtasks table
+        execute_query('''
+            CREATE TABLE IF NOT EXISTS subtasks (
+                id SERIAL PRIMARY KEY,
+                parent_task_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE,
+                title VARCHAR(255) NOT NULL,
+                description TEXT,
+                status VARCHAR(50) DEFAULT 'To Do',
+                completed BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
         ''')
         
         # Create file_attachments table

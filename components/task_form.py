@@ -5,19 +5,62 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+def get_project_tasks(project_id, exclude_task_id=None):
+    """Get all tasks in a project except the specified task"""
+    query = """
+        SELECT id, title 
+        FROM tasks 
+        WHERE project_id = %s
+    """
+    params = [project_id]
+    
+    if exclude_task_id:
+        query += " AND id != %s"
+        params.append(exclude_task_id)
+        
+    return execute_query(query, params)
+
 def create_task_form(project_id):
     try:
         with st.form("task_form"):
             st.write("### Add Task")
             
-            # Debug info
-            st.write(f"Creating task for project: {project_id}")
-            
-            # Minimal fields
+            # Main task fields
             title = st.text_input("Title", key=f"title_{project_id}")
             description = st.text_area("Description", key=f"desc_{project_id}")
             
-            # Simple file upload
+            col1, col2 = st.columns(2)
+            with col1:
+                status = st.selectbox("Status", ["To Do", "In Progress", "Done"])
+                priority = st.selectbox("Priority", ["Low", "Medium", "High"])
+            
+            # Dependencies section
+            st.write("### Dependencies")
+            available_tasks = get_project_tasks(project_id)
+            if available_tasks:
+                dependencies = st.multiselect(
+                    "This task depends on",
+                    options=[(t['id'], t['title']) for t in available_tasks],
+                    format_func=lambda x: x[1]
+                )
+            
+            # Subtasks section
+            st.write("### Subtasks")
+            num_subtasks = st.number_input("Number of subtasks", min_value=0, max_value=10, value=0)
+            subtasks = []
+            
+            for i in range(num_subtasks):
+                with st.container():
+                    st.write(f"Subtask {i+1}")
+                    subtask_title = st.text_input(f"Title###{i}", key=f"subtask_title_{i}")
+                    subtask_desc = st.text_area(f"Description###{i}", key=f"subtask_desc_{i}")
+                    if subtask_title:
+                        subtasks.append({
+                            'title': subtask_title,
+                            'description': subtask_desc
+                        })
+            
+            # File attachment
             uploaded_file = st.file_uploader(
                 "Attach File (optional)",
                 type=['txt', 'pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx']
@@ -27,41 +70,51 @@ def create_task_form(project_id):
             
             if submitted and title:
                 try:
-                    # Show debug info
-                    st.write("Creating task with data:")
-                    st.json({
-                        "project_id": project_id,
-                        "title": title,
-                        "description": description,
-                        "status": "To Do",  # Fixed status for now
-                        "has_attachment": uploaded_file is not None
-                    })
+                    # Start transaction
+                    execute_query("BEGIN")
                     
-                    # Insert task
+                    # Create main task
                     result = execute_query('''
-                        INSERT INTO tasks (project_id, title, description, status)
-                        VALUES (%s, %s, %s, %s)
+                        INSERT INTO tasks (project_id, title, description, status, priority)
+                        VALUES (%s, %s, %s, %s, %s)
                         RETURNING id, title;
-                    ''', (project_id, title, description, "To Do"))
+                    ''', (project_id, title, description, status, priority))
                     
                     if result:
                         task_id = result[0]['id']
                         
-                        # Handle file upload if present
+                        # Add dependencies
+                        if available_tasks and dependencies:
+                            for dep_id, _ in dependencies:
+                                execute_query('''
+                                    INSERT INTO task_dependencies (task_id, depends_on_id)
+                                    VALUES (%s, %s)
+                                ''', (task_id, dep_id))
+                        
+                        # Add subtasks
+                        for subtask in subtasks:
+                            execute_query('''
+                                INSERT INTO subtasks (parent_task_id, title, description)
+                                VALUES (%s, %s, %s)
+                            ''', (task_id, subtask['title'], subtask['description']))
+                        
+                        # Handle file upload
                         if uploaded_file:
                             file_id = save_uploaded_file(uploaded_file, task_id)
                             if file_id:
                                 st.success(f"✅ File '{uploaded_file.name}' attached!")
                         
-                        st.success(f"✅ Task '{title}' created!")
-                        st.write("Debug - Created task:", result[0])
+                        execute_query("COMMIT")
+                        st.success(f"✅ Task '{title}' created with {len(subtasks)} subtasks!")
                         st.rerun()
                         return True
                     
+                    execute_query("ROLLBACK")
                     st.error("Failed to create task")
                     return False
                     
                 except Exception as e:
+                    execute_query("ROLLBACK")
                     logger.error(f"Error creating task: {str(e)}")
                     st.error(f"Error: {str(e)}")
                     return False
