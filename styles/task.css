@@ -1,0 +1,86 @@
+/* Task card styling */
+div.task-card {
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin: 8px 0;
+    padding: 16px;
+    background-color: white;
+    border-left: 4px solid;
+}
+
+div.task-card[data-priority="High"] {
+    border-left-color: #dc3545;
+}
+
+div.task-card[data-priority="Medium"] {
+    border-left-color: #ffc107;
+}
+
+div.task-card[data-priority="Low"] {
+    border-left-color: #28a745;
+}
+
+/* Progress bar customization */
+div.stProgress > div > div {
+    height: 4px;
+    background-color: #e9ecef;
+}
+
+div.stProgress > div > div > div {
+    background-color: #28a745;
+}
+
+/* Status badges */
+.status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    margin: 4px 0;
+}
+
+.status-todo {
+    background-color: #f8f9fa;
+    color: #6c757d;
+}
+
+.status-progress {
+    background-color: #007bff;
+    color: white;
+}
+
+.status-done {
+    background-color: #28a745;
+    color: white;
+}
+
+/* Subtasks styling */
+.subtask-list {
+    margin-left: 16px;
+    padding-left: 8px;
+    border-left: 2px solid #e9ecef;
+}
+
+/* Dependencies styling */
+.dependency-list {
+    margin-top: 8px;
+    padding: 8px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+}
+
+/* File attachments */
+.attachment-list {
+    margin-top: 8px;
+}
+
+.attachment-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    margin: 4px 0;
+}
