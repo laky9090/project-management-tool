@@ -6,9 +6,7 @@ import json
 logger = logging.getLogger(__name__)
 
 DEFAULT_TEMPLATES = {
-    "Basic Kanban": ["To Do", "In Progress", "Done"],
-    "Extended Kanban": ["Backlog", "To Do", "In Progress", "Review", "Done"],
-    "Sprint Board": ["Sprint Backlog", "In Development", "Testing", "Ready for Release", "Released"]
+    "Basic Kanban": ["To Do", "In Progress", "Done"]
 }
 
 def save_board_template(name, columns):

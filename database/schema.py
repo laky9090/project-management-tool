@@ -80,11 +80,12 @@ def init_database():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
             
-            -- Insert default templates if they don't exist
+            -- Remove existing templates if any
+            DELETE FROM board_templates WHERE name IN ('Extended Kanban', 'Sprint Board');
+            
+            -- Insert default template if it doesn't exist
             INSERT INTO board_templates (name, columns) VALUES
-                ('Basic Kanban', '["To Do", "In Progress", "Done"]'),
-                ('Extended Kanban', '["Backlog", "To Do", "In Progress", "Review", "Done"]'),
-                ('Sprint Board', '["Sprint Backlog", "In Development", "Testing", "Ready for Release", "Released"]')
+                ('Basic Kanban', '["To Do", "In Progress", "Done"]')
             ON CONFLICT (name) DO NOTHING;
         ''')
         
