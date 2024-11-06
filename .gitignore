@@ -20,13 +20,31 @@ var/
 .installed.cfg
 *.egg
 
-# Logs
-*.log
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Local development
+# Environment files
 .env
 .env.local
 .env.*.local
 
-# Uploads
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Local development
 uploads/
+*.sqlite
+
+# Streamlit
+.streamlit/secrets.toml
+
+# System files
+.DS_Store
+Thumbs.db
