@@ -14,6 +14,7 @@ dependencies = [
     "pyjwt>=2.9.0",
     "python-dotenv>=1.0.1",
     "python-jose",
+    "python-json-logger>=2.0.7",
     "python-jwt",
     "python-magic",
     "python-multipart>=0.0.17",
