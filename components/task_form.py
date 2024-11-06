@@ -42,7 +42,7 @@ def create_task_form(project_id):
                 priority = st.selectbox("Priority", ["Low", "Medium", "High"])
             with col3:
                 due_date = st.date_input("Due Date")
-                
+            
             # Dependencies section
             st.write("### Dependencies")
             available_tasks = get_project_tasks(project_id)
@@ -53,8 +53,8 @@ def create_task_form(project_id):
                     options=[(t['id'], f"{t['title']} ({t['status']})") for t in available_tasks],
                     format_func=lambda x: x[1]
                 )
-                
-            # Subtasks section
+            
+            # Subtasks section with improved UI
             st.write("### Subtasks")
             num_subtasks = st.number_input("Number of subtasks", min_value=0, max_value=10, value=0)
             subtasks = []

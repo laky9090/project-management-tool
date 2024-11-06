@@ -64,11 +64,12 @@ def update_subtask_status(subtask_id, completed):
         return False
 
 def render_task_card(task):
+    """Render a task card with dependencies and subtasks"""
     with st.container():
-        # Task header with edit button
-        col1, col2, col3 = st.columns([3, 2, 1])
+        # Task header
+        col1, col2 = st.columns([3, 1])
         with col1:
-            st.write(f"**{task['title']}**")
+            st.markdown(f"### {task['title']}")
         with col2:
             new_status = st.selectbox(
                 "Status",
@@ -76,9 +77,56 @@ def render_task_card(task):
                 index=["To Do", "In Progress", "Done"].index(task['status']),
                 key=f"status_{task['id']}"
             )
+            if new_status != task['status']:
+                execute_query(
+                    "UPDATE tasks SET status = %s WHERE id = %s",
+                    (new_status, task['id'])
+                )
+                st.rerun()
+
+        # Task description and metadata
+        if task['description']:
+            st.write(task['description'])
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.write(f"**Priority:** {task['priority']}")
+        with col2:
+            st.write(f"**Due Date:** {task['due_date'].strftime('%Y-%m-%d') if task['due_date'] else 'Not set'}")
         with col3:
             if st.button("✏️ Edit", key=f"edit_{task['id']}"):
                 st.session_state[f"edit_mode_{task['id']}"] = True
+
+        # Dependencies section
+        st.write("**Dependencies:**")
+        dependencies = get_task_dependencies(task['id'])
+        if dependencies:
+            for dep in dependencies:
+                st.markdown(f"- {dep['title']} ({dep['status']}) - {dep['priority']} priority")
+        else:
+            st.write("*No dependencies*")
+
+        # Subtasks section
+        st.write("**Subtasks:**")
+        subtasks = get_task_subtasks(task['id'])
+        if subtasks:
+            for subtask in subtasks:
+                col1, col2 = st.columns([4, 1])
+                with col1:
+                    st.write(f"- {subtask['title']}")
+                    if subtask['description']:
+                        st.write(f"  *{subtask['description']}*")
+                with col2:
+                    completed = st.checkbox(
+                        "Complete",
+                        value=subtask['completed'],
+                        key=f"subtask_{subtask['id']}"
+                    )
+                    if completed != subtask['completed']:
+                        if update_subtask_status(subtask['id'], completed):
+                            st.rerun()
+        else:
+            st.write("*No subtasks*")
 
         # Edit mode
         if st.session_state.get(f"edit_mode_{task['id']}", False):
@@ -94,148 +142,36 @@ def render_task_card(task):
                     )
                 with col2:
                     new_due_date = st.date_input("Due Date", value=task['due_date'])
-
+                
                 if st.form_submit_button("Save Changes"):
-                    result = execute_query('''
-                        UPDATE tasks 
-                        SET title = %s, description = %s, priority = %s, due_date = %s
-                        WHERE id = %s
-                        RETURNING id
-                    ''', (new_title, new_description, new_priority, new_due_date, task['id']))
-                    
-                    if result:
+                    try:
+                        execute_query('''
+                            UPDATE tasks 
+                            SET title = %s, description = %s, priority = %s, due_date = %s
+                            WHERE id = %s
+                            RETURNING id
+                        ''', (new_title, new_description, new_priority, new_due_date, task['id']))
+                        
                         st.success("Task updated successfully!")
                         st.session_state[f"edit_mode_{task['id']}"] = False
                         time.sleep(0.5)
                         st.rerun()
-        else:
-            # Display task details
-            if task['description']:
-                st.write(task['description'])
-            st.write(f"Priority: **{task['priority']}**")
-            if task['due_date']:
-                st.write(f"Due: {task['due_date'].strftime('%Y-%m-%d')}")
-
-            # Dependencies and Subtasks section
-            with st.expander("Dependencies & Subtasks"):
-                # Dependencies section
-                st.write("**Dependencies:**")
-                dependencies = get_task_dependencies(task['id'])
-                if dependencies:
-                    for dep in dependencies:
-                        st.write(f"- {dep['title']} ({dep['status']})")
-                else:
-                    st.write("No dependencies")
-
-                # Subtasks section
-                st.write("**Subtasks:**")
-                subtasks = get_task_subtasks(task['id'])
-                if subtasks:
-                    for subtask in subtasks:
-                        col1, col2 = st.columns([4, 1])
-                        with col1:
-                            st.write(f"- {subtask['title']}")
-                        with col2:
-                            completed = st.checkbox(
-                                "Done",
-                                value=subtask['completed'],
-                                key=f"subtask_{subtask['id']}"
-                            )
-                            if completed != subtask['completed']:
-                                if update_subtask_status(subtask['id'], completed):
-                                    st.rerun()
-                else:
-                    st.write("No subtasks")
+                    except Exception as e:
+                        st.error(f"Error updating task: {str(e)}")
 
 def render_board(project_id):
-    """Render project board"""
-    st.write("### Project Board")
+    """Render project board with tasks and their dependencies"""
+    st.write("## Project Board")
     
     # Add new task button
     if st.button("➕ Add New Task"):
         st.session_state.show_task_form = True
 
-    # Task creation form
+    # Show task creation form
     if st.session_state.get('show_task_form', False):
-        with st.form("new_task_form"):
-            title = st.text_input("Task Title")
-            description = st.text_area("Description")
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                status = st.selectbox("Status", ["To Do", "In Progress", "Done"])
-            with col2:
-                priority = st.selectbox("Priority", ["Low", "Medium", "High"])
-            with col3:
-                due_date = st.date_input("Due Date")
-
-            # Dependencies selection
-            available_tasks = execute_query(
-                "SELECT id, title FROM tasks WHERE project_id = %s",
-                (project_id,)
-            )
-            if available_tasks:
-                dependencies = st.multiselect(
-                    "Dependencies",
-                    options=[(t['id'], t['title']) for t in available_tasks],
-                    format_func=lambda x: x[1]
-                )
-
-            # Subtasks
-            st.write("### Subtasks")
-            num_subtasks = st.number_input("Number of subtasks", min_value=0, max_value=5)
-            subtasks = []
-            for i in range(num_subtasks):
-                st.write(f"#### Subtask {i+1}")
-                subtask_title = st.text_input(f"Title", key=f"subtask_title_{i}")
-                subtask_desc = st.text_area(f"Description", key=f"subtask_desc_{i}")
-                if subtask_title:
-                    subtasks.append({
-                        'title': subtask_title,
-                        'description': subtask_desc,
-                        'completed': False
-                    })
-
-            if st.form_submit_button("Create Task"):
-                try:
-                    # Start transaction
-                    execute_query("BEGIN")
-
-                    # Create main task
-                    task_result = execute_query("""
-                        INSERT INTO tasks (project_id, title, description, status, priority, due_date)
-                        VALUES (%s, %s, %s, %s, %s, %s)
-                        RETURNING id
-                    """, (project_id, title, description, status, priority, due_date))
-
-                    if task_result:
-                        task_id = task_result[0]['id']
-
-                        # Add dependencies
-                        if dependencies:
-                            for dep_id, _ in dependencies:
-                                execute_query("""
-                                    INSERT INTO task_dependencies (task_id, depends_on_id)
-                                    VALUES (%s, %s)
-                                """, (task_id, dep_id))
-
-                        # Add subtasks
-                        for subtask in subtasks:
-                            execute_query("""
-                                INSERT INTO subtasks (parent_task_id, title, description, completed)
-                                VALUES (%s, %s, %s, %s)
-                            """, (task_id, subtask['title'], subtask['description'], subtask['completed']))
-
-                        execute_query("COMMIT")
-                        st.success("Task created successfully!")
-                        st.session_state.show_task_form = False
-                        st.rerun()
-                    else:
-                        execute_query("ROLLBACK")
-                        st.error("Failed to create task")
-                except Exception as e:
-                    execute_query("ROLLBACK")
-                    logger.error(f"Error creating task: {str(e)}")
-                    st.error(f"Error creating task: {str(e)}")
+        if create_task_form(project_id):
+            st.session_state.show_task_form = False
+            st.rerun()
 
     # Display existing tasks grouped by status
     tasks = execute_query("""
@@ -254,11 +190,13 @@ def render_board(project_id):
             task_groups[task['status']].append(task)
 
         # Create columns for each status
-        columns = st.columns(len(task_groups))
+        cols = st.columns(len(task_groups))
         for i, (status, status_tasks) in enumerate(task_groups.items()):
-            with columns[i]:
+            with cols[i]:
                 st.write(f"### {status}")
                 for task in status_tasks:
-                    render_task_card(task)
+                    with st.container():
+                        st.markdown("---")
+                        render_task_card(task)
     else:
         st.info("No tasks found. Create your first task to get started!")
