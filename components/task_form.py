@@ -39,6 +39,7 @@ def create_task_form(project_id):
             # Dependencies section
             st.write("### Dependencies")
             available_tasks = get_project_tasks(project_id)
+            dependencies = []
             if available_tasks:
                 dependencies = st.multiselect(
                     "This task depends on",
@@ -75,57 +76,58 @@ def create_task_form(project_id):
                     # Start transaction
                     execute_query("BEGIN")
                     
-                    # Create main task
+                    # Create main task with explicit column names and RETURNING all fields
                     result = execute_query('''
                         INSERT INTO tasks (project_id, title, description, status, priority)
                         VALUES (%s, %s, %s, %s, %s)
-                        RETURNING id, title;
+                        RETURNING id, title, description, status, priority;
                     ''', (project_id, title, description, status, priority))
                     
-                    if result:
-                        task_id = result[0]['id']
-                        logger.info(f"Created task {task_id} for project {project_id}")
-                        
-                        # Add dependencies
-                        if available_tasks and dependencies:
-                            for dep_id, _ in dependencies:
-                                execute_query('''
-                                    INSERT INTO task_dependencies (task_id, depends_on_id)
-                                    VALUES (%s, %s)
-                                ''', (task_id, dep_id))
-                                logger.info(f"Added dependency: Task {task_id} depends on {dep_id}")
-                        
-                        # Add subtasks
-                        for subtask in subtasks:
-                            subtask_result = execute_query('''
-                                INSERT INTO subtasks (parent_task_id, title, description)
-                                VALUES (%s, %s, %s)
-                                RETURNING id
-                            ''', (task_id, subtask['title'], subtask['description']))
-                            if subtask_result:
-                                logger.info(f"Created subtask: {subtask_result[0]['id']} for task {task_id}")
-                        
-                        # Handle file upload
-                        if uploaded_file:
-                            file_id = save_uploaded_file(uploaded_file, task_id)
-                            if file_id:
-                                logger.info(f"Attached file: {uploaded_file.name} to task {task_id}")
-                                st.success(f"✅ File '{uploaded_file.name}' attached!")
-                        
-                        execute_query("COMMIT")
-                        st.success(f"✅ Task '{title}' created successfully!")
-                        # Add delay to ensure DB operations complete
-                        time.sleep(0.5)
-                        st.rerun()
-                        return True
+                    logger.info(f"Task creation result: {result}")
                     
-                    execute_query("ROLLBACK")
-                    st.error("Failed to create task - database error")
-                    return False
+                    if not result:
+                        logger.error("Task creation failed - no result returned")
+                        execute_query("ROLLBACK")
+                        st.error("Failed to create task")
+                        return False
+                    
+                    task_id = result[0]['id']
+                    logger.info(f"Created task: {task_id}")
+                    
+                    # Add dependencies
+                    if dependencies:
+                        for dep_id, _ in dependencies:
+                            execute_query('''
+                                INSERT INTO task_dependencies (task_id, depends_on_id)
+                                VALUES (%s, %s)
+                            ''', (task_id, dep_id))
+                            logger.info(f"Added dependency: Task {task_id} depends on {dep_id}")
+                    
+                    # Add subtasks
+                    for subtask in subtasks:
+                        subtask_result = execute_query('''
+                            INSERT INTO subtasks (parent_task_id, title, description)
+                            VALUES (%s, %s, %s)
+                            RETURNING id
+                        ''', (task_id, subtask['title'], subtask['description']))
+                        if subtask_result:
+                            logger.info(f"Created subtask: {subtask_result[0]['id']} for task {task_id}")
+                    
+                    # Handle file upload
+                    if uploaded_file:
+                        file_id = save_uploaded_file(uploaded_file, task_id)
+                        if file_id:
+                            logger.info(f"Attached file: {uploaded_file.name} to task {task_id}")
+                    
+                    execute_query("COMMIT")
+                    st.success(f"✅ Task '{title}' created successfully!")
+                    time.sleep(1)  # Increase delay to ensure transaction completes
+                    st.rerun()
+                    return True
                     
                 except Exception as e:
+                    logger.error(f"Error in task creation: {str(e)}")
                     execute_query("ROLLBACK")
-                    logger.error(f"Error creating task: {str(e)}")
                     st.error(f"Error creating task: {str(e)}")
                     return False
                     
