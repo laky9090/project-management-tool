@@ -81,7 +81,7 @@ def render_board(project_id):
             SELECT id, title, description, status, priority, created_at
             FROM tasks 
             WHERE project_id = %s
-            ORDER BY created_at DESC
+            ORDER BY priority DESC, created_at DESC
         ''', (project_id,))
         
         if tasks:

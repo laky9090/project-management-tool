@@ -106,7 +106,7 @@ def create_task_form(project_id):
                         
                         execute_query("COMMIT")
                         st.success(f"✅ Task '{title}' created with {len(subtasks)} subtasks!")
-                        st.rerun()
+                        st.rerun()  # Add rerun to refresh the page
                         return True
                     
                     execute_query("ROLLBACK")
