@@ -2,6 +2,7 @@ import streamlit as st
 from database.connection import execute_query
 from utils.file_handler import save_uploaded_file
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +83,7 @@ def create_task_form(project_id):
                     
                     if result:
                         task_id = result[0]['id']
+                        logger.info(f"Created task: {task_id} - {title}")
                         
                         # Add dependencies
                         if available_tasks and dependencies:
@@ -90,33 +92,40 @@ def create_task_form(project_id):
                                     INSERT INTO task_dependencies (task_id, depends_on_id)
                                     VALUES (%s, %s)
                                 ''', (task_id, dep_id))
+                                logger.info(f"Added dependency: Task {task_id} depends on {dep_id}")
                         
                         # Add subtasks
                         for subtask in subtasks:
-                            execute_query('''
+                            subtask_result = execute_query('''
                                 INSERT INTO subtasks (parent_task_id, title, description)
                                 VALUES (%s, %s, %s)
+                                RETURNING id
                             ''', (task_id, subtask['title'], subtask['description']))
+                            if subtask_result:
+                                logger.info(f"Created subtask: {subtask_result[0]['id']} for task {task_id}")
                         
                         # Handle file upload
                         if uploaded_file:
                             file_id = save_uploaded_file(uploaded_file, task_id)
                             if file_id:
+                                logger.info(f"Attached file: {uploaded_file.name} to task {task_id}")
                                 st.success(f"✅ File '{uploaded_file.name}' attached!")
                         
                         execute_query("COMMIT")
-                        st.success(f"✅ Task '{title}' created with {len(subtasks)} subtasks!")
-                        st.rerun()  # Add rerun to refresh the page
+                        st.success(f"✅ Task '{title}' created successfully!")
+                        # Add delay to ensure DB operations complete
+                        time.sleep(0.5)
+                        st.rerun()
                         return True
                     
                     execute_query("ROLLBACK")
-                    st.error("Failed to create task")
+                    st.error("Failed to create task - database error")
                     return False
                     
                 except Exception as e:
                     execute_query("ROLLBACK")
                     logger.error(f"Error creating task: {str(e)}")
-                    st.error(f"Error: {str(e)}")
+                    st.error(f"Error creating task: {str(e)}")
                     return False
                     
         return False

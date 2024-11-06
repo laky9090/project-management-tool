@@ -4,27 +4,38 @@ from utils.file_handler import save_uploaded_file, get_task_attachments
 from components.board_templates import get_board_templates, DEFAULT_TEMPLATES, apply_template_to_project
 from components.task_form import create_task_form
 import logging
-import json
 
 logger = logging.getLogger(__name__)
 
 def get_task_dependencies(task_id):
     """Get dependencies for a task"""
-    return execute_query("""
-        SELECT t.id, t.title, t.status
-        FROM tasks t
-        JOIN task_dependencies td ON t.id = td.depends_on_id
-        WHERE td.task_id = %s
-    """, (task_id,))
+    try:
+        dependencies = execute_query("""
+            SELECT t.id, t.title, t.status
+            FROM tasks t
+            JOIN task_dependencies td ON t.id = td.depends_on_id
+            WHERE td.task_id = %s
+        """, (task_id,))
+        logger.info(f"Found {len(dependencies) if dependencies else 0} dependencies for task {task_id}")
+        return dependencies
+    except Exception as e:
+        logger.error(f"Error fetching dependencies for task {task_id}: {str(e)}")
+        return []
 
 def get_task_subtasks(task_id):
     """Get subtasks for a task"""
-    return execute_query("""
-        SELECT id, title, description, status, completed
-        FROM subtasks
-        WHERE parent_task_id = %s
-        ORDER BY created_at
-    """, (task_id,))
+    try:
+        subtasks = execute_query("""
+            SELECT id, title, description, status, completed
+            FROM subtasks
+            WHERE parent_task_id = %s
+            ORDER BY created_at
+        """, (task_id,))
+        logger.info(f"Found {len(subtasks) if subtasks else 0} subtasks for task {task_id}")
+        return subtasks
+    except Exception as e:
+        logger.error(f"Error fetching subtasks for task {task_id}: {str(e)}")
+        return []
 
 def update_subtask_status(subtask_id, completed):
     """Update subtask completion status"""
@@ -34,9 +45,10 @@ def update_subtask_status(subtask_id, completed):
             SET completed = %s, status = CASE WHEN %s THEN 'Done' ELSE 'To Do' END
             WHERE id = %s
         """, (completed, completed, subtask_id))
+        logger.info(f"Updated subtask {subtask_id} status to {completed}")
         return True
     except Exception as e:
-        logger.error(f"Error updating subtask: {str(e)}")
+        logger.error(f"Error updating subtask {subtask_id}: {str(e)}")
         return False
 
 def render_board(project_id):
@@ -51,51 +63,48 @@ def render_board(project_id):
         # Get all templates
         all_templates = {**DEFAULT_TEMPLATES, **get_board_templates()}
         
-        # Get current project's tasks to determine current template
-        current_tasks = execute_query(
-            "SELECT DISTINCT status FROM tasks WHERE project_id = %s",
-            (project_id,)
-        )
-        current_statuses = [task['status'] for task in current_tasks] if current_tasks else []
-        
-        # Try to detect current template
-        current_template = None
-        for name, columns in all_templates.items():
-            if set(current_statuses).issubset(set(columns)):
-                current_template = name
-                break
-                
-        if not current_template:
-            current_template = "Basic Kanban"  # Default template
-            
-        # Template selection
-        selected_template = st.selectbox(
-            "Select Template",
-            options=list(all_templates.keys()),
-            index=list(all_templates.keys()).index(current_template),
-            key="board_template"
-        )
-        
-        # Display Kanban Board
-        board_columns = st.columns(len(all_templates[selected_template]))
-        
-        # Get tasks with all fields
+        # Get tasks with all fields and proper ordering
         tasks = execute_query('''
-            SELECT t.id, t.title, t.description, t.status, t.priority, t.created_at
+            SELECT t.*
             FROM tasks t
             WHERE t.project_id = %s
-            ORDER BY t.created_at DESC
+            ORDER BY t.priority DESC, t.created_at DESC
         ''', (project_id,))
         
         if tasks:
             logger.info(f"Found {len(tasks)} tasks for project {project_id}")
+            for task in tasks:
+                logger.info(f"Task found: {task['id']} - {task['title']} - {task['status']}")
+            
+            # Get current statuses
+            current_statuses = list(set(task['status'] for task in tasks))
+            
+            # Try to detect current template
+            current_template = None
+            for name, columns in all_templates.items():
+                if set(current_statuses).issubset(set(columns)):
+                    current_template = name
+                    break
+                    
+            if not current_template:
+                current_template = "Basic Kanban"  # Default template
+                
+            # Template selection
+            selected_template = st.selectbox(
+                "Select Template",
+                options=list(all_templates.keys()),
+                index=list(all_templates.keys()).index(current_template),
+                key="board_template"
+            )
+            
+            # Display Kanban Board
+            board_columns = st.columns(len(all_templates[selected_template]))
             
             # Initialize tasks_by_status with all possible statuses
             tasks_by_status = {status: [] for status in all_templates[selected_template]}
             
             # Group tasks by status
             for task in tasks:
-                logger.info(f"Processing task: {task['id']} - {task['title']}")
                 if task['status'] in tasks_by_status:
                     tasks_by_status[task['status']].append(task)
                 else:
@@ -148,8 +157,8 @@ def render_board(project_id):
                                         st.markdown(f"- {subtask['title']}")
                                     with col2:
                                         if st.checkbox("Done", value=subtask['completed'], key=f"subtask_{subtask['id']}"):
-                                            update_subtask_status(subtask['id'], True)
-                                            st.rerun()
+                                            if update_subtask_status(subtask['id'], True):
+                                                st.rerun()
                             
                             # Show attachments if any
                             attachments = get_task_attachments(task['id'])
@@ -170,5 +179,6 @@ def render_board(project_id):
             st.info("No tasks found. Create your first task to get started!")
             
     except Exception as e:
-        logger.error(f"Error: {str(e)}")
-        st.error(f"An error occurred while rendering the board: {str(e)}")
+        logger.error(f"Error fetching tasks: {str(e)}")
+        st.error(f"Error loading tasks: {str(e)}")
+        return
