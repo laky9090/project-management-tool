@@ -1,6 +1,7 @@
 import streamlit as st
 from database.connection import execute_query
 from utils.file_handler import save_uploaded_file, get_task_attachments
+from components.task_form import create_task_form
 import logging
 import time
 
@@ -161,6 +162,10 @@ def render_task_card(task):
 
 def render_board(project_id):
     """Render project board with tasks and their dependencies"""
+    # Initialize session state for task form if not exists
+    if 'show_task_form' not in st.session_state:
+        st.session_state.show_task_form = False
+    
     st.write("## Project Board")
     
     # Add new task button
