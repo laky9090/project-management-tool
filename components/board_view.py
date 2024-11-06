@@ -1,12 +1,17 @@
 import streamlit as st
 from database.connection import execute_query
 from utils.file_handler import get_task_attachments
+from components.task_form import create_task_form
 import logging
 
 logger = logging.getLogger(__name__)
 
 def render_board(project_id):
     try:
+        # Add task creation button
+        if st.button("➕ Add Task"):
+            create_task_form(project_id)
+            
         st.write("## Project Board")
         
         # Debug info
