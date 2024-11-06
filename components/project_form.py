@@ -9,9 +9,6 @@ def create_project_form():
     with st.form("project_form"):
         st.write("### Create Project")
         
-        # Debug container
-        debug_container = st.empty()
-        
         name = st.text_input("Project Name")
         description = st.text_area("Description")
         deadline = st.date_input("Deadline", min_value=datetime.today())
@@ -20,15 +17,6 @@ def create_project_form():
         
         if submitted and name:
             try:
-                # Show debug info
-                with debug_container:
-                    st.write("### Debug Information")
-                    st.json({
-                        "name": name,
-                        "description": description,
-                        "deadline": str(deadline)
-                    })
-                
                 result = execute_query(
                     '''
                     INSERT INTO projects (name, description, deadline)
@@ -40,7 +28,6 @@ def create_project_form():
                 
                 if result:
                     st.success(f"Project '{name}' created successfully!")
-                    st.write("Created project:", result[0])
                     st.rerun()
                     return True
                     
@@ -63,9 +50,19 @@ def list_projects():
     selected_project = None
     
     if projects:
+        # Convert projects to list for selectbox
+        project_options = [(p['id'], f"{p['name']} - Due: {p['deadline'].strftime('%b %d, %Y') if p['deadline'] else 'No deadline'}") for p in projects]
+        
+        selected_id = st.selectbox(
+            "Select Project",
+            options=project_options,
+            format_func=lambda x: x[1],
+            key="project_selector"
+        )
+        
+        # Display project cards without select buttons
         for project in projects:
             with st.container():
-                selected = st.session_state.get('selected_project') == project['id']
                 card_style = '''
                     padding: 1rem;
                     border-radius: 8px;
@@ -73,13 +70,7 @@ def list_projects():
                     background: white;
                     border: 2px solid;
                     border-color: {} !important;
-                    cursor: pointer;
-                    transition: transform 0.2s ease, box-shadow 0.2s ease;
-                    &:hover {{
-                        transform: translateY(-2px);
-                        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-                    }}
-                '''.format('#7C3AED' if selected else '#E5E7EB')
+                '''.format('#7C3AED' if project['id'] == selected_id[0] else '#E5E7EB')
                 
                 st.markdown(f'''
                     <div style="{card_style}">
@@ -88,9 +79,9 @@ def list_projects():
                         <div style="color: #6B7280">Due: {project['deadline'].strftime('%b %d, %Y') if project['deadline'] else 'No deadline'}</div>
                     </div>
                 ''', unsafe_allow_html=True)
-                
-                if st.button("Select", key=f"project_{project['id']}", use_container_width=True):
-                    selected_project = project['id']
+        
+        # Return the selected project ID
+        return selected_id[0] if selected_id else None
     else:
         st.info("No projects found. Create one to get started!")
     

@@ -14,11 +14,13 @@ DEFAULT_TEMPLATES = {
 def save_board_template(name, columns):
     """Save a board template to the database"""
     try:
+        # Convert columns to JSON string before saving
+        columns_json = json.dumps(columns)
         result = execute_query("""
             INSERT INTO board_templates (name, columns)
             VALUES (%s, %s)
             RETURNING id
-        """, (name, json.dumps(columns)))
+        """, (name, columns_json))
         return result[0]['id'] if result else None
     except Exception as e:
         logger.error(f"Error saving template: {str(e)}")
@@ -28,7 +30,16 @@ def get_board_templates():
     """Get all saved board templates"""
     try:
         templates = execute_query("SELECT id, name, columns FROM board_templates")
-        return {template['name']: json.loads(template['columns']) for template in templates} if templates else {}
+        template_dict = {}
+        if templates:
+            for template in templates:
+                # Parse JSON string back to Python object
+                try:
+                    columns = json.loads(template['columns']) if isinstance(template['columns'], str) else template['columns']
+                    template_dict[template['name']] = columns
+                except Exception as e:
+                    logger.error(f"Error parsing template columns: {str(e)}")
+        return template_dict
     except Exception as e:
         logger.error(f"Error fetching templates: {str(e)}")
         return {}
