@@ -22,6 +22,7 @@ def get_project_tasks(project_id, exclude_task_id=None):
     return execute_query(query, params)
 
 def create_task_form(project_id):
+    logger.info(f"Creating task for project: {project_id}")
     try:
         with st.form("task_form"):
             st.write("### Add Task")
@@ -83,7 +84,7 @@ def create_task_form(project_id):
                     
                     if result:
                         task_id = result[0]['id']
-                        logger.info(f"Created task: {task_id} - {title}")
+                        logger.info(f"Created task {task_id} for project {project_id}")
                         
                         # Add dependencies
                         if available_tasks and dependencies:

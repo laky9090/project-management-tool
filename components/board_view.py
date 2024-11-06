@@ -1,7 +1,7 @@
 import streamlit as st
 from database.connection import execute_query
 from utils.file_handler import save_uploaded_file, get_task_attachments
-from components.board_templates import get_board_templates, DEFAULT_TEMPLATES, apply_template_to_project
+from components.board_templates import get_board_templates, DEFAULT_TEMPLATES
 from components.task_form import create_task_form
 import logging
 
@@ -64,6 +64,7 @@ def render_board(project_id):
         all_templates = {**DEFAULT_TEMPLATES, **get_board_templates()}
         
         # Get tasks with all fields and proper ordering
+        logger.info(f"Fetching tasks for project_id={project_id}")
         tasks = execute_query('''
             SELECT t.*
             FROM tasks t
@@ -72,9 +73,9 @@ def render_board(project_id):
         ''', (project_id,))
         
         if tasks:
-            logger.info(f"Found {len(tasks)} tasks for project {project_id}")
+            logger.info(f"Found {len(tasks)} tasks")
             for task in tasks:
-                logger.info(f"Task found: {task['id']} - {task['title']} - {task['status']}")
+                logger.info(f"Task: {task['id']} - {task['title']} - {task['status']}")
             
             # Get current statuses
             current_statuses = list(set(task['status'] for task in tasks))
