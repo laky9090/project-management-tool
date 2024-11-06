@@ -22,125 +22,125 @@ def get_project_tasks(project_id, exclude_task_id=None):
     return execute_query(query, params)
 
 def create_task_form(project_id):
-    with st.form("task_form", clear_on_submit=True):
-        st.write("### Create New Task")
+    logger.info(f"Starting task creation form for project {project_id}")
+    try:
+        # Start transaction outside the form submission
+        execute_query("BEGIN")
         
-        # Basic task information
-        title = st.text_input("Title", key="task_title")
-        description = st.text_area("Description", key="task_desc")
-        
-        # Task metadata
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            status = st.selectbox("Status", ["To Do", "In Progress", "Done"])
-        with col2:
-            priority = st.selectbox("Priority", ["Low", "Medium", "High"])
-        with col3:
-            due_date = st.date_input("Due Date")
+        with st.form("task_form", clear_on_submit=True):
+            st.write("### Create New Task")
             
-        # Dependencies section
-        st.write("### Dependencies")
-        available_tasks = get_project_tasks(project_id)
-        dependencies = []
-        if available_tasks:
-            dependencies = st.multiselect(
-                "This task depends on",
-                options=[(t['id'], f"{t['title']} ({t['status']})") for t in available_tasks],
-                format_func=lambda x: x[1]
+            # Basic task information
+            title = st.text_input("Title", key="task_title")
+            description = st.text_area("Description", key="task_desc")
+            
+            # Task metadata
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                status = st.selectbox("Status", ["To Do", "In Progress", "Done"])
+            with col2:
+                priority = st.selectbox("Priority", ["Low", "Medium", "High"])
+            with col3:
+                due_date = st.date_input("Due Date")
+                
+            # Dependencies section
+            st.write("### Dependencies")
+            available_tasks = get_project_tasks(project_id)
+            dependencies = []
+            if available_tasks:
+                dependencies = st.multiselect(
+                    "This task depends on",
+                    options=[(t['id'], f"{t['title']} ({t['status']})") for t in available_tasks],
+                    format_func=lambda x: x[1]
+                )
+                
+            # Subtasks section
+            st.write("### Subtasks")
+            num_subtasks = st.number_input("Number of subtasks", min_value=0, max_value=10, value=0)
+            subtasks = []
+            
+            for i in range(num_subtasks):
+                with st.container():
+                    col1, col2 = st.columns([3, 1])
+                    with col1:
+                        subtask_title = st.text_input(f"Subtask {i+1} Title", key=f"subtask_title_{i}")
+                    with col2:
+                        subtask_status = st.selectbox(
+                            "Status",
+                            ["To Do", "Done"],
+                            key=f"subtask_status_{i}"
+                        )
+                    subtask_desc = st.text_area(f"Description", key=f"subtask_desc_{i}")
+                    if subtask_title:
+                        subtasks.append({
+                            'title': subtask_title,
+                            'description': subtask_desc,
+                            'completed': subtask_status == "Done"
+                        })
+            
+            # File attachment
+            uploaded_file = st.file_uploader(
+                "Attach File (optional)",
+                type=['txt', 'pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx']
             )
             
-        # Subtasks section
-        st.write("### Subtasks")
-        num_subtasks = st.number_input("Number of subtasks", min_value=0, max_value=10, value=0)
-        subtasks = []
-        
-        for i in range(num_subtasks):
-            with st.container():
-                col1, col2 = st.columns([3, 1])
-                with col1:
-                    subtask_title = st.text_input(f"Subtask {i+1} Title", key=f"subtask_title_{i}")
-                with col2:
-                    subtask_status = st.selectbox(
-                        "Status",
-                        ["To Do", "Done"],
-                        key=f"subtask_status_{i}"
-                    )
-                subtask_desc = st.text_area(f"Description", key=f"subtask_desc_{i}")
-                if subtask_title:
-                    subtasks.append({
-                        'title': subtask_title,
-                        'description': subtask_desc,
-                        'completed': subtask_status == "Done"
-                    })
-        
-        # File attachment
-        uploaded_file = st.file_uploader(
-            "Attach File (optional)",
-            type=['txt', 'pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx']
-        )
-        
-        submitted = st.form_submit_button("Create Task")
-        
-        if submitted and title:
-            try:
-                logger.info(f"Creating task with title: {title}")
-                logger.info(f"Task details - Status: {status}, Priority: {priority}")
-                logger.info(f"Number of dependencies: {len(dependencies)}")
-                logger.info(f"Number of subtasks: {len(subtasks)}")
+            submitted = st.form_submit_button("Create Task")
+            
+            if submitted and title:
+                logger.info(f"Creating new task: {title} for project {project_id}")
                 
-                # Start transaction
-                execute_query("BEGIN")
-                
-                # Create main task
+                # Create main task with all fields
                 result = execute_query('''
                     INSERT INTO tasks (project_id, title, description, status, priority, due_date)
                     VALUES (%s, %s, %s, %s, %s, %s)
-                    RETURNING id
+                    RETURNING id, title, status
                 ''', (project_id, title, description, status, priority, due_date))
                 
-                if not result:
-                    execute_query("ROLLBACK")
-                    logger.error("Failed to create task - database insert failed")
-                    st.error("Failed to create task")
-                    return False
-                
-                task_id = result[0]['id']
-                logger.info(f"Task created with ID: {task_id}")
-                
-                # Add dependencies
-                if dependencies:
-                    for dep_id, _ in dependencies:
-                        logger.info(f"Adding dependency {dep_id} to task {task_id}")
-                        execute_query('''
-                            INSERT INTO task_dependencies (task_id, depends_on_id)
-                            VALUES (%s, %s)
-                        ''', (task_id, dep_id))
-                
-                # Add subtasks
-                for subtask in subtasks:
-                    logger.info(f"Adding subtask '{subtask['title']}' to task {task_id}")
-                    execute_query('''
-                        INSERT INTO subtasks (parent_task_id, title, description, completed)
-                        VALUES (%s, %s, %s, %s)
-                    ''', (task_id, subtask['title'], subtask['description'], subtask['completed']))
-                
-                # Handle file upload
-                if uploaded_file:
-                    logger.info(f"Processing file attachment: {uploaded_file.name}")
-                    file_id = save_uploaded_file(uploaded_file, task_id)
-                    if not file_id:
-                        logger.warning(f"Failed to save attachment for task {task_id}")
-                
-                execute_query("COMMIT")
-                logger.info(f"Task '{title}' creation completed successfully")
-                st.success(f"Task '{title}' created successfully!")
-                time.sleep(0.5)  # Small delay to ensure UI updates
-                return True
-                
-            except Exception as e:
+                if result:
+                    task_id = result[0]['id']
+                    logger.info(f"Successfully created task {task_id}: {result[0]['title']}")
+                    
+                    # Add dependencies
+                    if dependencies:
+                        logger.info(f"Adding {len(dependencies)} dependencies for task {task_id}")
+                        for dep_id, _ in dependencies:
+                            execute_query('''
+                                INSERT INTO task_dependencies (task_id, depends_on_id)
+                                VALUES (%s, %s)
+                            ''', (task_id, dep_id))
+                    
+                    # Add subtasks
+                    if subtasks:
+                        logger.info(f"Adding {len(subtasks)} subtasks for task {task_id}")
+                        for subtask in subtasks:
+                            execute_query('''
+                                INSERT INTO subtasks (parent_task_id, title, description, completed)
+                                VALUES (%s, %s, %s, %s)
+                            ''', (task_id, subtask['title'], subtask['description'], subtask['completed']))
+                    
+                    # Handle file upload
+                    if uploaded_file:
+                        logger.info(f"Processing file attachment: {uploaded_file.name}")
+                        file_id = save_uploaded_file(uploaded_file, task_id)
+                        if not file_id:
+                            logger.warning(f"Failed to save attachment for task {task_id}")
+                    
+                    execute_query("COMMIT")
+                    logger.info(f"Task creation completed successfully for task {task_id}")
+                    st.success(f"✅ Task '{title}' created successfully!")
+                    time.sleep(1)  # Increase delay slightly
+                    st.rerun()
+                    return True
+                    
                 execute_query("ROLLBACK")
-                logger.error(f"Error creating task: {str(e)}")
-                st.error(f"Error creating task: {str(e)}")
+                logger.error("Task creation failed - no result returned")
+                st.error("Failed to create task")
                 return False
                 
+    except Exception as e:
+        execute_query("ROLLBACK")
+        logger.error(f"Error in task creation: {str(e)}")
+        st.error(f"Error creating task: {str(e)}")
+        return False
+        
     return False
