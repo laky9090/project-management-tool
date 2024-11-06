@@ -3,12 +3,11 @@ import streamlit.components.v1 as components
 import logging
 import os
 from database.schema import init_database
+from database.connection import get_connection
 from components.project_form import create_project_form, list_projects
 from components.task_form import create_task_form
 from components.board_view import render_board
-from components.timeline_view import render_timeline
-from components.task_list import render_task_list
-from database.connection import get_connection
+import logging
 
 # Configure Streamlit
 os.environ['STREAMLIT_SERVER_PORT'] = '5000'
@@ -62,22 +61,6 @@ with st.sidebar:
     
     if selected_project:
         st.session_state.selected_project = selected_project
-        st.write("---")
-        st.write("## Project Views")
-        
-        view_options = ["Board", "List", "Timeline"]
-        current_view_index = view_options.index(st.session_state.current_view) if st.session_state.current_view in view_options else 0
-        
-        new_view = st.radio(
-            "Select View",
-            view_options,
-            index=current_view_index
-        )
-        
-        if new_view != st.session_state.current_view:
-            logger.info(f"Changing view from {st.session_state.current_view} to {new_view}")
-            st.session_state.current_view = new_view
-            st.rerun()
 
 # Main content
 try:
@@ -88,20 +71,13 @@ try:
             st.rerun()
 
     elif st.session_state.selected_project:
-        # Render selected view with proper error handling
-        current_view = st.session_state.current_view
-        logger.info(f"Rendering {current_view} view for project {st.session_state.selected_project}")
-        
+        # Render board view
+        logger.info(f"Rendering Board view for project {st.session_state.selected_project}")
         try:
-            if current_view == 'Board':
-                render_board(st.session_state.selected_project)
-            elif current_view == 'List':
-                render_task_list(st.session_state.selected_project)
-            elif current_view == 'Timeline':
-                render_timeline(st.session_state.selected_project)
+            render_board(st.session_state.selected_project)
         except Exception as e:
-            logger.error(f"Error rendering {current_view} view: {str(e)}")
-            st.error(f"An error occurred while loading the {current_view} view. Please try again.")
+            logger.error(f"Error rendering board view: {str(e)}")
+            st.error("An error occurred while loading the board view. Please try again.")
     else:
         st.info("Please select or create a project to get started!")
 except Exception as e:
