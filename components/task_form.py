@@ -22,12 +22,8 @@ def get_project_tasks(project_id, exclude_task_id=None):
     return execute_query(query, params)
 
 def create_task_form(project_id):
-    logger.info(f"Starting task creation form for project {project_id}")
     try:
-        # Start transaction outside the form submission
-        execute_query("BEGIN")
-        
-        with st.form("task_form", clear_on_submit=True):
+        with st.form("task_form"):
             st.write("### Create New Task")
             
             # Basic task information
@@ -87,22 +83,24 @@ def create_task_form(project_id):
             submitted = st.form_submit_button("Create Task")
             
             if submitted and title:
-                logger.info(f"Creating new task: {title} for project {project_id}")
+                # Start transaction
+                execute_query("BEGIN")
                 
-                # Create main task with all fields
-                result = execute_query('''
-                    INSERT INTO tasks (project_id, title, description, status, priority, due_date)
-                    VALUES (%s, %s, %s, %s, %s, %s)
-                    RETURNING id, title, status
-                ''', (project_id, title, description, status, priority, due_date))
-                
-                if result:
+                try:
+                    # Create main task
+                    result = execute_query('''
+                        INSERT INTO tasks (project_id, title, description, status, priority, due_date)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                        RETURNING id, title, status;
+                    ''', (project_id, title, description, status, priority, due_date))
+                    
+                    if not result:
+                        raise Exception("Task creation failed")
+                    
                     task_id = result[0]['id']
-                    logger.info(f"Successfully created task {task_id}: {result[0]['title']}")
                     
                     # Add dependencies
                     if dependencies:
-                        logger.info(f"Adding {len(dependencies)} dependencies for task {task_id}")
                         for dep_id, _ in dependencies:
                             execute_query('''
                                 INSERT INTO task_dependencies (task_id, depends_on_id)
@@ -111,7 +109,6 @@ def create_task_form(project_id):
                     
                     # Add subtasks
                     if subtasks:
-                        logger.info(f"Adding {len(subtasks)} subtasks for task {task_id}")
                         for subtask in subtasks:
                             execute_query('''
                                 INSERT INTO subtasks (parent_task_id, title, description, completed)
@@ -120,27 +117,24 @@ def create_task_form(project_id):
                     
                     # Handle file upload
                     if uploaded_file:
-                        logger.info(f"Processing file attachment: {uploaded_file.name}")
                         file_id = save_uploaded_file(uploaded_file, task_id)
                         if not file_id:
                             logger.warning(f"Failed to save attachment for task {task_id}")
                     
+                    # Commit transaction
                     execute_query("COMMIT")
-                    logger.info(f"Task creation completed successfully for task {task_id}")
                     st.success(f"✅ Task '{title}' created successfully!")
-                    time.sleep(1)  # Increase delay slightly
+                    time.sleep(0.5)
                     st.rerun()
                     return True
                     
-                execute_query("ROLLBACK")
-                logger.error("Task creation failed - no result returned")
-                st.error("Failed to create task")
-                return False
-                
+                except Exception as e:
+                    execute_query("ROLLBACK")
+                    st.error(f"Error creating task: {str(e)}")
+                    return False
+                    
     except Exception as e:
-        execute_query("ROLLBACK")
-        logger.error(f"Error in task creation: {str(e)}")
-        st.error(f"Error creating task: {str(e)}")
+        st.error(f"Form error: {str(e)}")
         return False
-        
+    
     return False
