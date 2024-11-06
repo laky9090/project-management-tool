@@ -91,43 +91,41 @@ def create_task_form(project_id):
                     result = execute_query('''
                         INSERT INTO tasks (project_id, title, description, status, priority, due_date)
                         VALUES (%s, %s, %s, %s, %s, %s)
-                        RETURNING id, title, status;
+                        RETURNING id;
                     ''', (project_id, title, description, status, priority, due_date))
                     
-                    if not result:
-                        raise Exception("Task creation failed")
-                    
-                    task_id = result[0]['id']
-                    
-                    # Add dependencies
-                    if dependencies:
-                        for dep_id, _ in dependencies:
-                            execute_query('''
-                                INSERT INTO task_dependencies (task_id, depends_on_id)
-                                VALUES (%s, %s)
-                            ''', (task_id, dep_id))
-                    
-                    # Add subtasks
-                    if subtasks:
-                        for subtask in subtasks:
-                            execute_query('''
-                                INSERT INTO subtasks (parent_task_id, title, description, completed)
-                                VALUES (%s, %s, %s, %s)
-                            ''', (task_id, subtask['title'], subtask['description'], subtask['completed']))
-                    
-                    # Handle file upload
-                    if uploaded_file:
-                        file_id = save_uploaded_file(uploaded_file, task_id)
-                        if not file_id:
-                            logger.warning(f"Failed to save attachment for task {task_id}")
-                    
-                    # Commit transaction
-                    execute_query("COMMIT")
-                    st.success(f"✅ Task '{title}' created successfully!")
-                    time.sleep(0.5)
-                    st.rerun()
-                    return True
-                    
+                    if result:
+                        task_id = result[0]['id']
+                        
+                        # Add dependencies
+                        if dependencies:
+                            for dep_id, _ in dependencies:
+                                execute_query('''
+                                    INSERT INTO task_dependencies (task_id, depends_on_id)
+                                    VALUES (%s, %s)
+                                ''', (task_id, dep_id))
+                        
+                        # Add subtasks
+                        if subtasks:
+                            for subtask in subtasks:
+                                execute_query('''
+                                    INSERT INTO subtasks (parent_task_id, title, description, completed)
+                                    VALUES (%s, %s, %s, %s)
+                                ''', (task_id, subtask['title'], subtask['description'], subtask['completed']))
+                        
+                        # Handle file upload
+                        if uploaded_file:
+                            file_id = save_uploaded_file(uploaded_file, task_id)
+                            if not file_id:
+                                logger.warning(f"Failed to save attachment for task {task_id}")
+                        
+                        # Commit transaction
+                        execute_query("COMMIT")
+                        st.success(f"✅ Task '{title}' created successfully!")
+                        time.sleep(1)  # Ensure database transaction completes
+                        st.rerun()
+                        return True
+                        
                 except Exception as e:
                     execute_query("ROLLBACK")
                     st.error(f"Error creating task: {str(e)}")

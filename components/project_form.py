@@ -40,6 +40,30 @@ def create_project_form():
                 return False
     return False
 
+def edit_project_form(project_id):
+    """Edit project form"""
+    project = execute_query('SELECT * FROM projects WHERE id = %s', (project_id,))[0]
+    
+    with st.form("edit_project_form"):
+        name = st.text_input("Project Name", value=project['name'])
+        description = st.text_area("Description", value=project['description'])
+        deadline = st.date_input("Deadline", value=project['deadline'])
+        
+        if st.form_submit_button("Save Changes"):
+            try:
+                execute_query('''
+                    UPDATE projects 
+                    SET name = %s, description = %s, deadline = %s
+                    WHERE id = %s
+                ''', (name, description, deadline, project_id))
+                st.success("Project updated successfully!")
+                st.rerun()
+                return True
+            except Exception as e:
+                st.error(f"Error updating project: {str(e)}")
+                return False
+    return False
+
 def list_projects():
     projects = execute_query('''
         SELECT p.*
@@ -50,18 +74,18 @@ def list_projects():
     selected_project = None
     
     if projects:
-        # Convert projects to list for selectbox
-        project_options = [(p['id'], f"{p['name']} - Due: {p['deadline'].strftime('%b %d, %Y') if p['deadline'] else 'No deadline'}") for p in projects]
+        # Add edit button for each project
+        for project in projects:
+            col1, col2 = st.columns([4, 1])
+            with col1:
+                if st.button(f"{project['name']} - Due: {project['deadline'].strftime('%b %d, %Y') if project['deadline'] else 'No deadline'}", 
+                           key=f"select_project_{project['id']}"):
+                    selected_project = project['id']
+            with col2:
+                if st.button("✏️", key=f"edit_project_{project['id']}"):
+                    edit_project_form(project['id'])
         
-        selected_id = st.selectbox(
-            "Select Project",
-            options=project_options,
-            format_func=lambda x: x[1],
-            key="project_selector"
-        )
-        
-        # Return the selected project ID
-        return selected_id[0] if selected_id else None
+        return selected_project
     else:
         st.info("No projects found. Create one to get started!")
     
