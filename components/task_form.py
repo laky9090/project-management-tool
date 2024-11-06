@@ -83,6 +83,11 @@ def create_task_form(project_id):
         
         if submitted and title:
             try:
+                logger.info(f"Creating task with title: {title}")
+                logger.info(f"Task details - Status: {status}, Priority: {priority}")
+                logger.info(f"Number of dependencies: {len(dependencies)}")
+                logger.info(f"Number of subtasks: {len(subtasks)}")
+                
                 # Start transaction
                 execute_query("BEGIN")
                 
@@ -95,14 +100,17 @@ def create_task_form(project_id):
                 
                 if not result:
                     execute_query("ROLLBACK")
+                    logger.error("Failed to create task - database insert failed")
                     st.error("Failed to create task")
                     return False
                 
                 task_id = result[0]['id']
+                logger.info(f"Task created with ID: {task_id}")
                 
                 # Add dependencies
                 if dependencies:
                     for dep_id, _ in dependencies:
+                        logger.info(f"Adding dependency {dep_id} to task {task_id}")
                         execute_query('''
                             INSERT INTO task_dependencies (task_id, depends_on_id)
                             VALUES (%s, %s)
@@ -110,6 +118,7 @@ def create_task_form(project_id):
                 
                 # Add subtasks
                 for subtask in subtasks:
+                    logger.info(f"Adding subtask '{subtask['title']}' to task {task_id}")
                     execute_query('''
                         INSERT INTO subtasks (parent_task_id, title, description, completed)
                         VALUES (%s, %s, %s, %s)
@@ -117,11 +126,13 @@ def create_task_form(project_id):
                 
                 # Handle file upload
                 if uploaded_file:
+                    logger.info(f"Processing file attachment: {uploaded_file.name}")
                     file_id = save_uploaded_file(uploaded_file, task_id)
                     if not file_id:
                         logger.warning(f"Failed to save attachment for task {task_id}")
                 
                 execute_query("COMMIT")
+                logger.info(f"Task '{title}' creation completed successfully")
                 st.success(f"Task '{title}' created successfully!")
                 time.sleep(0.5)  # Small delay to ensure UI updates
                 return True

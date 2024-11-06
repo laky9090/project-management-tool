@@ -46,17 +46,21 @@ def calculate_task_progress(subtasks):
 def update_subtask_status(subtask_id, completed):
     """Update subtask completion status"""
     try:
+        logger.info(f"Updating subtask {subtask_id} status to {'completed' if completed else 'incomplete'}")
         execute_query("""
             UPDATE subtasks
             SET completed = %s, status = CASE WHEN %s THEN 'Done' ELSE 'To Do' END
             WHERE id = %s
         """, (completed, completed, subtask_id))
+        logger.info(f"Subtask {subtask_id} status updated successfully")
         return True
     except Exception as e:
         logger.error(f"Error updating subtask {subtask_id}: {str(e)}")
         return False
 
 def render_board(project_id):
+    logger.info(f"Rendering board for project {project_id}")
+    
     st.write("### Project Board")
     
     # Add task creation button
@@ -80,6 +84,7 @@ def render_board(project_id):
         st.write("**Docs**")
 
     # Fetch tasks with dependencies and subtasks
+    logger.info(f"Fetching tasks for project {project_id}")
     tasks = execute_query('''
         SELECT t.*,
                COUNT(DISTINCT td.depends_on_id) as dependency_count,
@@ -91,9 +96,12 @@ def render_board(project_id):
         GROUP BY t.id
         ORDER BY t.created_at DESC
     ''', (project_id,))
-
+    
+    logger.info(f"Found {len(tasks) if tasks else 0} tasks")
     if tasks:
         for task in tasks:
+            logger.info(f"Task: {task['id']} - {task['title']} - {task['status']}")
+            
             # Get dependencies and subtasks
             dependencies = get_task_dependencies(task['id'])
             subtasks = get_task_subtasks(task['id'])
@@ -101,6 +109,7 @@ def render_board(project_id):
             
             # Calculate progress
             progress = calculate_task_progress(subtasks)
+            logger.info(f"Task {task['id']} progress: {progress:.0%}")
             
             cols = st.columns([3, 2, 2, 2, 2, 2])
             with cols[0]:
