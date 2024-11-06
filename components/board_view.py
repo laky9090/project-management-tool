@@ -45,7 +45,8 @@ def render_board(project_id):
         
         # Add task creation button at the top
         if st.button('➕ Create New Task'):
-            create_task_form(project_id)
+            if create_task_form(project_id):
+                st.rerun()
         
         # Get all templates
         all_templates = {**DEFAULT_TEMPLATES, **get_board_templates()}
@@ -77,20 +78,29 @@ def render_board(project_id):
         
         # Display Kanban Board
         board_columns = st.columns(len(all_templates[selected_template]))
+        
+        # Get tasks with all fields
         tasks = execute_query('''
-            SELECT id, title, description, status, priority, created_at
-            FROM tasks 
-            WHERE project_id = %s
-            ORDER BY priority DESC, created_at DESC
+            SELECT t.id, t.title, t.description, t.status, t.priority, t.created_at
+            FROM tasks t
+            WHERE t.project_id = %s
+            ORDER BY t.created_at DESC
         ''', (project_id,))
         
         if tasks:
+            logger.info(f"Found {len(tasks)} tasks for project {project_id}")
+            
+            # Initialize tasks_by_status with all possible statuses
+            tasks_by_status = {status: [] for status in all_templates[selected_template]}
+            
             # Group tasks by status
-            tasks_by_status = {}
-            for status in all_templates[selected_template]:
-                tasks_by_status[status] = [
-                    task for task in tasks if task['status'] == status
-                ]
+            for task in tasks:
+                logger.info(f"Processing task: {task['id']} - {task['title']}")
+                if task['status'] in tasks_by_status:
+                    tasks_by_status[task['status']].append(task)
+                else:
+                    # If task status doesn't match template, move to first column
+                    tasks_by_status[all_templates[selected_template][0]].append(task)
             
             # Display tasks in columns
             for col, status in zip(board_columns, all_templates[selected_template]):
