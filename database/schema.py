@@ -58,6 +58,24 @@ def init_database():
             )
         ''')
         
+        # Create trigger for updating subtasks timestamp
+        execute_query('''
+            CREATE OR REPLACE FUNCTION update_subtask_timestamp()
+            RETURNS TRIGGER AS $$
+            BEGIN
+                NEW.updated_at = CURRENT_TIMESTAMP;
+                RETURN NEW;
+            END;
+            $$ language 'plpgsql';
+
+            DROP TRIGGER IF EXISTS update_subtask_timestamp ON subtasks;
+            
+            CREATE TRIGGER update_subtask_timestamp
+                BEFORE UPDATE ON subtasks
+                FOR EACH ROW
+                EXECUTE FUNCTION update_subtask_timestamp();
+        ''')
+        
         # Create file_attachments table
         execute_query('''
             CREATE TABLE IF NOT EXISTS file_attachments (
@@ -79,9 +97,6 @@ def init_database():
                 columns JSONB NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
-            
-            -- Remove existing templates if any
-            DELETE FROM board_templates WHERE name IN ('Extended Kanban', 'Sprint Board');
             
             -- Insert default template if it doesn't exist
             INSERT INTO board_templates (name, columns) VALUES

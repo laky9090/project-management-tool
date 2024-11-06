@@ -17,138 +17,131 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-// Get tasks by project
+// Get tasks by project with dependencies and subtasks
 router.get('/project/:projectId', async (req, res) => {
   console.log('Fetching tasks for project:', req.params.projectId);
   try {
-    const { rows } = await db.query(
-      'SELECT * FROM tasks WHERE project_id = $1 ORDER BY created_at DESC',
+    const { rows: tasks } = await db.query(
+      `SELECT t.*, 
+          array_agg(DISTINCT jsonb_build_object(
+              'id', d.id,
+              'title', dt.title,
+              'status', dt.status
+          )) FILTER (WHERE d.id IS NOT NULL) as dependencies,
+          array_agg(DISTINCT jsonb_build_object(
+              'id', s.id,
+              'title', s.title,
+              'description', s.description,
+              'completed', s.completed
+          )) FILTER (WHERE s.id IS NOT NULL) as subtasks
+       FROM tasks t
+       LEFT JOIN task_dependencies d ON t.id = d.task_id
+       LEFT JOIN tasks dt ON d.depends_on_id = dt.id
+       LEFT JOIN subtasks s ON t.id = s.parent_task_id
+       WHERE t.project_id = $1
+       GROUP BY t.id
+       ORDER BY t.created_at DESC`,
       [req.params.projectId]
     );
-    console.log('Found tasks:', rows);
-    res.json(rows);
+    
+    console.log('Found tasks:', tasks);
+    res.json(tasks);
   } catch (err) {
     console.error('Error fetching tasks:', err);
     res.status(500).json({ error: 'Failed to fetch tasks' });
   }
 });
 
-// Create new task
+// Create new task with dependencies and subtasks
 router.post('/', async (req, res) => {
   console.log('Creating new task with data:', req.body);
-  const { project_id, title, description, status, priority, assignee, due_date } = req.body;
+  const { 
+    project_id, 
+    title, 
+    description, 
+    status, 
+    priority, 
+    due_date,
+    dependencies,
+    subtasks 
+  } = req.body;
   
-  // Validation
   if (!project_id) {
     console.error('Missing project_id');
     return res.status(400).json({ error: 'project_id is required' });
   }
 
   try {
-    // Verify project exists
-    const projectCheck = await db.query(
-      'SELECT id FROM projects WHERE id = $1',
-      [project_id]
+    await db.query('BEGIN');
+    
+    // Create main task
+    const taskResult = await db.query(
+      `INSERT INTO tasks (project_id, title, description, status, priority, due_date)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`,
+      [project_id, title, description, status, priority, due_date]
     );
     
-    if (projectCheck.rows.length === 0) {
-      console.error('Project not found:', project_id);
-      return res.status(404).json({ error: 'Project not found' });
+    const task = taskResult.rows[0];
+
+    // Add dependencies
+    if (dependencies && dependencies.length > 0) {
+      for (const depId of dependencies) {
+        await db.query(
+          `INSERT INTO task_dependencies (task_id, depends_on_id)
+           VALUES ($1, $2)`,
+          [task.id, depId]
+        );
+      }
     }
 
-    const result = await db.query(
-      `INSERT INTO tasks 
-       (project_id, title, description, status, priority, assignee, due_date)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING *`,
-      [project_id, title, description, status, priority, assignee, due_date]
-    );
-    
-    console.log('Task created:', result.rows[0]);
-    res.status(201).json(result.rows[0]);
+    // Add subtasks
+    if (subtasks && subtasks.length > 0) {
+      for (const subtask of subtasks) {
+        await db.query(
+          `INSERT INTO subtasks (parent_task_id, title, description, completed)
+           VALUES ($1, $2, $3, $4)`,
+          [task.id, subtask.title, subtask.description, subtask.completed || false]
+        );
+      }
+    }
+
+    await db.query('COMMIT');
+    res.status(201).json(task);
   } catch (err) {
+    await db.query('ROLLBACK');
     console.error('Error creating task:', err);
     res.status(500).json({ 
       error: 'Failed to create task',
-      details: err.message,
-      sqlState: err.code
+      details: err.message
     });
   }
 });
 
-// Add file attachment to task
-router.post('/:taskId/attachments', upload.single('file'), async (req, res) => {
-  const { taskId } = req.params;
-  const file = req.file;
-
-  if (!file) {
-    console.error('No file uploaded for task:', taskId);
-    return res.status(400).json({ error: 'No file uploaded' });
-  }
+// Update subtask status
+router.patch('/subtasks/:subtaskId', async (req, res) => {
+  const { subtaskId } = req.params;
+  const { completed } = req.body;
 
   try {
-    // Ensure task exists
-    const taskCheck = await db.query(
-      'SELECT id FROM tasks WHERE id = $1',
-      [taskId]
+    const result = await db.query(
+      `UPDATE subtasks 
+       SET completed = $1,
+           status = CASE WHEN $1 THEN 'Done' ELSE 'To Do' END,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $2
+       RETURNING *`,
+      [completed, subtaskId]
     );
 
-    if (taskCheck.rows.length === 0) {
-      console.error('Task not found:', taskId);
-      return res.status(404).json({ error: 'Task not found' });
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Subtask not found' });
     }
 
-    // Ensure uploads directory exists
-    await fs.mkdir('uploads', { recursive: true });
-
-    const query = `
-      INSERT INTO file_attachments 
-      (task_id, filename, file_path, file_type, file_size)
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING *
-    `;
-
-    const values = [
-      taskId,
-      file.originalname,
-      file.path,
-      file.mimetype,
-      file.size
-    ];
-
-    console.log('Saving file attachment:', {
-      taskId,
-      filename: file.originalname,
-      type: file.mimetype,
-      size: file.size
-    });
-
-    const { rows } = await db.query(query, values);
-    console.log('File attachment saved:', rows[0]);
-    res.status(201).json(rows[0]);
+    res.json(result.rows[0]);
   } catch (err) {
-    console.error('Error uploading file:', err);
-    res.status(500).json({ 
-      error: 'Failed to upload file',
-      details: err.message,
-      code: err.code
-    });
-  }
-});
-
-// Get task attachments
-router.get('/:taskId/attachments', async (req, res) => {
-  console.log('Fetching attachments for task:', req.params.taskId);
-  try {
-    const { rows } = await db.query(
-      'SELECT * FROM file_attachments WHERE task_id = $1',
-      [req.params.taskId]
-    );
-    console.log('Found attachments:', rows);
-    res.json(rows);
-  } catch (err) {
-    console.error('Error fetching attachments:', err);
-    res.status(500).json({ error: 'Failed to fetch attachments' });
+    console.error('Error updating subtask:', err);
+    res.status(500).json({ error: 'Failed to update subtask' });
   }
 });
 

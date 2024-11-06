@@ -50,7 +50,7 @@ def update_subtask_status(subtask_id, completed):
                 status = CASE WHEN %s THEN 'Done' ELSE 'To Do' END,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = %s
-            RETURNING id
+            RETURNING id, title, status
         """, (completed, completed, subtask_id))
         
         if result:
@@ -64,119 +64,142 @@ def update_subtask_status(subtask_id, completed):
         logger.error(f"Error updating subtask status: {str(e)}")
         return False
 
-def edit_task_form(task):
-    """Edit task form"""
-    with st.form(f"edit_task_{task['id']}"):
-        title = st.text_input("Title", value=task['title'])
-        description = st.text_area("Description", value=task['description'])
-        status = st.selectbox("Status", ["To Do", "In Progress", "Done"], 
-                            index=["To Do", "In Progress", "Done"].index(task['status']))
-        priority = st.selectbox("Priority", ["Low", "Medium", "High"], 
-                              index=["Low", "Medium", "High"].index(task['priority']))
-        due_date = st.date_input("Due Date", value=task['due_date'] if task['due_date'] else None)
+def render_task_card(task):
+    """Render individual task card"""
+    try:
+        # Start explicit transaction
+        execute_query("BEGIN")
         
-        if st.form_submit_button("Save Changes"):
-            try:
-                # Start transaction
-                execute_query("BEGIN")
-                
-                # Update task
+        cols = st.columns([3, 2, 2, 2, 2])
+        with cols[0]:
+            st.write(f"**{task['title']}**")
+            if task['description']:
+                with st.expander("Description"):
+                    st.write(task['description'])
+        
+        with cols[1]:
+            new_status = st.selectbox(
+                "Status",
+                ["To Do", "In Progress", "Done"],
+                index=["To Do", "In Progress", "Done"].index(task['status']),
+                key=f"status_{task['id']}"
+            )
+            if new_status != task['status']:
                 result = execute_query('''
                     UPDATE tasks 
-                    SET title = %s, description = %s, status = %s, priority = %s, due_date = %s,
+                    SET status = %s,
                         updated_at = CURRENT_TIMESTAMP
                     WHERE id = %s
-                    RETURNING id
-                ''', (title, description, status, priority, due_date, task['id']))
+                    RETURNING id, title, status;
+                ''', (new_status, task['id']))
                 
                 if result:
                     execute_query("COMMIT")
-                    st.success("Task updated successfully!")
-                    time.sleep(0.5)  # Small delay to ensure database update completes
+                    st.success(f"Updated status to {new_status}")
+                    time.sleep(0.5)
                     st.rerun()
                 else:
                     execute_query("ROLLBACK")
-                    st.error("Failed to update task")
-            except Exception as e:
-                execute_query("ROLLBACK")
-                st.error(f"Error updating task: {str(e)}")
-
-def render_task_card(task):
-    """Render individual task card"""
-    cols = st.columns([3, 2, 2, 2, 2])
-    
-    # Task title and progress
-    with cols[0]:
-        subtasks = get_task_subtasks(task['id'])
-        title_text = f"**{task['title']}**"
-        if subtasks:
-            completed = sum(1 for s in subtasks if s['completed'])
-            title_text += f" ({completed}/{len(subtasks)})"
-        st.write(title_text)
+                    st.error("Failed to update status")
         
-        if subtasks:
-            progress = completed / len(subtasks)
-            st.progress(progress)
-    
-    # Status
-    with cols[1]:
-        st.write(task['status'])
-    
-    # Priority
-    with cols[2]:
-        st.write(task['priority'])
-    
-    # Due date
-    with cols[3]:
-        st.write(task['due_date'].strftime('%Y-%m-%d') if task['due_date'] else '-')
-    
-    # Details and edit button
-    with cols[4]:
-        if st.button("✏️ Edit", key=f"edit_{task['id']}"):
-            edit_task_form(task)
-            
-        with st.expander("Details"):
-            if task['description']:
-                st.write("**Description:**")
-                st.write(task['description'])
-            
-            # Dependencies section
-            dependencies = get_task_dependencies(task['id'])
-            if dependencies:
-                st.write("**Dependencies:**")
-                for dep in dependencies:
-                    st.write(f"- {dep['title']} ({dep['status']})")
-            
-            # Subtasks section
-            if subtasks:
-                st.write("**Subtasks:**")
-                for subtask in subtasks:
-                    col1, col2 = st.columns([4, 1])
-                    with col1:
-                        st.write(f"- {subtask['title']}")
-                    with col2:
-                        if st.checkbox("Done", value=subtask['completed'], 
-                                     key=f"subtask_{subtask['id']}"):
-                            if update_subtask_status(subtask['id'], True):
-                                st.rerun()
-            
-            # Attachments section
-            attachments = get_task_attachments(task['id'])
-            if attachments:
-                st.write("**Attachments:**")
-                for attachment in attachments:
-                    try:
-                        with open(attachment['file_path'], 'rb') as f:
-                            st.download_button(
-                                f"📎 {attachment['filename']}", 
-                                f,
-                                file_name=attachment['filename'],
-                                mime=attachment['file_type']
-                            )
-                    except Exception as e:
-                        logger.error(f"Error loading attachment: {str(e)}")
+        with cols[2]:
+            new_priority = st.selectbox(
+                "Priority",
+                ["Low", "Medium", "High"],
+                index=["Low", "Medium", "High"].index(task['priority']),
+                key=f"priority_{task['id']}"
+            )
+            if new_priority != task['priority']:
+                result = execute_query('''
+                    UPDATE tasks 
+                    SET priority = %s,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                    RETURNING id, title, priority;
+                ''', (new_priority, task['id']))
+                
+                if result:
+                    execute_query("COMMIT")
+                    st.success(f"Updated priority to {new_priority}")
+                    time.sleep(0.5)
+                    st.rerun()
+                else:
+                    execute_query("ROLLBACK")
+                    st.error("Failed to update priority")
+        
+        with cols[3]:
+            new_due_date = st.date_input(
+                "Due Date",
+                value=task['due_date'] if task['due_date'] else None,
+                key=f"due_date_{task['id']}"
+            )
+            if new_due_date != task['due_date']:
+                result = execute_query('''
+                    UPDATE tasks 
+                    SET due_date = %s,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                    RETURNING id, title;
+                ''', (new_due_date, task['id']))
+                
+                if result:
+                    execute_query("COMMIT")
+                    st.success("Updated due date")
+                    time.sleep(0.5)
+                    st.rerun()
+                else:
+                    execute_query("ROLLBACK")
+                    st.error("Failed to update due date")
+        
+        # Details section
+        with cols[4]:
+            with st.expander("Details"):
+                # Dependencies section
+                dependencies = get_task_dependencies(task['id'])
+                if dependencies:
+                    st.write("**Dependencies:**")
+                    for dep in dependencies:
+                        st.write(f"- {dep['title']} ({dep['status']})")
+                
+                # Subtasks section
+                subtasks = get_task_subtasks(task['id'])
+                if subtasks:
+                    st.write("**Subtasks:**")
+                    for subtask in subtasks:
+                        col1, col2 = st.columns([4, 1])
+                        with col1:
+                            st.write(f"- {subtask['title']}")
+                        with col2:
+                            if st.checkbox("Done", value=subtask['completed'], 
+                                         key=f"subtask_{subtask['id']}"):
+                                if update_subtask_status(subtask['id'], True):
+                                    st.rerun()
+                
+                # Attachments section
+                attachments = get_task_attachments(task['id'])
+                if attachments:
+                    st.write("**Attachments:**")
+                    for attachment in attachments:
+                        try:
+                            with open(attachment['file_path'], 'rb') as f:
+                                st.download_button(
+                                    f"📎 {attachment['filename']}", 
+                                    f,
+                                    file_name=attachment['filename'],
+                                    mime=attachment['file_type']
+                                )
+                        except Exception as e:
+                            logger.error(f"Error loading attachment: {str(e)}")
+        
+        execute_query("COMMIT")
+        
+    except Exception as e:
+        execute_query("ROLLBACK")
+        logger.error(f"Error updating task: {str(e)}")
+        st.error(f"Error updating task: {str(e)}")
 
 def render_board(project_id):
+    """Render project board"""
     st.write("### Project Board")
     
     # Add task creation button at top
@@ -196,7 +219,7 @@ def render_board(project_id):
     with cols[3]:
         st.write("**Due Date**")
     with cols[4]:
-        st.write("**Actions**")
+        st.write("**Details**")
 
     # Fetch tasks
     logger.info(f"Fetching tasks for project {project_id}")
