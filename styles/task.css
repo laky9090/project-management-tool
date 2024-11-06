@@ -1,23 +1,44 @@
 /* Task card styling */
-div.task-card {
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    margin: 8px 0;
-    padding: 16px;
-    background-color: white;
-    border-left: 4px solid;
+.stMarkdown {
+    font-family: 'Segoe UI', sans-serif;
 }
 
-div.task-card[data-priority="High"] {
-    border-left-color: #dc3545;
+[data-testid="stHorizontalBlock"] {
+    background: white;
+    padding: 8px;
+    margin: 4px 0;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-div.task-card[data-priority="Medium"] {
-    border-left-color: #ffc107;
+[data-testid="stHorizontalBlock"]:hover {
+    background: #f8f9fa;
 }
 
-div.task-card[data-priority="Low"] {
-    border-left-color: #28a745;
+/* Status colors */
+.status-done {
+    color: #00c875;
+    font-weight: 500;
+}
+
+.status-progress {
+    color: #fdab3d;
+    font-weight: 500;
+}
+
+.priority-high {
+    color: #e2445c;
+    font-weight: 500;
+}
+
+.priority-medium {
+    color: #fdab3d;
+    font-weight: 500;
+}
+
+.priority-low {
+    color: #00c875;
+    font-weight: 500;
 }
 
 /* Progress bar customization */
@@ -27,60 +48,28 @@ div.stProgress > div > div {
 }
 
 div.stProgress > div > div > div {
-    background-color: #28a745;
+    background-color: #00c875;
 }
 
-/* Status badges */
-.status-badge {
-    display: inline-block;
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 500;
-    margin: 4px 0;
-}
-
-.status-todo {
-    background-color: #f8f9fa;
-    color: #6c757d;
-}
-
-.status-progress {
-    background-color: #007bff;
-    color: white;
-}
-
-.status-done {
-    background-color: #28a745;
-    color: white;
-}
-
-/* Subtasks styling */
-.subtask-list {
-    margin-left: 16px;
-    padding-left: 8px;
-    border-left: 2px solid #e9ecef;
-}
-
-/* Dependencies styling */
-.dependency-list {
-    margin-top: 8px;
-    padding: 8px;
-    background-color: #f8f9fa;
-    border-radius: 4px;
-}
-
-/* File attachments */
-.attachment-list {
-    margin-top: 8px;
-}
-
-.attachment-item {
+/* Task metadata */
+.task-metadata {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 4px 8px;
-    background-color: #f8f9fa;
+    font-size: 12px;
+    color: #6c757d;
+}
+
+/* Subtask list */
+.subtask-list {
+    margin-top: 8px;
+    padding-left: 16px;
+}
+
+/* Dependencies list */
+.dependency-list {
+    margin-top: 8px;
+    padding: 8px;
+    background: #f8f9fa;
     border-radius: 4px;
-    margin: 4px 0;
 }
