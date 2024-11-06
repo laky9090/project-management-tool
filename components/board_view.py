@@ -63,24 +63,24 @@ def update_subtask_status(subtask_id, completed):
 def render_task_card(task, subtasks, dependencies, attachments):
     """Render a single task card with the new design"""
     with st.container():
-        # Task header with expand/collapse
-        col1, col2, col3 = st.columns([6,2,2])
-        with col1:
+        # Task header with title and metadata
+        title_col, meta_col = st.columns([7,3])
+        with title_col:
             st.write(f"### {task['title']}")
-        with col2:
-            st.write(f"📅 {task['due_date'].strftime('%b %d') if task['due_date'] else 'No date'}")
-        with col3:
+        
+        with meta_col:
+            # Priority and date in compact format
             priority_colors = {
                 'High': '🔴',
                 'Medium': '🟡',
                 'Low': '🟢'
             }
-            st.write(f"{priority_colors.get(task['priority'], '⚪')} {task['priority']}")
+            st.write(f"{priority_colors.get(task['priority'], '⚪')} {task['priority']} · {task['due_date'].strftime('%b %d') if task['due_date'] else 'No date'}")
         
         # Progress bar based on subtasks
         progress = calculate_task_progress(subtasks)
         st.progress(progress)
-
+        
         # Status with color coding
         status_colors = {
             'To Do': '⚪ TO DO',
@@ -158,8 +158,7 @@ def render_board(project_id):
         # Get all templates
         all_templates = {**DEFAULT_TEMPLATES, **get_board_templates()}
         
-        # Fetch tasks with proper ordering and logging
-        logger.info(f"Fetching tasks for project_id={project_id}")
+        # Fetch tasks with proper ordering
         tasks = execute_query('''
             SELECT t.*
             FROM tasks t
