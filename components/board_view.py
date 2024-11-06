@@ -3,6 +3,7 @@ from database.connection import execute_query
 from utils.file_handler import save_uploaded_file, get_task_attachments
 from components.task_form import create_task_form
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -42,14 +43,24 @@ def get_task_subtasks(task_id):
 def update_subtask_status(subtask_id, completed):
     """Update subtask completion status"""
     try:
-        execute_query("""
+        execute_query("BEGIN")
+        result = execute_query("""
             UPDATE subtasks
             SET completed = %s,
-                status = CASE WHEN %s THEN 'Done' ELSE 'To Do' END
+                status = CASE WHEN %s THEN 'Done' ELSE 'To Do' END,
+                updated_at = CURRENT_TIMESTAMP
             WHERE id = %s
+            RETURNING id
         """, (completed, completed, subtask_id))
-        return True
+        
+        if result:
+            execute_query("COMMIT")
+            return True
+        else:
+            execute_query("ROLLBACK")
+            return False
     except Exception as e:
+        execute_query("ROLLBACK")
         logger.error(f"Error updating subtask status: {str(e)}")
         return False
 
@@ -66,14 +77,28 @@ def edit_task_form(task):
         
         if st.form_submit_button("Save Changes"):
             try:
-                execute_query('''
+                # Start transaction
+                execute_query("BEGIN")
+                
+                # Update task
+                result = execute_query('''
                     UPDATE tasks 
-                    SET title = %s, description = %s, status = %s, priority = %s, due_date = %s
+                    SET title = %s, description = %s, status = %s, priority = %s, due_date = %s,
+                        updated_at = CURRENT_TIMESTAMP
                     WHERE id = %s
+                    RETURNING id
                 ''', (title, description, status, priority, due_date, task['id']))
-                st.success("Task updated successfully!")
-                st.rerun()
+                
+                if result:
+                    execute_query("COMMIT")
+                    st.success("Task updated successfully!")
+                    time.sleep(0.5)  # Small delay to ensure database update completes
+                    st.rerun()
+                else:
+                    execute_query("ROLLBACK")
+                    st.error("Failed to update task")
             except Exception as e:
+                execute_query("ROLLBACK")
                 st.error(f"Error updating task: {str(e)}")
 
 def render_task_card(task):
