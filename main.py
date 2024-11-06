@@ -7,6 +7,7 @@ from database.connection import get_connection
 from components.project_form import create_project_form, list_projects
 from components.task_form import create_task_form
 from components.board_view import render_board
+from components.analytics import render_analytics
 import logging
 
 # Configure Streamlit
@@ -61,6 +62,14 @@ with st.sidebar:
     
     if selected_project:
         st.session_state.selected_project = selected_project
+        
+        # View selection
+        st.write("## Project Views")
+        view_options = ["Board", "Analytics"]
+        selected_view = st.radio("Select View", view_options)
+        if selected_view != st.session_state.current_view:
+            st.session_state.current_view = selected_view
+            st.rerun()
 
 # Main content
 try:
@@ -71,13 +80,20 @@ try:
             st.rerun()
 
     elif st.session_state.selected_project:
-        # Render board view
-        logger.info(f"Rendering Board view for project {st.session_state.selected_project}")
-        try:
-            render_board(st.session_state.selected_project)
-        except Exception as e:
-            logger.error(f"Error rendering board view: {str(e)}")
-            st.error("An error occurred while loading the board view. Please try again.")
+        if st.session_state.current_view == 'Analytics':
+            logger.info(f"Rendering Analytics view for project {st.session_state.selected_project}")
+            try:
+                render_analytics(st.session_state.selected_project)
+            except Exception as e:
+                logger.error(f"Error rendering analytics view: {str(e)}")
+                st.error("An error occurred while loading the analytics view. Please try again.")
+        else:  # Board view
+            logger.info(f"Rendering Board view for project {st.session_state.selected_project}")
+            try:
+                render_board(st.session_state.selected_project)
+            except Exception as e:
+                logger.error(f"Error rendering board view: {str(e)}")
+                st.error("An error occurred while loading the board view. Please try again.")
     else:
         st.info("Please select or create a project to get started!")
 except Exception as e:
