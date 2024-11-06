@@ -71,7 +71,6 @@ def get_task_attachments(task_id):
                 valid_attachments.append(attachment)
             else:
                 logger.warning(f"File not found: {attachment['file_path']}")
-                # Optionally clean up database record for missing files
                 execute_query("DELETE FROM file_attachments WHERE id = %s", (attachment['id'],))
         
         return valid_attachments
