@@ -2,6 +2,7 @@ import streamlit as st
 from database.connection import execute_query
 from utils.file_handler import save_uploaded_file, get_task_attachments
 from components.board_templates import get_board_templates, DEFAULT_TEMPLATES, apply_template_to_project
+from components.task_form import create_task_form
 import logging
 import json
 
@@ -41,6 +42,10 @@ def update_subtask_status(subtask_id, completed):
 def render_board(project_id):
     try:
         st.write("### Project Board")
+        
+        # Add task creation button at the top
+        if st.button('➕ Create New Task'):
+            create_task_form(project_id)
         
         # Get all templates
         all_templates = {**DEFAULT_TEMPLATES, **get_board_templates()}
