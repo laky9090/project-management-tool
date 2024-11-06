@@ -15,7 +15,8 @@ dependencies = [
     "python-dotenv>=1.0.1",
     "python-jose",
     "python-jwt",
+    "python-magic",
     "python-multipart>=0.0.17",
     "streamlit>=1.39.0",
-    "uuid",
+    "uuid>=0.4.27",
 ]
