@@ -8,6 +8,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+@st.cache_data(ttl=300)
 def get_task_status_distribution(project_id):
     """Get distribution of tasks by status"""
     try:
@@ -23,6 +24,7 @@ def get_task_status_distribution(project_id):
         logger.error(f"Error getting task status distribution: {str(e)}")
         return []
 
+@st.cache_data(ttl=300)
 def get_priority_distribution(project_id):
     """Get distribution of tasks by priority"""
     try:
@@ -38,6 +40,7 @@ def get_priority_distribution(project_id):
         logger.error(f"Error getting priority distribution: {str(e)}")
         return []
 
+@st.cache_data(ttl=300)
 def get_task_completion_trend(project_id):
     """Get task completion trend over time"""
     try:
@@ -55,6 +58,7 @@ def get_task_completion_trend(project_id):
         logger.error(f"Error getting task completion trend: {str(e)}")
         return []
 
+@st.cache_data(ttl=300)
 def get_project_progress(project_id):
     """Get overall project progress metrics"""
     try:
@@ -75,64 +79,70 @@ def get_project_progress(project_id):
 def render_analytics(project_id):
     """Render analytics dashboard for a project"""
     st.write("## Project Analytics")
+    
+    # Use container to prevent unnecessary reruns
+    with st.container():
+        # Project Progress Overview
+        progress = get_project_progress(project_id)
+        if progress:
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                st.metric("Total Tasks", progress['total_tasks'])
+            with col2:
+                completion_rate = round((progress['completed_tasks'] / progress['total_tasks'] * 100 if progress['total_tasks'] > 0 else 0), 1)
+                st.metric("Completion Rate", f"{completion_rate}%")
+            with col3:
+                st.metric("High Priority Tasks", progress['high_priority'])
+            with col4:
+                st.metric("Pending High Priority", progress['pending_high_priority'])
 
-    # Project Progress Overview
-    progress = get_project_progress(project_id)
-    if progress:
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            st.metric("Total Tasks", progress['total_tasks'])
-        with col2:
-            completion_rate = round((progress['completed_tasks'] / progress['total_tasks'] * 100 if progress['total_tasks'] > 0 else 0), 1)
-            st.metric("Completion Rate", f"{completion_rate}%")
-        with col3:
-            st.metric("High Priority Tasks", progress['high_priority'])
-        with col4:
-            st.metric("Pending High Priority", progress['pending_high_priority'])
+    # Status Distribution Chart
+    with st.container():
+        status_dist = get_task_status_distribution(project_id)
+        if status_dist:
+            df_status = pd.DataFrame(status_dist)
+            fig_status = px.pie(df_status, values='count', names='status', title='Task Status Distribution')
+            st.plotly_chart(fig_status, use_container_width=True)
 
-    # Task Status Distribution
-    status_dist = get_task_status_distribution(project_id)
-    if status_dist:
-        df_status = pd.DataFrame(status_dist)
-        fig_status = px.pie(df_status, values='count', names='status', title='Task Status Distribution')
-        st.plotly_chart(fig_status)
-
-    # Priority Distribution
-    priority_dist = get_priority_distribution(project_id)
-    if priority_dist:
-        df_priority = pd.DataFrame(priority_dist)
-        fig_priority = px.bar(df_priority, x='priority', y='count', title='Tasks by Priority')
-        st.plotly_chart(fig_priority)
+    # Priority Distribution Chart
+    with st.container():
+        priority_dist = get_priority_distribution(project_id)
+        if priority_dist:
+            df_priority = pd.DataFrame(priority_dist)
+            fig_priority = px.bar(df_priority, x='priority', y='count', title='Tasks by Priority')
+            st.plotly_chart(fig_priority, use_container_width=True)
 
     # Task Completion Trend
-    completion_trend = get_task_completion_trend(project_id)
-    if completion_trend:
-        df_trend = pd.DataFrame(completion_trend)
-        fig_trend = go.Figure()
-        fig_trend.add_trace(go.Scatter(x=df_trend['date'], y=df_trend['total'], 
-                                     name='Total Tasks', mode='lines+markers'))
-        fig_trend.add_trace(go.Scatter(x=df_trend['date'], y=df_trend['completed'], 
-                                     name='Completed Tasks', mode='lines+markers'))
-        fig_trend.update_layout(title='Task Completion Trend', xaxis_title='Date', yaxis_title='Number of Tasks')
-        st.plotly_chart(fig_trend)
+    with st.container():
+        completion_trend = get_task_completion_trend(project_id)
+        if completion_trend:
+            df_trend = pd.DataFrame(completion_trend)
+            fig_trend = go.Figure()
+            fig_trend.add_trace(go.Scatter(x=df_trend['date'], y=df_trend['total'], 
+                                       name='Total Tasks', mode='lines+markers'))
+            fig_trend.add_trace(go.Scatter(x=df_trend['date'], y=df_trend['completed'], 
+                                       name='Completed Tasks', mode='lines+markers'))
+            fig_trend.update_layout(title='Task Completion Trend', xaxis_title='Date', yaxis_title='Number of Tasks')
+            st.plotly_chart(fig_trend, use_container_width=True)
 
-    # Additional Analytics Options
-    with st.expander("📊 Detailed Analytics"):
-        st.write("### Task Age Analysis")
-        age_data = execute_query("""
-            SELECT 
-                status,
-                AVG(EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - created_at))/86400) as avg_age_days
-            FROM tasks
-            WHERE project_id = %s
-            GROUP BY status
-        """, (project_id,))
-        
-        if age_data:
-            df_age = pd.DataFrame(age_data)
-            df_age['avg_age_days'] = df_age['avg_age_days'].round(1)
-            fig_age = px.bar(df_age, x='status', y='avg_age_days', 
-                           title='Average Task Age by Status (Days)',
-                           labels={'avg_age_days': 'Average Age (Days)'})
-            st.plotly_chart(fig_age)
+    # Additional Analytics with lazy loading
+    if st.checkbox("📊 Show Detailed Analytics"):
+        with st.container():
+            st.write("### Task Age Analysis")
+            age_data = execute_query("""
+                SELECT 
+                    status,
+                    AVG(EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - created_at))/86400) as avg_age_days
+                FROM tasks
+                WHERE project_id = %s
+                GROUP BY status
+            """, (project_id,))
+            
+            if age_data:
+                df_age = pd.DataFrame(age_data)
+                df_age['avg_age_days'] = df_age['avg_age_days'].round(1)
+                fig_age = px.bar(df_age, x='status', y='avg_age_days', 
+                               title='Average Task Age by Status (Days)',
+                               labels={'avg_age_days': 'Average Age (Days)'})
+                st.plotly_chart(fig_age, use_container_width=True)

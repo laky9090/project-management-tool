@@ -3,6 +3,8 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import streamlit as st
 import logging
+import time
+from functools import wraps
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -22,6 +24,40 @@ def get_connection():
         logger.error(f"Database connection error: {str(e)}")
         return None
 
+def cache_query(ttl_seconds=300):
+    """
+    Cache decorator for database queries with TTL
+    """
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            # Create cache key from function name and arguments
+            cache_key = f"{func.__name__}_{str(args)}_{str(kwargs)}"
+            
+            # Check if result is in session state cache
+            if 'query_cache' not in st.session_state:
+                st.session_state.query_cache = {}
+                
+            cache_entry = st.session_state.query_cache.get(cache_key)
+            current_time = time.time()
+            
+            # Return cached result if valid
+            if cache_entry and (current_time - cache_entry['timestamp']) < ttl_seconds:
+                logger.info(f"Cache hit for query: {cache_key}")
+                return cache_entry['data']
+            
+            # Execute query and cache result
+            result = func(*args, **kwargs)
+            st.session_state.query_cache[cache_key] = {
+                'data': result,
+                'timestamp': current_time
+            }
+            logger.info(f"Cache miss for query: {cache_key}")
+            return result
+        return wrapper
+    return decorator
+
+@cache_query(ttl_seconds=300)
 def execute_query(query, params=None):
     conn = None
     cur = None
