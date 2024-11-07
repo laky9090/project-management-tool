@@ -104,7 +104,7 @@ const Board = ({ projectId }) => {
           {Object.entries(tasks).map(([status, statusTasks]) => (
             <div key={status} className="column">
               <h3>{status}</h3>
-              <Droppable droppableId={status}>
+              <Droppable droppableId={status} type="task">
                 {(provided) => (
                   <div
                     {...provided.droppableProps}
@@ -153,23 +153,9 @@ const Board = ({ projectId }) => {
                               <span className={`priority ${task.priority.toLowerCase()}`}>
                                 {task.priority}
                               </span>
-                              <input
-                                type="text"
-                                value={task.assignee || ''}
-                                onChange={(e) => {
-                                  const newAssignee = e.target.value;
-                                  const oldAssignee = task.assignee;
-                                  const tasksCopy = { ...tasks };
-                                  Object.keys(tasksCopy).forEach(s => {
-                                    const t = tasksCopy[s].find(t => t.id === task.id);
-                                    if (t) t.assignee = newAssignee;
-                                  });
-                                  setTasks(tasksCopy);
-                                  debouncedAssigneeChange(task.id, newAssignee, oldAssignee);
-                                }}
-                                placeholder="Assign to..."
-                                className="assignee-input"
-                              />
+                              <span className="assignee">
+                                {task.assignee ? `Assigned to: ${task.assignee}` : 'Unassigned'}
+                              </span>
                             </div>
                             {task.due_date && (
                               <div className="task-due-date">
