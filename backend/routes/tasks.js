@@ -17,7 +17,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-// Get tasks by project with dependencies, subtasks, and assignee
+// Get tasks by project with dependencies and subtasks
 router.get('/project/:projectId', async (req, res) => {
   console.log('Fetching tasks for project:', req.params.projectId);
   try {
@@ -38,7 +38,7 @@ router.get('/project/:projectId', async (req, res) => {
        LEFT JOIN task_dependencies d ON t.id = d.task_id
        LEFT JOIN tasks dt ON d.depends_on_id = dt.id
        LEFT JOIN subtasks s ON t.id = s.parent_task_id
-       WHERE t.project_id = $1
+       WHERE t.project_id = $1 AND t.deleted_at IS NULL
        GROUP BY t.id
        ORDER BY t.created_at DESC`,
       [req.params.projectId]
@@ -52,15 +52,15 @@ router.get('/project/:projectId', async (req, res) => {
   }
 });
 
-// Assign task to user
+// Update task assignment
 router.patch('/:taskId/assign', async (req, res) => {
   const { taskId } = req.params;
-  const { assignee } = req.body;
+  const { assignee_id } = req.body;
 
   try {
     const { rows } = await db.query(
       'UPDATE tasks SET assignee = $1 WHERE id = $2 RETURNING *',
-      [assignee, taskId]
+      [assignee_id, taskId]
     );
 
     if (rows.length === 0) {
@@ -86,7 +86,7 @@ router.post('/', async (req, res) => {
     due_date,
     dependencies,
     subtasks,
-    assignee 
+    assignee_id 
   } = req.body;
   
   if (!project_id) {
@@ -102,7 +102,7 @@ router.post('/', async (req, res) => {
       `INSERT INTO tasks (project_id, title, description, status, priority, due_date, assignee)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-      [project_id, title, description, status, priority, due_date, assignee]
+      [project_id, title, description, status, priority, due_date, assignee_id]
     );
     
     const task = taskResult.rows[0];

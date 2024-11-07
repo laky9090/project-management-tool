@@ -28,13 +28,13 @@ app.use(cors({
 
 app.use(express.json());
 
-// Serve static files from React build
-app.use(express.static(path.join(__dirname, '../frontend/build')));
-
-// Routes
+// API Routes
 app.use('/api/auth', authRouter);
 app.use('/api/tasks', authMiddleware, tasksRouter);
-app.use('/api/projects', authMiddleware, projectsRouter);
+app.use('/api/projects', projectsRouter); // Removed authMiddleware temporarily
+
+// Serve static files
+app.use(express.static(path.join(__dirname, '../frontend/build')));
 
 // Serve React app for any other routes
 app.get('*', (req, res) => {

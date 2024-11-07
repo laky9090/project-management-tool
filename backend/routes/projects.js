@@ -8,11 +8,10 @@ router.get('/', async (req, res) => {
     const { rows } = await db.query(
       'SELECT * FROM projects WHERE deleted_at IS NULL ORDER BY created_at DESC'
     );
-    console.log('Fetched projects:', rows);
     res.json(rows);
   } catch (err) {
     console.error('Error fetching projects:', err);
-    res.status(500).json({ error: 'Failed to fetch projects' });
+    res.status(500).json({ error: 'Failed to fetch projects', details: err.message });
   }
 });
 
@@ -26,8 +25,8 @@ router.post('/', async (req, res) => {
     );
     res.status(201).json(rows[0]);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to create project' });
+    console.error('Error creating project:', err);
+    res.status(500).json({ error: 'Failed to create project', details: err.message });
   }
 });
 

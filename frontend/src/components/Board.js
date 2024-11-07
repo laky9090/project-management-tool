@@ -16,12 +16,16 @@ const Board = ({ projectId }) => {
   const loadTasks = async () => {
     try {
       setError(null);
+      console.log('Loading tasks for project:', projectId);
       const response = await api.getProjectTasks(projectId);
+      console.log('Loaded tasks:', response.data);
+      
       const groupedTasks = response.data.reduce((acc, task) => {
         if (!acc[task.status]) acc[task.status] = [];
         acc[task.status].push(task);
         return acc;
       }, { 'To Do': [], 'In Progress': [], 'Done': [] });
+      
       setTasks(groupedTasks);
     } catch (error) {
       console.error('Error loading tasks:', error);
@@ -58,6 +62,7 @@ const Board = ({ projectId }) => {
   const handleAssigneeChange = async (taskId, assigneeId) => {
     try {
       setError(null);
+      console.log('Updating task assignment:', { taskId, assigneeId });
       await api.updateTaskAssignment(taskId, assigneeId);
       await loadTasks();
     } catch (error) {
