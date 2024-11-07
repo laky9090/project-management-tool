@@ -9,20 +9,30 @@ logger = logging.getLogger(__name__)
 
 def delete_task(task_id):
     try:
-        execute_query("BEGIN")
-        # Delete will cascade to dependencies and subtasks
         result = execute_query(
-            "DELETE FROM tasks WHERE id = %s RETURNING id",
+            "UPDATE tasks SET deleted_at = CURRENT_TIMESTAMP WHERE id = %s RETURNING id",
             (task_id,)
         )
-        if result:
-            execute_query("COMMIT")
-            return True
-        execute_query("ROLLBACK")
-        return False
+        return bool(result)
     except Exception as e:
-        execute_query("ROLLBACK")
         logger.error(f"Error deleting task: {str(e)}")
+        return False
+
+def get_deleted_tasks(project_id):
+    return execute_query(
+        "SELECT * FROM tasks WHERE project_id = %s AND deleted_at IS NOT NULL",
+        (project_id,)
+    )
+
+def restore_task(task_id):
+    try:
+        result = execute_query(
+            "UPDATE tasks SET deleted_at = NULL WHERE id = %s RETURNING id",
+            (task_id,)
+        )
+        return bool(result)
+    except Exception as e:
+        logger.error(f"Error restoring task: {str(e)}")
         return False
 
 def delete_subtask(subtask_id):
@@ -99,35 +109,46 @@ def update_subtask_status(subtask_id, completed):
         logger.error(f"Error updating subtask status: {str(e)}")
         return False
 
-def render_task_card(task):
+def render_task_card(task, is_deleted=False):
     """Render a task card with dependencies and subtasks"""
     with st.container():
         # Task header
         col1, col2, col3 = st.columns([3, 1, 1])
         with col1:
             st.markdown(f"### {task['title']}")
-        with col2:
-            # Status dropdown
-            new_status = st.selectbox(
-                "Status",
-                ["To Do", "In Progress", "Done"],
-                index=["To Do", "In Progress", "Done"].index(task['status']),
-                key=f"status_{task['id']}"
-            )
-            if new_status != task['status']:
-                execute_query(
-                    "UPDATE tasks SET status = %s WHERE id = %s",
-                    (new_status, task['id'])
+        
+        if not is_deleted:
+            with col2:
+                # Status dropdown
+                new_status = st.selectbox(
+                    "Status",
+                    ["To Do", "In Progress", "Done"],
+                    index=["To Do", "In Progress", "Done"].index(task['status']),
+                    key=f"status_{task['id']}"
                 )
-                st.rerun()
-        with col3:
-            if st.button("🗑️", key=f"delete_task_{task['id']}", help="Delete task"):
-                if delete_task(task['id']):
-                    st.success("Task deleted successfully!")
-                    time.sleep(0.5)
+                if new_status != task['status']:
+                    execute_query(
+                        "UPDATE tasks SET status = %s WHERE id = %s",
+                        (new_status, task['id'])
+                    )
                     st.rerun()
-                else:
-                    st.error("Failed to delete task")
+            with col3:
+                if st.button("🗑️", key=f"delete_task_{task['id']}", help="Delete task"):
+                    if delete_task(task['id']):
+                        st.success("Task deleted successfully!")
+                        time.sleep(0.5)
+                        st.rerun()
+                    else:
+                        st.error("Failed to delete task")
+        else:
+            with col3:
+                if st.button("🔄", key=f"restore_task_{task['id']}", help="Restore task"):
+                    if restore_task(task['id']):
+                        st.success("Task restored successfully!")
+                        time.sleep(0.5)
+                        st.rerun()
+                    else:
+                        st.error("Failed to restore task")
 
         # Task description and metadata
         if task['description']:
@@ -139,78 +160,79 @@ def render_task_card(task):
         with col2:
             st.write(f"**Due Date:** {task['due_date'].strftime('%d/%m/%Y') if task['due_date'] else 'Not set'}")
         with col3:
-            if st.button("✏️ Edit", key=f"edit_{task['id']}"):
+            if not is_deleted and st.button("✏️ Edit", key=f"edit_{task['id']}"):
                 st.session_state[f"edit_mode_{task['id']}"] = True
 
-        # Dependencies section
-        st.write("**Dependencies:**")
-        dependencies = get_task_dependencies(task['id'])
-        if dependencies:
-            for dep in dependencies:
-                st.markdown(f"- {dep['title']} ({dep['status']}) - {dep['priority']} priority")
-        else:
-            st.write("*No dependencies*")
+        if not is_deleted:
+            # Dependencies section
+            st.write("**Dependencies:**")
+            dependencies = get_task_dependencies(task['id'])
+            if dependencies:
+                for dep in dependencies:
+                    st.markdown(f"- {dep['title']} ({dep['status']}) - {dep['priority']} priority")
+            else:
+                st.write("*No dependencies*")
 
-        # Subtasks section
-        st.write("**Subtasks:**")
-        subtasks = get_task_subtasks(task['id'])
-        if subtasks:
-            for subtask in subtasks:
-                col1, col2, col3 = st.columns([3, 1, 1])
-                with col1:
-                    st.write(f"- {subtask['title']}")
-                    if subtask['description']:
-                        st.write(f"  *{subtask['description']}*")
-                with col2:
-                    completed = st.checkbox(
-                        "Complete",
-                        value=subtask['completed'],
-                        key=f"subtask_{subtask['id']}"
-                    )
-                    if completed != subtask['completed']:
-                        if update_subtask_status(subtask['id'], completed):
-                            st.rerun()
-                with col3:
-                    if st.button("🗑️", key=f"delete_subtask_{subtask['id']}", help="Delete subtask"):
-                        if delete_subtask(subtask['id']):
-                            st.success("Subtask deleted successfully!")
+            # Subtasks section
+            st.write("**Subtasks:**")
+            subtasks = get_task_subtasks(task['id'])
+            if subtasks:
+                for subtask in subtasks:
+                    col1, col2, col3 = st.columns([3, 1, 1])
+                    with col1:
+                        st.write(f"- {subtask['title']}")
+                        if subtask['description']:
+                            st.write(f"  *{subtask['description']}*")
+                    with col2:
+                        completed = st.checkbox(
+                            "Complete",
+                            value=subtask['completed'],
+                            key=f"subtask_{subtask['id']}"
+                        )
+                        if completed != subtask['completed']:
+                            if update_subtask_status(subtask['id'], completed):
+                                st.rerun()
+                    with col3:
+                        if st.button("🗑️", key=f"delete_subtask_{subtask['id']}", help="Delete subtask"):
+                            if delete_subtask(subtask['id']):
+                                st.success("Subtask deleted successfully!")
+                                time.sleep(0.5)
+                                st.rerun()
+                            else:
+                                st.error("Failed to delete subtask")
+            else:
+                st.write("*No subtasks*")
+
+            # Edit mode
+            if st.session_state.get(f"edit_mode_{task['id']}", False):
+                with st.form(key=f"edit_task_{task['id']}"):
+                    new_title = st.text_input("Title", value=task['title'])
+                    new_description = st.text_area("Description", value=task['description'])
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        new_priority = st.selectbox(
+                            "Priority",
+                            ["Low", "Medium", "High"],
+                            index=["Low", "Medium", "High"].index(task['priority'])
+                        )
+                    with col2:
+                        new_due_date = st.date_input("Due Date", value=task['due_date'])
+                    
+                    if st.form_submit_button("Save Changes"):
+                        try:
+                            execute_query('''
+                                UPDATE tasks 
+                                SET title = %s, description = %s, priority = %s, due_date = %s
+                                WHERE id = %s
+                                RETURNING id
+                            ''', (new_title, new_description, new_priority, new_due_date, task['id']))
+                            
+                            st.success("Task updated successfully!")
+                            st.session_state[f"edit_mode_{task['id']}"] = False
                             time.sleep(0.5)
                             st.rerun()
-                        else:
-                            st.error("Failed to delete subtask")
-        else:
-            st.write("*No subtasks*")
-
-        # Edit mode
-        if st.session_state.get(f"edit_mode_{task['id']}", False):
-            with st.form(key=f"edit_task_{task['id']}"):
-                new_title = st.text_input("Title", value=task['title'])
-                new_description = st.text_area("Description", value=task['description'])
-                col1, col2 = st.columns(2)
-                with col1:
-                    new_priority = st.selectbox(
-                        "Priority",
-                        ["Low", "Medium", "High"],
-                        index=["Low", "Medium", "High"].index(task['priority'])
-                    )
-                with col2:
-                    new_due_date = st.date_input("Due Date", value=task['due_date'])
-                
-                if st.form_submit_button("Save Changes"):
-                    try:
-                        execute_query('''
-                            UPDATE tasks 
-                            SET title = %s, description = %s, priority = %s, due_date = %s
-                            WHERE id = %s
-                            RETURNING id
-                        ''', (new_title, new_description, new_priority, new_due_date, task['id']))
-                        
-                        st.success("Task updated successfully!")
-                        st.session_state[f"edit_mode_{task['id']}"] = False
-                        time.sleep(0.5)
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Error updating task: {str(e)}")
+                        except Exception as e:
+                            st.error(f"Error updating task: {str(e)}")
 
 def render_board(project_id):
     """Render project board with tasks and their dependencies"""
@@ -235,7 +257,7 @@ def render_board(project_id):
         SELECT t.*, array_agg(td.depends_on_id) as dependencies
         FROM tasks t
         LEFT JOIN task_dependencies td ON t.id = td.task_id
-        WHERE t.project_id = %s
+        WHERE t.project_id = %s AND t.deleted_at IS NULL
         GROUP BY t.id
         ORDER BY t.created_at DESC
     """, (project_id,))
@@ -256,4 +278,17 @@ def render_board(project_id):
                         st.markdown("---")
                         render_task_card(task)
     else:
-        st.info("No tasks found. Create your first task to get started!")
+        st.info("No active tasks found. Create your first task to get started!")
+
+    # Display deleted tasks in an expander
+    st.write("## Deleted Tasks")
+    deleted_tasks = get_deleted_tasks(project_id)
+    
+    if deleted_tasks:
+        with st.expander("Show Deleted Tasks"):
+            for task in deleted_tasks:
+                with st.container():
+                    st.markdown("---")
+                    render_task_card(task, is_deleted=True)
+    else:
+        st.info("No deleted tasks found.")
