@@ -103,38 +103,30 @@ def render_task_card(task, is_deleted=False):
     """Render a task card with all functionality matching the React frontend"""
     with st.container():
         # Task header with title and actions
-        col1, col2, col3 = st.columns([3, 1, 1])
+        col1, col2 = st.columns([4, 1])
         with col1:
             st.markdown(f"### {task['title']}")
-        
-        if not is_deleted:
-            with col2:
-                new_status = st.selectbox(
-                    "Status",
-                    ["To Do", "In Progress", "Done"],
-                    index=["To Do", "In Progress", "Done"].index(task['status']),
-                    key=f"status_{task['id']}"
-                )
-                if new_status != task['status']:
-                    if execute_query(
-                        "UPDATE tasks SET status = %s WHERE id = %s",
-                        (new_status, task['id'])
-                    ):
-                        st.rerun()
-                    
-            with col3:
-                if st.button("🗑️", key=f"delete_{task['id']}", help="Delete task"):
-                    if delete_task(task['id']):
-                        st.success("Task deleted!")
-                        time.sleep(0.5)
-                        st.rerun()
-        else:
-            with col3:
-                if st.button("🔄", key=f"restore_{task['id']}", help="Restore task"):
-                    if restore_task(task['id']):
-                        st.success("Task restored!")
-                        time.sleep(0.5)
-                        st.rerun()
+            
+        with col2:
+            # Action buttons in a horizontal layout
+            button_cols = st.columns(2)
+            with button_cols[0]:
+                if not is_deleted:
+                    if st.button("✏️", key=f"edit_{task['id']}", help="Edit task"):
+                        st.session_state[f"edit_mode_{task['id']}"] = True
+            with button_cols[1]:
+                if not is_deleted:
+                    if st.button("🗑️", key=f"delete_{task['id']}", help="Delete task"):
+                        if delete_task(task['id']):
+                            st.success("Task deleted!")
+                            time.sleep(0.5)
+                            st.rerun()
+                else:
+                    if st.button("🔄", key=f"restore_{task['id']}", help="Restore task"):
+                        if restore_task(task['id']):
+                            st.success("Task restored!")
+                            time.sleep(0.5)
+                            st.rerun()
 
         # Task details
         if task['description']:
@@ -147,25 +139,36 @@ def render_task_card(task, is_deleted=False):
         with col2:
             st.write(f"**Due Date:** {task['due_date'].strftime('%d/%m/%Y') if task['due_date'] else 'Not set'}")
         with col3:
-            # Assignee field matching React frontend
-            new_assignee = st.text_input(
-                "Assignee",
-                value=task['assignee'] if task['assignee'] else '',
-                key=f"assignee_{task['id']}",
-                placeholder="Click to assign"
-            )
-            if new_assignee != task['assignee']:
-                if update_task_assignee(task['id'], new_assignee):
-                    st.success(f"Task assigned to {new_assignee}")
-                    time.sleep(0.5)
-                    st.rerun()
-                else:
-                    st.error("Failed to update assignee")
+            if not is_deleted:
+                new_status = st.selectbox(
+                    "Status",
+                    ["To Do", "In Progress", "Done"],
+                    index=["To Do", "In Progress", "Done"].index(task['status']),
+                    key=f"status_{task['id']}"
+                )
+                if new_status != task['status']:
+                    if execute_query(
+                        "UPDATE tasks SET status = %s WHERE id = %s",
+                        (new_status, task['id'])
+                    ):
+                        st.rerun()
 
-        # Edit functionality
-        if not is_deleted and st.button("✏️ Edit", key=f"edit_{task['id']}"):
-            st.session_state[f"edit_mode_{task['id']}"] = True
+        # Assignee field
+        new_assignee = st.text_input(
+            "Assignee",
+            value=task['assignee'] if task['assignee'] else '',
+            key=f"assignee_{task['id']}",
+            placeholder="Click to assign"
+        )
+        if new_assignee != task['assignee']:
+            if update_task_assignee(task['id'], new_assignee):
+                st.success(f"Task assigned to {new_assignee}")
+                time.sleep(0.5)
+                st.rerun()
+            else:
+                st.error("Failed to update assignee")
 
+        # Edit form
         if not is_deleted and st.session_state.get(f"edit_mode_{task['id']}", False):
             with st.form(key=f"edit_task_{task['id']}"):
                 new_title = st.text_input("Title", value=task['title'])

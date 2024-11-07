@@ -64,7 +64,8 @@
 
 .task-actions {
   display: flex;
-  gap: 8px;
+  gap: 4px;
+  align-items: center;
 }
 
 .edit-button,
@@ -72,9 +73,10 @@
   background: none;
   border: none;
   cursor: pointer;
-  padding: 4px;
+  padding: 4px 8px;
   border-radius: 4px;
   transition: background-color 0.2s ease;
+  font-size: 16px;
 }
 
 .edit-button:hover,
