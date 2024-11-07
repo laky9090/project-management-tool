@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Configure base URL for API requests
-const API_URL = `http://${window.location.hostname}:3001/api`;
+const API_URL = '/api';
 
 // Configure axios to include credentials
 axios.defaults.withCredentials = true;

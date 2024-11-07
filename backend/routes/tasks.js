@@ -17,7 +17,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-// Get tasks by project with dependencies and subtasks
+// Get tasks by project with dependencies, subtasks, and assignee
 router.get('/project/:projectId', async (req, res) => {
   console.log('Fetching tasks for project:', req.params.projectId);
   try {
@@ -52,6 +52,28 @@ router.get('/project/:projectId', async (req, res) => {
   }
 });
 
+// Assign task to user
+router.patch('/:taskId/assign', async (req, res) => {
+  const { taskId } = req.params;
+  const { assignee } = req.body;
+
+  try {
+    const { rows } = await db.query(
+      'UPDATE tasks SET assignee = $1 WHERE id = $2 RETURNING *',
+      [assignee, taskId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('Error assigning task:', err);
+    res.status(500).json({ error: 'Failed to assign task' });
+  }
+});
+
 // Create new task with dependencies and subtasks
 router.post('/', async (req, res) => {
   console.log('Creating new task with data:', req.body);
@@ -63,7 +85,8 @@ router.post('/', async (req, res) => {
     priority, 
     due_date,
     dependencies,
-    subtasks 
+    subtasks,
+    assignee 
   } = req.body;
   
   if (!project_id) {
@@ -76,10 +99,10 @@ router.post('/', async (req, res) => {
     
     // Create main task
     const taskResult = await db.query(
-      `INSERT INTO tasks (project_id, title, description, status, priority, due_date)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO tasks (project_id, title, description, status, priority, due_date, assignee)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-      [project_id, title, description, status, priority, due_date]
+      [project_id, title, description, status, priority, due_date, assignee]
     );
     
     const task = taskResult.rows[0];
