@@ -12,17 +12,18 @@ const TaskForm = ({ projectId }) => {
     due_date: new Date().toISOString().split('T')[0]
   });
   const [fileAttachment, setFileAttachment] = useState(null);
+  const [error, setError] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      setError(null);
       const taskData = {
         ...formData,
         project_id: projectId
       };
 
       const response = await api.createTask(taskData);
-      console.log('Task created successfully:', response.data);
 
       if (fileAttachment && response.data.id) {
         const attachmentFormData = new FormData();
@@ -40,11 +41,11 @@ const TaskForm = ({ projectId }) => {
         due_date: new Date().toISOString().split('T')[0]
       });
       setFileAttachment(null);
-
+      setError(null);
       alert('Task created successfully!');
     } catch (error) {
       console.error('Error creating task:', error);
-      alert(`Failed to create task: ${error.response?.data?.error || error.message}`);
+      setError(error.response?.data?.error || 'Failed to create task');
     }
   };
 
@@ -63,6 +64,7 @@ const TaskForm = ({ projectId }) => {
   return (
     <form onSubmit={handleSubmit} className="task-form">
       <h3>Create New Task</h3>
+      {error && <div className="error-message">{error}</div>}
       <div className="form-group">
         <input
           type="text"

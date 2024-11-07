@@ -82,6 +82,74 @@ const Board = ({ projectId }) => {
     }
   };
 
+  const renderTaskCard = (task, provided) => (
+    <div
+      ref={provided.innerRef}
+      {...provided.draggableProps}
+      {...provided.dragHandleProps}
+      className="task-card"
+    >
+      {editingTask === task.id ? (
+        <div className="task-edit-form">
+          <input
+            type="text"
+            defaultValue={task.title}
+            onBlur={(e) => handleUpdateTask(task.id, { title: e.target.value })}
+          />
+          <textarea
+            defaultValue={task.description}
+            onBlur={(e) => handleUpdateTask(task.id, { description: e.target.value })}
+          />
+          <button onClick={() => setEditingTask(null)}>Cancel</button>
+        </div>
+      ) : (
+        <>
+          <div className="task-header">
+            <h4>{task.title}</h4>
+            <div className="task-actions">
+              <button onClick={() => setEditingTask(task.id)} className="edit-button">✏️</button>
+              <button onClick={() => handleDeleteTask(task.id)} className="delete-button">🗑️</button>
+            </div>
+          </div>
+          <p>{task.description}</p>
+        </>
+      )}
+      <div className="task-meta">
+        <span className={`priority ${task.priority.toLowerCase()}`}>
+          {task.priority}
+        </span>
+        {editingAssignee === task.id ? (
+          <input
+            type="text"
+            className="assignee-input"
+            defaultValue={task.assignee || ''}
+            placeholder="Assign to..."
+            onBlur={(e) => handleAssigneeChange(task.id, e.target.value)}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                handleAssigneeChange(task.id, e.target.value);
+              }
+            }}
+            autoFocus
+          />
+        ) : (
+          <span 
+            className="assignee" 
+            onClick={() => setEditingAssignee(task.id)}
+            style={{ cursor: 'pointer' }}
+          >
+            {task.assignee ? `Assigned to: ${task.assignee}` : 'Click to assign'}
+          </span>
+        )}
+      </div>
+      {task.due_date && (
+        <div className="task-due-date">
+          Due: {new Date(task.due_date).toLocaleDateString()}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div className="board">
@@ -90,7 +158,7 @@ const Board = ({ projectId }) => {
           {Object.entries(tasks).map(([status, statusTasks]) => (
             <div key={status} className="column">
               <h3>{status}</h3>
-              <Droppable droppableId={status} type="task">
+              <Droppable droppableId={status}>
                 {(provided) => (
                   <div
                     {...provided.droppableProps}
@@ -103,73 +171,7 @@ const Board = ({ projectId }) => {
                         draggableId={task.id.toString()}
                         index={index}
                       >
-                        {(provided) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                            className="task-card"
-                          >
-                            {editingTask === task.id ? (
-                              <div className="task-edit-form">
-                                <input
-                                  type="text"
-                                  defaultValue={task.title}
-                                  onBlur={(e) => handleUpdateTask(task.id, { title: e.target.value })}
-                                />
-                                <textarea
-                                  defaultValue={task.description}
-                                  onBlur={(e) => handleUpdateTask(task.id, { description: e.target.value })}
-                                />
-                                <button onClick={() => setEditingTask(null)}>Cancel</button>
-                              </div>
-                            ) : (
-                              <>
-                                <div className="task-header">
-                                  <h4>{task.title}</h4>
-                                  <div className="task-actions">
-                                    <button onClick={() => setEditingTask(task.id)} className="edit-button">✏️</button>
-                                    <button onClick={() => handleDeleteTask(task.id)} className="delete-button">🗑️</button>
-                                  </div>
-                                </div>
-                                <p>{task.description}</p>
-                              </>
-                            )}
-                            <div className="task-meta">
-                              <span className={`priority ${task.priority.toLowerCase()}`}>
-                                {task.priority}
-                              </span>
-                              {editingAssignee === task.id ? (
-                                <input
-                                  type="text"
-                                  className="assignee-input"
-                                  defaultValue={task.assignee || ''}
-                                  placeholder="Assign to..."
-                                  onBlur={(e) => handleAssigneeChange(task.id, e.target.value)}
-                                  onKeyPress={(e) => {
-                                    if (e.key === 'Enter') {
-                                      handleAssigneeChange(task.id, e.target.value);
-                                    }
-                                  }}
-                                  autoFocus
-                                />
-                              ) : (
-                                <span 
-                                  className="assignee" 
-                                  onClick={() => setEditingAssignee(task.id)}
-                                  style={{ cursor: 'pointer' }}
-                                >
-                                  {task.assignee ? `Assigned to: ${task.assignee}` : 'Click to assign'}
-                                </span>
-                              )}
-                            </div>
-                            {task.due_date && (
-                              <div className="task-due-date">
-                                Due: {new Date(task.due_date).toLocaleDateString()}
-                              </div>
-                            )}
-                          </div>
-                        )}
+                        {(provided) => renderTaskCard(task, provided)}
                       </Draggable>
                     ))}
                     {provided.placeholder}
