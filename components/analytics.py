@@ -11,10 +11,11 @@ logger = logging.getLogger(__name__)
 
 @st.cache_data(ttl=300)
 def get_project_metrics(project_id):
-    """Get all project metrics in a single query"""
+    """Get all project metrics in a single optimized query"""
     try:
         result = execute_query("""
-            WITH task_metrics AS (
+            WITH RECURSIVE 
+            task_metrics AS (
                 SELECT 
                     COUNT(*) as total_tasks,
                     COUNT(*) FILTER (WHERE status = 'Done') as completed_tasks,
@@ -47,7 +48,9 @@ def get_project_metrics(project_id):
                     COUNT(*) FILTER (WHERE status = 'Done') as completed,
                     COUNT(*) as total
                 FROM tasks
-                WHERE project_id = %s AND deleted_at IS NULL
+                WHERE project_id = %s 
+                AND deleted_at IS NULL
+                AND created_at >= CURRENT_DATE - INTERVAL '30 days'
                 GROUP BY DATE(created_at)
                 ORDER BY date
             )
@@ -68,16 +71,18 @@ def get_project_metrics(project_id):
         return None
 
 def render_analytics(project_id):
-    """Render analytics dashboard with optimized loading"""
+    """Render analytics dashboard with optimized loading and caching"""
     st.write("## Project Analytics")
     
-    # Load all metrics at once
-    metrics = get_project_metrics(project_id)
+    # Load metrics with caching
+    with st.spinner("Loading project metrics..."):
+        metrics = get_project_metrics(project_id)
+    
     if not metrics:
         st.error("Failed to load project metrics")
         return
     
-    # Project Progress Overview
+    # Project Progress Overview - Always visible
     with st.container():
         col1, col2, col3, col4 = st.columns(4)
         
@@ -92,30 +97,53 @@ def render_analytics(project_id):
         with col4:
             st.metric("Pending High Priority", metrics['pending_high_priority'])
     
-    # Status Distribution Chart
-    with st.container():
-        status_dist = pd.DataFrame([
-            {'status': k, 'count': v} 
-            for k, v in metrics['status_distribution'].items()
-        ])
-        if not status_dist.empty:
-            fig_status = px.pie(status_dist, values='count', names='status', 
-                              title='Task Status Distribution')
-            st.plotly_chart(fig_status, use_container_width=True)
+    # Status Distribution - Cached and lazy loaded
+    if 'show_status_dist' not in st.session_state:
+        st.session_state.show_status_dist = False
+        
+    show_status = st.checkbox("📊 Show Status Distribution", 
+                            value=st.session_state.show_status_dist,
+                            key='status_dist_toggle')
     
-    # Priority Distribution Chart
-    with st.container():
-        priority_dist = pd.DataFrame([
-            {'priority': k, 'count': v} 
-            for k, v in metrics['priority_distribution'].items()
-        ])
-        if not priority_dist.empty:
-            fig_priority = px.bar(priority_dist, x='priority', y='count', 
-                                title='Tasks by Priority')
-            st.plotly_chart(fig_priority, use_container_width=True)
+    if show_status:
+        with st.container():
+            status_dist = pd.DataFrame([
+                {'status': k, 'count': v} 
+                for k, v in metrics['status_distribution'].items()
+            ])
+            if not status_dist.empty:
+                fig_status = px.pie(status_dist, values='count', names='status', 
+                                  title='Task Status Distribution')
+                st.plotly_chart(fig_status, use_container_width=True)
     
-    # Task Completion Trend
-    if metrics['completion_trend']:
+    # Priority Distribution - Cached and lazy loaded
+    if 'show_priority_dist' not in st.session_state:
+        st.session_state.show_priority_dist = False
+        
+    show_priority = st.checkbox("📊 Show Priority Distribution", 
+                              value=st.session_state.show_priority_dist,
+                              key='priority_dist_toggle')
+    
+    if show_priority:
+        with st.container():
+            priority_dist = pd.DataFrame([
+                {'priority': k, 'count': v} 
+                for k, v in metrics['priority_distribution'].items()
+            ])
+            if not priority_dist.empty:
+                fig_priority = px.bar(priority_dist, x='priority', y='count', 
+                                    title='Tasks by Priority')
+                st.plotly_chart(fig_priority, use_container_width=True)
+    
+    # Task Completion Trend - Cached and lazy loaded
+    if 'show_completion_trend' not in st.session_state:
+        st.session_state.show_completion_trend = False
+        
+    show_trend = st.checkbox("📈 Show Completion Trend", 
+                           value=st.session_state.show_completion_trend,
+                           key='completion_trend_toggle')
+    
+    if show_trend and metrics['completion_trend']:
         with st.container():
             df_trend = pd.DataFrame(metrics['completion_trend'])
             fig_trend = go.Figure()
@@ -127,14 +155,7 @@ def render_analytics(project_id):
                                   xaxis_title='Date', yaxis_title='Number of Tasks')
             st.plotly_chart(fig_trend, use_container_width=True)
     
-    # Lazy load detailed analytics
-    if st.checkbox("📊 Show Detailed Analytics"):
-        with st.container():
-            st.write("### Task Age Analysis")
-            if metrics['age_analysis']:
-                df_age = pd.DataFrame(metrics['age_analysis'])
-                df_age['avg_age_days'] = df_age['avg_age_days'].round(1)
-                fig_age = px.bar(df_age, x='status', y='avg_age_days',
-                                title='Average Task Age by Status (Days)',
-                                labels={'avg_age_days': 'Average Age (Days)'})
-                st.plotly_chart(fig_age, use_container_width=True)
+    # Save visualization states
+    st.session_state.show_status_dist = show_status
+    st.session_state.show_priority_dist = show_priority
+    st.session_state.show_completion_trend = show_trend

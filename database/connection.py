@@ -7,10 +7,18 @@ import time
 from functools import wraps
 import hashlib
 import json
+from datetime import datetime, date
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+class DateTimeEncoder(json.JSONEncoder):
+    """Custom JSON encoder for datetime objects"""
+    def default(self, obj):
+        if isinstance(obj, (datetime, date)):
+            return obj.isoformat()
+        return super().default(obj)
 
 def get_connection():
     try:
@@ -29,7 +37,7 @@ def get_connection():
 def generate_etag(data):
     """Generate ETag for data"""
     if isinstance(data, (list, dict)):
-        data = json.dumps(data, sort_keys=True)
+        data = json.dumps(data, sort_keys=True, cls=DateTimeEncoder)
     return hashlib.md5(str(data).encode()).hexdigest()
 
 def cache_query(ttl_seconds=300):

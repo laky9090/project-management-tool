@@ -6,6 +6,25 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
+def convert_datetime(dt):
+    """Convert datetime object to ISO format string"""
+    try:
+        return dt.isoformat() if dt else None
+    except Exception as e:
+        logger.error(f"Error converting datetime: {str(e)}")
+        return None
+
+def convert_project_dates(project):
+    """Convert all datetime fields in a project dict to ISO format strings"""
+    try:
+        project['created_at'] = convert_datetime(project['created_at'])
+        project['deleted_at'] = convert_datetime(project['deleted_at'])
+        project['deadline'] = convert_datetime(project['deadline'])
+        return project
+    except Exception as e:
+        logger.error(f"Error converting project dates: {str(e)}")
+        return project
+
 def delete_project(project_id):
     try:
         result = execute_query(
@@ -34,10 +53,9 @@ def get_deleted_projects():
             "SELECT * FROM projects WHERE deleted_at IS NOT NULL ORDER BY created_at DESC"
         )
         # Convert datetime objects to ISO format strings
-        for project in projects:
-            project['created_at'] = project['created_at'].isoformat() if project['created_at'] else None
-            project['deleted_at'] = project['deleted_at'].isoformat() if project['deleted_at'] else None
-            project['deadline'] = project['deadline'].isoformat() if project['deadline'] else None
+        if projects:
+            projects = [convert_project_dates(project) for project in projects]
+            logger.info(f"Successfully retrieved and converted {len(projects)} deleted projects")
         return projects
     except Exception as e:
         logger.error(f"Error getting deleted projects: {str(e)}")
@@ -88,14 +106,15 @@ def edit_project_form(project_id):
             st.error("Project not found!")
             return False
             
-        project = project[0]
+        project = convert_project_dates(project[0])
         
         with st.form(key=f"edit_project_form_{project_id}"):
             st.write("### Edit Project")
             
             name = st.text_input("Project Name", value=project['name'])
             description = st.text_area("Description", value=project['description'] or "")
-            deadline = st.date_input("Deadline", value=project['deadline'] if project['deadline'] else None)
+            current_deadline = datetime.fromisoformat(project['deadline']).date() if project['deadline'] else None
+            deadline = st.date_input("Deadline", value=current_deadline)
             
             col1, col2 = st.columns([1, 1])
             with col1:
@@ -162,14 +181,16 @@ def list_projects():
         
         selected_project = None
         
-        # Process datetime fields before display
+        # Process datetime fields
         if projects:
+            logger.info(f"Processing {len(projects)} active projects")
             for project in projects:
-                # Convert datetime objects to ISO format strings
-                project['created_at'] = project['created_at'].isoformat() if project['created_at'] else None
-                project['deleted_at'] = project['deleted_at'].isoformat() if project['deleted_at'] else None
-                project['deadline'] = project['deadline'].isoformat() if project['deadline'] else None
-                
+                try:
+                    project = convert_project_dates(project)
+                except Exception as e:
+                    logger.error(f"Error converting dates for project {project.get('id')}: {str(e)}")
+                    continue
+            
             # Display active projects
             st.write("### Active Projects")
             for project in projects:
@@ -184,8 +205,12 @@ def list_projects():
                             selected_project = project['id']
                             
                     with col2:
-                        deadline_str = datetime.fromisoformat(project['deadline']).strftime('%d/%m/%Y') if project['deadline'] else 'No deadline'
-                        st.write(f"Due: {deadline_str}")
+                        try:
+                            deadline_str = datetime.fromisoformat(project['deadline']).strftime('%d/%m/%Y') if project['deadline'] else 'No deadline'
+                            st.write(f"Due: {deadline_str}")
+                        except Exception as e:
+                            logger.error(f"Error formatting deadline for project {project['id']}: {str(e)}")
+                            st.write("Due: Invalid date")
                         
                     with col3:
                         if st.button("✏️", key=f"edit_project_{project['id']}", help="Edit project"):
@@ -216,8 +241,12 @@ def list_projects():
                     col1, col2 = st.columns([4, 1])
                     
                     with col1:
-                        deleted_date = datetime.fromisoformat(project['deleted_at']).strftime('%d/%m/%Y') if project['deleted_at'] else 'Unknown'
-                        st.write(f"{project['name']} (Deleted on: {deleted_date})")
+                        try:
+                            deleted_date = datetime.fromisoformat(project['deleted_at']).strftime('%d/%m/%Y') if project['deleted_at'] else 'Unknown'
+                            st.write(f"{project['name']} (Deleted on: {deleted_date})")
+                        except Exception as e:
+                            logger.error(f"Error formatting deleted date for project {project.get('id')}: {str(e)}")
+                            st.write(f"{project['name']} (Deleted on: Unknown)")
                         
                     with col2:
                         if st.button("🔄", key=f"restore_project_{project['id']}", help="Restore project"):
