@@ -54,12 +54,17 @@ def create_task_form(project_id):
                     format_func=lambda x: x[1]
                 )
             
-            # Subtasks section with improved UI
+            # Subtasks section with dynamic addition
             st.write("### Subtasks")
-            num_subtasks = st.number_input("Number of subtasks", min_value=0, max_value=10, value=0)
+            if 'subtask_count' not in st.session_state:
+                st.session_state.subtask_count = 1
+
+            # Add subtask button
+            if st.button("+ Add Another Subtask"):
+                st.session_state.subtask_count += 1
+
             subtasks = []
-            
-            for i in range(num_subtasks):
+            for i in range(st.session_state.subtask_count):
                 with st.container():
                     col1, col2 = st.columns([3, 1])
                     with col1:
