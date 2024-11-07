@@ -67,3 +67,17 @@
   background-color: #28a745;
   color: white;
 }
+
+.assignee-select {
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid #ced4da;
+  font-size: 12px;
+  background-color: white;
+}
+
+.assignee-select:focus {
+  outline: none;
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}

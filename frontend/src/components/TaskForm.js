@@ -9,14 +9,28 @@ const TaskForm = ({ projectId }) => {
     status: 'To Do',
     priority: 'Medium',
     assignee: '',
-    due_date: new Date().toISOString().split('T')[0]
+    due_date: new Date().toISOString().split('T')[0],
+    assignee_id: ''
   });
   const [fileAttachment, setFileAttachment] = useState(null);
+  const [users, setUsers] = useState([]);
+
+  // Fetch available users for assignment
+  React.useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await api.getUsers();
+        setUsers(response.data);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      }
+    };
+    fetchUsers();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Debug log before sending
       console.log('Attempting to create task:', {
         ...formData,
         project_id: projectId
@@ -29,7 +43,6 @@ const TaskForm = ({ projectId }) => {
 
       console.log('Task created successfully:', response.data);
 
-      // Handle file upload if present
       if (fileAttachment && response.data.id) {
         const attachmentFormData = new FormData();
         attachmentFormData.append('file', fileAttachment);
@@ -37,14 +50,14 @@ const TaskForm = ({ projectId }) => {
         console.log('File attachment uploaded successfully');
       }
 
-      // Reset form
       setFormData({
         title: '',
         description: '',
         status: 'To Do',
         priority: 'Medium',
         assignee: '',
-        due_date: new Date().toISOString().split('T')[0]
+        due_date: new Date().toISOString().split('T')[0],
+        assignee_id: ''
       });
       setFileAttachment(null);
 
@@ -104,13 +117,18 @@ const TaskForm = ({ projectId }) => {
       </div>
       <div className="form-row">
         <div className="form-group">
-          <input
-            type="text"
-            name="assignee"
-            value={formData.assignee}
+          <select 
+            name="assignee_id"
+            value={formData.assignee_id}
             onChange={handleChange}
-            placeholder="Assignee"
-          />
+          >
+            <option value="">Select Assignee</option>
+            {users.map(user => (
+              <option key={user.id} value={user.id}>
+                {user.username}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="form-group">
           <input

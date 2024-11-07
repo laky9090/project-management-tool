@@ -6,9 +6,11 @@ import './Board.css';
 
 const Board = ({ projectId }) => {
   const [tasks, setTasks] = useState({ 'To Do': [], 'In Progress': [], 'Done': [] });
+  const [users, setUsers] = useState([]);
 
   useEffect(() => {
     loadTasks();
+    loadUsers();
   }, [projectId]);
 
   const loadTasks = async () => {
@@ -25,6 +27,15 @@ const Board = ({ projectId }) => {
     }
   };
 
+  const loadUsers = async () => {
+    try {
+      const response = await api.getUsers();
+      setUsers(response.data);
+    } catch (error) {
+      console.error('Error loading users:', error);
+    }
+  };
+
   const onDragEnd = async (result) => {
     if (!result.destination) return;
 
@@ -37,6 +48,20 @@ const Board = ({ projectId }) => {
     } catch (error) {
       console.error('Error updating task status:', error);
     }
+  };
+
+  const handleAssigneeChange = async (taskId, assigneeId) => {
+    try {
+      await api.updateTaskAssignment(taskId, assigneeId);
+      await loadTasks();
+    } catch (error) {
+      console.error('Error updating task assignment:', error);
+    }
+  };
+
+  const getAssigneeName = (assigneeId) => {
+    const user = users.find(u => u.id === assigneeId);
+    return user ? user.username : 'Unassigned';
   };
 
   return (
@@ -72,7 +97,18 @@ const Board = ({ projectId }) => {
                             <span className={`priority ${task.priority.toLowerCase()}`}>
                               {task.priority}
                             </span>
-                            <span>{task.assignee}</span>
+                            <select
+                              value={task.assignee_id || ''}
+                              onChange={(e) => handleAssigneeChange(task.id, e.target.value)}
+                              className="assignee-select"
+                            >
+                              <option value="">Unassigned</option>
+                              {users.map(user => (
+                                <option key={user.id} value={user.id}>
+                                  {user.username}
+                                </option>
+                              ))}
+                            </select>
                           </div>
                         </div>
                       )}

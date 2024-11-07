@@ -15,6 +15,11 @@ const api = {
   getProjectTasks: (projectId) => axios.get(`${API_URL}/tasks/project/${projectId}`),
   createTask: (task) => axios.post(`${API_URL}/tasks`, task),
   updateTaskStatus: (taskId, status) => axios.patch(`${API_URL}/tasks/${taskId}/status`, { status }),
+  updateTaskAssignment: (taskId, assigneeId) => axios.patch(`${API_URL}/tasks/${taskId}/assign`, { assignee_id: assigneeId }),
+  
+  // Users
+  getUsers: () => axios.get(`${API_URL}/users`),
+  getCurrentUser: () => axios.get(`${API_URL}/users/me`),
   
   // File attachments
   uploadTaskAttachment: (taskId, formData) => axios.post(`${API_URL}/tasks/${taskId}/attachments`, formData, {
