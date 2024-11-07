@@ -93,7 +93,7 @@ def render_task_card(task):
         with col1:
             st.write(f"**Priority:** {task['priority']}")
         with col2:
-            st.write(f"**Due Date:** {task['due_date'].strftime('%Y-%m-%d') if task['due_date'] else 'Not set'}")
+            st.write(f"**Due Date:** {task['due_date'].strftime('%d/%m/%Y') if task['due_date'] else 'Not set'}")
         with col3:
             if st.button("✏️ Edit", key=f"edit_{task['id']}"):
                 st.session_state[f"edit_mode_{task['id']}"] = True

@@ -157,8 +157,8 @@ def list_projects():
                             selected_project = project['id']
                             
                     with col2:
-                        # Deadline
-                        st.write(f"Due: {project['deadline'].strftime('%b %d, %Y') if project['deadline'] else 'No deadline'}")
+                        # Deadline with French date format
+                        st.write(f"Due: {project['deadline'].strftime('%d/%m/%Y') if project['deadline'] else 'No deadline'}")
                         
                     with col3:
                         # Edit button
