@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Configure base URL for API requests
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+const API_URL = `https://${window.location.hostname.replace('3000', '3001')}/api`;
 
 // Configure axios to include credentials
 axios.defaults.withCredentials = true;
