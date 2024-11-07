@@ -44,13 +44,15 @@ def create_task_form(project_id):
             description = st.text_area("Description", key="task_desc")
             
             # Task metadata
-            col1, col2, col3 = st.columns(3)
+            col1, col2, col3, col4 = st.columns(4)
             with col1:
                 status = st.selectbox("Status", ["To Do", "In Progress", "Done"])
             with col2:
                 priority = st.selectbox("Priority", ["Low", "Medium", "High"])
             with col3:
                 due_date = st.date_input("Due Date")
+            with col4:
+                assignee = st.text_input("Assignee")
             
             # Dependencies section
             st.write("### Dependencies")
@@ -101,10 +103,10 @@ def create_task_form(project_id):
                     
                     # Create main task
                     result = execute_query('''
-                        INSERT INTO tasks (project_id, title, description, status, priority, due_date)
-                        VALUES (%s, %s, %s, %s, %s, %s)
+                        INSERT INTO tasks (project_id, title, description, status, priority, due_date, assignee)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)
                         RETURNING id, title;
-                    ''', (project_id, title, description, status, priority, due_date))
+                    ''', (project_id, title, description, status, priority, due_date, assignee))
                     
                     if not result:
                         raise Exception("Failed to create task")
