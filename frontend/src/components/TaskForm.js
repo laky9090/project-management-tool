@@ -16,11 +16,6 @@ const TaskForm = ({ projectId }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      console.log('Attempting to create task:', {
-        ...formData,
-        project_id: projectId
-      });
-
       const taskData = {
         ...formData,
         project_id: projectId
@@ -33,7 +28,6 @@ const TaskForm = ({ projectId }) => {
         const attachmentFormData = new FormData();
         attachmentFormData.append('file', fileAttachment);
         await api.uploadTaskAttachment(response.data.id, attachmentFormData);
-        console.log('File attachment uploaded successfully');
       }
 
       // Reset form
@@ -48,7 +42,6 @@ const TaskForm = ({ projectId }) => {
       setFileAttachment(null);
 
       alert('Task created successfully!');
-
     } catch (error) {
       console.error('Error creating task:', error);
       alert(`Failed to create task: ${error.response?.data?.error || error.message}`);
@@ -56,7 +49,11 @@ const TaskForm = ({ projectId }) => {
   };
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData(prevData => ({
+      ...prevData,
+      [name]: value
+    }));
   };
 
   const handleFileChange = (e) => {

@@ -7,6 +7,7 @@ const Board = ({ projectId }) => {
   const [tasks, setTasks] = useState({ 'To Do': [], 'In Progress': [], 'Done': [] });
   const [error, setError] = useState(null);
   const [editingTask, setEditingTask] = useState(null);
+  const [editingAssignee, setEditingAssignee] = useState(null);
 
   const loadTasks = useCallback(async () => {
     try {
@@ -46,20 +47,15 @@ const Board = ({ projectId }) => {
     }
   };
 
-  const handleAssigneeChange = async (taskId, assignee, oldValue) => {
+  const handleAssigneeChange = async (taskId, assignee) => {
     try {
       setError(null);
       await api.updateTaskAssignment(taskId, assignee);
       await loadTasks();
+      setEditingAssignee(null);
     } catch (error) {
       console.error('Error updating task assignment:', error);
       setError('Failed to update task assignment. Please try again.');
-      const tasksCopy = { ...tasks };
-      Object.keys(tasksCopy).forEach(status => {
-        const task = tasksCopy[status].find(t => t.id === taskId);
-        if (task) task.assignee = oldValue;
-      });
-      setTasks(tasksCopy);
     }
   };
 
@@ -85,16 +81,6 @@ const Board = ({ projectId }) => {
       setError('Failed to update task. Please try again.');
     }
   };
-
-  const debounce = (func, wait) => {
-    let timeout;
-    return (...args) => {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => func(...args), wait);
-    };
-  };
-
-  const debouncedAssigneeChange = debounce(handleAssigneeChange, 500);
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
@@ -153,9 +139,29 @@ const Board = ({ projectId }) => {
                               <span className={`priority ${task.priority.toLowerCase()}`}>
                                 {task.priority}
                               </span>
-                              <span className="assignee">
-                                {task.assignee ? `Assigned to: ${task.assignee}` : 'Unassigned'}
-                              </span>
+                              {editingAssignee === task.id ? (
+                                <input
+                                  type="text"
+                                  className="assignee-input"
+                                  defaultValue={task.assignee || ''}
+                                  placeholder="Assign to..."
+                                  onBlur={(e) => handleAssigneeChange(task.id, e.target.value)}
+                                  onKeyPress={(e) => {
+                                    if (e.key === 'Enter') {
+                                      handleAssigneeChange(task.id, e.target.value);
+                                    }
+                                  }}
+                                  autoFocus
+                                />
+                              ) : (
+                                <span 
+                                  className="assignee" 
+                                  onClick={() => setEditingAssignee(task.id)}
+                                  style={{ cursor: 'pointer' }}
+                                >
+                                  {task.assignee ? `Assigned to: ${task.assignee}` : 'Click to assign'}
+                                </span>
+                              )}
                             </div>
                             {task.due_date && (
                               <div className="task-due-date">
