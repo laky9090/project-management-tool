@@ -5,12 +5,10 @@ import './Board.css';
 
 const Board = ({ projectId }) => {
   const [tasks, setTasks] = useState({ 'To Do': [], 'In Progress': [], 'Done': [] });
-  const [users, setUsers] = useState([]);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     loadTasks();
-    loadUsers();
   }, [projectId]);
 
   const loadTasks = async () => {
@@ -33,16 +31,6 @@ const Board = ({ projectId }) => {
     }
   };
 
-  const loadUsers = async () => {
-    try {
-      const response = await api.getUsers();
-      setUsers(response.data);
-    } catch (error) {
-      console.error('Error loading users:', error);
-      setError('Failed to load users. Some features may be limited.');
-    }
-  };
-
   const onDragEnd = async (result) => {
     if (!result.destination) return;
 
@@ -59,11 +47,11 @@ const Board = ({ projectId }) => {
     }
   };
 
-  const handleAssigneeChange = async (taskId, assigneeId) => {
+  const handleAssigneeChange = async (taskId, assignee) => {
     try {
       setError(null);
-      console.log('Updating task assignment:', { taskId, assigneeId });
-      await api.updateTaskAssignment(taskId, assigneeId);
+      console.log('Updating task assignment:', { taskId, assignee });
+      await api.updateTaskAssignment(taskId, assignee);
       await loadTasks();
     } catch (error) {
       console.error('Error updating task assignment:', error);
@@ -105,18 +93,13 @@ const Board = ({ projectId }) => {
                               <span className={`priority ${task.priority.toLowerCase()}`}>
                                 {task.priority}
                               </span>
-                              <select
-                                value={task.assignee_id || ''}
+                              <input
+                                type="text"
+                                value={task.assignee || ''}
                                 onChange={(e) => handleAssigneeChange(task.id, e.target.value)}
-                                className="assignee-select"
-                              >
-                                <option value="">Unassigned</option>
-                                {users.map(user => (
-                                  <option key={user.id} value={user.id}>
-                                    {user.username}
-                                  </option>
-                                ))}
-                              </select>
+                                placeholder="Assign to..."
+                                className="assignee-input"
+                              />
                             </div>
                           </div>
                         )}
