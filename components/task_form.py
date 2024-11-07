@@ -142,6 +142,7 @@ def create_task_form(project_id):
                     # Commit transaction
                     execute_query("COMMIT")
                     st.success(f"✅ Task '{title}' created successfully!")
+                    st.session_state.show_task_form = False  # Hide the form
                     time.sleep(0.5)  # Ensure transaction completes
                     st.rerun()
                     return True
