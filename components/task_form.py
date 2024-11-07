@@ -26,6 +26,15 @@ def get_project_tasks(project_id, exclude_task_id=None):
         return []
 
 def create_task_form(project_id):
+    # Initialize subtask count if not exists
+    if 'subtask_count' not in st.session_state:
+        st.session_state.subtask_count = 1
+
+    # Add subtask button (outside the form)
+    if st.button("+ Add Another Subtask"):
+        st.session_state.subtask_count += 1
+        st.rerun()
+
     try:
         with st.form("task_form"):
             st.write("### Create New Task")
@@ -54,15 +63,8 @@ def create_task_form(project_id):
                     format_func=lambda x: x[1]
                 )
             
-            # Subtasks section with dynamic addition
+            # Subtasks section
             st.write("### Subtasks")
-            if 'subtask_count' not in st.session_state:
-                st.session_state.subtask_count = 1
-
-            # Add subtask button
-            if st.button("+ Add Another Subtask"):
-                st.session_state.subtask_count += 1
-
             subtasks = []
             for i in range(st.session_state.subtask_count):
                 with st.container():
@@ -89,6 +91,7 @@ def create_task_form(project_id):
                 type=['txt', 'pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx']
             )
             
+            # Create form submit button
             submitted = st.form_submit_button("Create Task")
             
             if submitted and title:
