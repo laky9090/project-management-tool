@@ -13,7 +13,8 @@ def init_database():
                 name VARCHAR(100) NOT NULL,
                 description TEXT,
                 deadline DATE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                deleted_at TIMESTAMP
             )
         ''')
         
@@ -28,14 +29,9 @@ def init_database():
                 priority VARCHAR(50) DEFAULT 'Medium',
                 due_date DATE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                deleted_at TIMESTAMP
             )
-        ''')
-
-        # Add deleted_at column to tasks table
-        execute_query('''
-            ALTER TABLE tasks 
-            ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP;
         ''')
         
         # Create task_dependencies table

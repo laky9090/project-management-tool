@@ -6,6 +6,33 @@ import time
 
 logger = logging.getLogger(__name__)
 
+def delete_project(project_id):
+    try:
+        result = execute_query(
+            "UPDATE projects SET deleted_at = CURRENT_TIMESTAMP WHERE id = %s RETURNING id",
+            (project_id,)
+        )
+        return bool(result)
+    except Exception as e:
+        logger.error(f"Error deleting project: {str(e)}")
+        return False
+
+def restore_project(project_id):
+    try:
+        result = execute_query(
+            "UPDATE projects SET deleted_at = NULL WHERE id = %s RETURNING id",
+            (project_id,)
+        )
+        return bool(result)
+    except Exception as e:
+        logger.error(f"Error restoring project: {str(e)}")
+        return False
+
+def get_deleted_projects():
+    return execute_query(
+        "SELECT * FROM projects WHERE deleted_at IS NOT NULL ORDER BY created_at DESC"
+    )
+
 def create_project_form():
     with st.form("project_form"):
         st.write("### Create Project")
@@ -131,25 +158,28 @@ def edit_project_form(project_id):
 def list_projects():
     """List all projects with edit functionality"""
     try:
+        # Get active projects
         projects = execute_query('''
             SELECT p.*,
                    COUNT(t.id) as total_tasks,
                    COUNT(CASE WHEN t.status = 'Done' THEN 1 END) as completed_tasks
             FROM projects p
-            LEFT JOIN tasks t ON p.id = t.project_id
+            LEFT JOIN tasks t ON p.id = t.project_id AND t.deleted_at IS NULL
+            WHERE p.deleted_at IS NULL
             GROUP BY p.id
             ORDER BY p.created_at DESC
         ''')
         
         selected_project = None
         
+        # Display active projects
         if projects:
+            st.write("### Active Projects")
             for project in projects:
                 with st.container():
-                    col1, col2, col3 = st.columns([3, 1, 1])
+                    col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
                     
                     with col1:
-                        # Project name and progress
                         if st.button(
                             f"{project['name']} ({project['completed_tasks']}/{project['total_tasks']} tasks)",
                             key=f"select_project_{project['id']}"
@@ -157,22 +187,47 @@ def list_projects():
                             selected_project = project['id']
                             
                     with col2:
-                        # Deadline with French date format
                         st.write(f"Due: {project['deadline'].strftime('%d/%m/%Y') if project['deadline'] else 'No deadline'}")
                         
                     with col3:
-                        # Edit button
-                        if st.button("✏️", key=f"edit_project_{project['id']}"):
+                        if st.button("✏️", key=f"edit_project_{project['id']}", help="Edit project"):
                             st.session_state.editing_project = project['id']
                             
+                    with col4:
+                        if st.button("🗑️", key=f"delete_project_{project['id']}", help="Delete project"):
+                            if delete_project(project['id']):
+                                st.success(f"Project '{project['name']}' deleted")
+                                time.sleep(0.5)
+                                st.rerun()
+                            else:
+                                st.error("Failed to delete project")
+                    
                     # Show edit form if this project is being edited
                     if st.session_state.get('editing_project') == project['id']:
                         if edit_project_form(project['id']):
                             st.rerun()
-            
-            return selected_project
         else:
-            st.info("No projects found. Create one to get started!")
+            st.info("No active projects found. Create one to get started!")
+        
+        # Display deleted projects
+        deleted_projects = get_deleted_projects()
+        if deleted_projects:
+            st.write("### Deleted Projects")
+            for project in deleted_projects:
+                with st.container():
+                    col1, col2 = st.columns([4, 1])
+                    
+                    with col1:
+                        st.write(f"{project['name']} (Deleted on: {project['deleted_at'].strftime('%d/%m/%Y')})")
+                        
+                    with col2:
+                        if st.button("🔄", key=f"restore_project_{project['id']}", help="Restore project"):
+                            if restore_project(project['id']):
+                                st.success(f"Project '{project['name']}' restored")
+                                time.sleep(0.5)
+                                st.rerun()
+                            else:
+                                st.error("Failed to restore project")
         
         return selected_project
         
