@@ -31,6 +31,12 @@ def init_database():
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+
+        # Add deleted_at column to tasks table
+        execute_query('''
+            ALTER TABLE tasks 
+            ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP;
+        ''')
         
         # Create task_dependencies table
         execute_query('''
