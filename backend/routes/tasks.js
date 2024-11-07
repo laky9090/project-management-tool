@@ -19,7 +19,6 @@ const upload = multer({ storage: storage });
 
 // Get tasks by project with dependencies and subtasks
 router.get('/project/:projectId', async (req, res) => {
-  console.log('Fetching tasks for project:', req.params.projectId);
   try {
     const { rows: tasks } = await db.query(
       `SELECT t.*, 
@@ -44,11 +43,92 @@ router.get('/project/:projectId', async (req, res) => {
       [req.params.projectId]
     );
     
-    console.log('Found tasks:', tasks);
     res.json(tasks);
   } catch (err) {
     console.error('Error fetching tasks:', err);
     res.status(500).json({ error: 'Failed to fetch tasks' });
+  }
+});
+
+// Update task
+router.patch('/:taskId', async (req, res) => {
+  const { taskId } = req.params;
+  const updates = req.body;
+
+  try {
+    const allowedUpdates = ['title', 'description', 'status', 'priority', 'due_date', 'assignee'];
+    const updateFields = Object.keys(updates)
+      .filter(key => allowedUpdates.includes(key))
+      .map((key, index) => `${key} = $${index + 1}`);
+    
+    const values = Object.keys(updates)
+      .filter(key => allowedUpdates.includes(key))
+      .map(key => updates[key]);
+
+    if (updateFields.length === 0) {
+      return res.status(400).json({ error: 'No valid fields to update' });
+    }
+
+    const query = `
+      UPDATE tasks 
+      SET ${updateFields.join(', ')}, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $${values.length + 1}
+      RETURNING *
+    `;
+
+    const { rows } = await db.query(query, [...values, taskId]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('Error updating task:', err);
+    res.status(500).json({ error: 'Failed to update task' });
+  }
+});
+
+// Delete task (soft delete)
+router.delete('/:taskId', async (req, res) => {
+  const { taskId } = req.params;
+
+  try {
+    const { rows } = await db.query(
+      'UPDATE tasks SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING id',
+      [taskId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    res.json({ message: 'Task deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting task:', err);
+    res.status(500).json({ error: 'Failed to delete task' });
+  }
+});
+
+// Update task status
+router.patch('/:taskId/status', async (req, res) => {
+  const { taskId } = req.params;
+  const { status } = req.body;
+
+  try {
+    const { rows } = await db.query(
+      'UPDATE tasks SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
+      [status, taskId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('Error updating task status:', err);
+    res.status(500).json({ error: 'Failed to update task status' });
   }
 });
 
@@ -59,7 +139,7 @@ router.patch('/:taskId/assign', async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      'UPDATE tasks SET assignee = $1 WHERE id = $2 RETURNING *',
+      'UPDATE tasks SET assignee = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
       [assignee, taskId]
     );
 
@@ -71,100 +151,6 @@ router.patch('/:taskId/assign', async (req, res) => {
   } catch (err) {
     console.error('Error assigning task:', err);
     res.status(500).json({ error: 'Failed to assign task' });
-  }
-});
-
-// Create new task
-router.post('/', async (req, res) => {
-  console.log('Creating new task with data:', req.body);
-  const { 
-    project_id, 
-    title, 
-    description, 
-    status, 
-    priority, 
-    due_date,
-    dependencies,
-    subtasks,
-    assignee 
-  } = req.body;
-  
-  if (!project_id) {
-    console.error('Missing project_id');
-    return res.status(400).json({ error: 'project_id is required' });
-  }
-
-  try {
-    await db.query('BEGIN');
-    
-    // Create main task
-    const taskResult = await db.query(
-      `INSERT INTO tasks (project_id, title, description, status, priority, due_date, assignee)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING *`,
-      [project_id, title, description, status, priority, due_date, assignee]
-    );
-    
-    const task = taskResult.rows[0];
-
-    // Add dependencies
-    if (dependencies && dependencies.length > 0) {
-      for (const depId of dependencies) {
-        await db.query(
-          `INSERT INTO task_dependencies (task_id, depends_on_id)
-           VALUES ($1, $2)`,
-          [task.id, depId]
-        );
-      }
-    }
-
-    // Add subtasks
-    if (subtasks && subtasks.length > 0) {
-      for (const subtask of subtasks) {
-        await db.query(
-          `INSERT INTO subtasks (parent_task_id, title, description, completed)
-           VALUES ($1, $2, $3, $4)`,
-          [task.id, subtask.title, subtask.description, subtask.completed || false]
-        );
-      }
-    }
-
-    await db.query('COMMIT');
-    res.status(201).json(task);
-  } catch (err) {
-    await db.query('ROLLBACK');
-    console.error('Error creating task:', err);
-    res.status(500).json({ 
-      error: 'Failed to create task',
-      details: err.message
-    });
-  }
-});
-
-// Update subtask status
-router.patch('/subtasks/:subtaskId', async (req, res) => {
-  const { subtaskId } = req.params;
-  const { completed } = req.body;
-
-  try {
-    const result = await db.query(
-      `UPDATE subtasks 
-       SET completed = $1,
-           status = CASE WHEN $1 THEN 'Done' ELSE 'To Do' END,
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = $2
-       RETURNING *`,
-      [completed, subtaskId]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Subtask not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error('Error updating subtask:', err);
-    res.status(500).json({ error: 'Failed to update subtask' });
   }
 });
 

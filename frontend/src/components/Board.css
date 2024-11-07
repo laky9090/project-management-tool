@@ -55,13 +55,60 @@
   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.task-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.edit-button,
+.delete-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.edit-button:hover,
+.delete-button:hover {
+  background-color: #f8f9fa;
+}
+
+.task-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.task-edit-form input,
+.task-edit-form textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.task-edit-form textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
 .task-card h4 {
-  margin: 0 0 8px 0;
+  margin: 0;
   color: #212529;
 }
 
 .task-card p {
-  margin: 0 0 8px 0;
+  margin: 8px 0;
   color: #6c757d;
   font-size: 14px;
 }
