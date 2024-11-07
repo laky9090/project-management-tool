@@ -7,6 +7,41 @@ import time
 
 logger = logging.getLogger(__name__)
 
+def delete_task(task_id):
+    try:
+        execute_query("BEGIN")
+        # Delete will cascade to dependencies and subtasks
+        result = execute_query(
+            "DELETE FROM tasks WHERE id = %s RETURNING id",
+            (task_id,)
+        )
+        if result:
+            execute_query("COMMIT")
+            return True
+        execute_query("ROLLBACK")
+        return False
+    except Exception as e:
+        execute_query("ROLLBACK")
+        logger.error(f"Error deleting task: {str(e)}")
+        return False
+
+def delete_subtask(subtask_id):
+    try:
+        execute_query("BEGIN")
+        result = execute_query(
+            "DELETE FROM subtasks WHERE id = %s RETURNING id",
+            (subtask_id,)
+        )
+        if result:
+            execute_query("COMMIT")
+            return True
+        execute_query("ROLLBACK")
+        return False
+    except Exception as e:
+        execute_query("ROLLBACK")
+        logger.error(f"Error deleting subtask: {str(e)}")
+        return False
+
 def get_task_dependencies(task_id):
     """Get dependencies for a task"""
     try:
@@ -68,10 +103,11 @@ def render_task_card(task):
     """Render a task card with dependencies and subtasks"""
     with st.container():
         # Task header
-        col1, col2 = st.columns([3, 1])
+        col1, col2, col3 = st.columns([3, 1, 1])
         with col1:
             st.markdown(f"### {task['title']}")
         with col2:
+            # Status dropdown
             new_status = st.selectbox(
                 "Status",
                 ["To Do", "In Progress", "Done"],
@@ -84,6 +120,14 @@ def render_task_card(task):
                     (new_status, task['id'])
                 )
                 st.rerun()
+        with col3:
+            if st.button("🗑️", key=f"delete_task_{task['id']}", help="Delete task"):
+                if delete_task(task['id']):
+                    st.success("Task deleted successfully!")
+                    time.sleep(0.5)
+                    st.rerun()
+                else:
+                    st.error("Failed to delete task")
 
         # Task description and metadata
         if task['description']:
@@ -112,7 +156,7 @@ def render_task_card(task):
         subtasks = get_task_subtasks(task['id'])
         if subtasks:
             for subtask in subtasks:
-                col1, col2 = st.columns([4, 1])
+                col1, col2, col3 = st.columns([3, 1, 1])
                 with col1:
                     st.write(f"- {subtask['title']}")
                     if subtask['description']:
@@ -126,6 +170,14 @@ def render_task_card(task):
                     if completed != subtask['completed']:
                         if update_subtask_status(subtask['id'], completed):
                             st.rerun()
+                with col3:
+                    if st.button("🗑️", key=f"delete_subtask_{subtask['id']}", help="Delete subtask"):
+                        if delete_subtask(subtask['id']):
+                            st.success("Subtask deleted successfully!")
+                            time.sleep(0.5)
+                            st.rerun()
+                        else:
+                            st.error("Failed to delete subtask")
         else:
             st.write("*No subtasks*")
 
