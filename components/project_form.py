@@ -1,6 +1,5 @@
 import streamlit as st
 from database.connection import execute_query
-from datetime import datetime
 import logging
 import time
 
@@ -34,12 +33,13 @@ def get_deleted_projects():
     )
 
 def create_project_form():
+    """Create new project form"""
     with st.form("project_form"):
         st.write("### Create Project")
         
         name = st.text_input("Project Name")
         description = st.text_area("Description")
-        deadline = st.date_input("Deadline", min_value=datetime.today())
+        deadline = st.date_input("Deadline")
         
         submitted = st.form_submit_button("Create Project")
         
@@ -56,9 +56,7 @@ def create_project_form():
                 
                 if result:
                     st.success(f"Project '{name}' created successfully!")
-                    st.session_state.current_view = 'Board'
                     time.sleep(0.5)
-                    st.rerun()
                     return True
                     
                 st.error("Failed to create project - database error")
@@ -81,20 +79,12 @@ def edit_project_form(project_id):
             
         project = project[0]
         
-        # Store original values in session state for comparison
-        if 'original_project_values' not in st.session_state:
-            st.session_state.original_project_values = {
-                'name': project['name'],
-                'description': project['description'],
-                'deadline': project['deadline']
-            }
-        
         with st.form(key=f"edit_project_form_{project_id}"):
             st.write("### Edit Project")
             
             name = st.text_input("Project Name", value=project['name'])
             description = st.text_area("Description", value=project['description'] or "")
-            deadline = st.date_input("Deadline", value=project['deadline'] if project['deadline'] else datetime.today())
+            deadline = st.date_input("Deadline", value=project['deadline'] if project['deadline'] else None)
             
             col1, col2 = st.columns([1, 1])
             with col1:
@@ -103,7 +93,6 @@ def edit_project_form(project_id):
                 cancel_button = st.form_submit_button("Cancel")
             
             if cancel_button:
-                del st.session_state.original_project_values
                 st.session_state.editing_project = None
                 return True
                 
@@ -111,14 +100,6 @@ def edit_project_form(project_id):
                 if not name:
                     st.error("Project name cannot be empty!")
                     return False
-                    
-                # Check if any changes were made
-                if (name == st.session_state.original_project_values['name'] and
-                    description == st.session_state.original_project_values['description'] and
-                    deadline == st.session_state.original_project_values['deadline']):
-                    st.warning("No changes were made.")
-                    st.session_state.editing_project = None
-                    return True
                 
                 try:
                     execute_query('BEGIN')
@@ -132,10 +113,8 @@ def edit_project_form(project_id):
                     if result:
                         execute_query('COMMIT')
                         st.success("Project updated successfully!")
-                        # Clear the original values from session state
-                        del st.session_state.original_project_values
                         st.session_state.editing_project = None
-                        time.sleep(0.5)  # Add delay to ensure message is visible
+                        time.sleep(0.5)
                         return True
                     else:
                         execute_query('ROLLBACK')

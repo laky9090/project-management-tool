@@ -18,6 +18,12 @@ def init_database():
             )
         ''')
         
+        # Add deleted_at column to projects table if it doesn't exist
+        execute_query('''
+            ALTER TABLE projects 
+            ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP;
+        ''')
+        
         # Create tasks table
         execute_query('''
             CREATE TABLE IF NOT EXISTS tasks (
