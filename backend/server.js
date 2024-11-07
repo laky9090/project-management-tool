@@ -30,8 +30,8 @@ app.use(express.json());
 
 // API Routes
 app.use('/api/auth', authRouter);
-app.use('/api/tasks', authMiddleware, tasksRouter);
-app.use('/api/projects', projectsRouter); // Removed authMiddleware temporarily
+app.use('/api/tasks', tasksRouter); // Removed authMiddleware
+app.use('/api/projects', projectsRouter);
 
 // Serve static files
 app.use(express.static(path.join(__dirname, '../frontend/build')));

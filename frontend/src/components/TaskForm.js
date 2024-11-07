@@ -9,24 +9,9 @@ const TaskForm = ({ projectId }) => {
     status: 'To Do',
     priority: 'Medium',
     assignee: '',
-    due_date: new Date().toISOString().split('T')[0],
-    assignee_id: ''
+    due_date: new Date().toISOString().split('T')[0]
   });
   const [fileAttachment, setFileAttachment] = useState(null);
-  const [users, setUsers] = useState([]);
-
-  // Fetch available users for assignment
-  React.useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const response = await api.getUsers();
-        setUsers(response.data);
-      } catch (error) {
-        console.error('Error fetching users:', error);
-      }
-    };
-    fetchUsers();
-  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -56,8 +41,7 @@ const TaskForm = ({ projectId }) => {
         status: 'To Do',
         priority: 'Medium',
         assignee: '',
-        due_date: new Date().toISOString().split('T')[0],
-        assignee_id: ''
+        due_date: new Date().toISOString().split('T')[0]
       });
       setFileAttachment(null);
 
@@ -117,18 +101,13 @@ const TaskForm = ({ projectId }) => {
       </div>
       <div className="form-row">
         <div className="form-group">
-          <select 
-            name="assignee_id"
-            value={formData.assignee_id}
+          <input
+            type="text"
+            name="assignee"
+            value={formData.assignee}
             onChange={handleChange}
-          >
-            <option value="">Select Assignee</option>
-            {users.map(user => (
-              <option key={user.id} value={user.id}>
-                {user.username}
-              </option>
-            ))}
-          </select>
+            placeholder="Assignee Name"
+          />
         </div>
         <div className="form-group">
           <input

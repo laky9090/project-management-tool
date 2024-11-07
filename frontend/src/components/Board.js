@@ -75,58 +75,60 @@ const Board = ({ projectId }) => {
     <DragDropContext onDragEnd={onDragEnd}>
       <div className="board">
         {error && <div className="error-message">{error}</div>}
-        {Object.entries(tasks).map(([status, statusTasks]) => (
-          <div key={status} className="column">
-            <h3>{status}</h3>
-            <Droppable droppableId={status}>
-              {(provided) => (
-                <div
-                  {...provided.droppableProps}
-                  ref={provided.innerRef}
-                  className="task-list"
-                >
-                  {statusTasks.map((task, index) => (
-                    <Draggable
-                      key={task.id}
-                      draggableId={task.id.toString()}
-                      index={index}
-                    >
-                      {(provided) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                          className="task-card"
-                        >
-                          <h4>{task.title}</h4>
-                          <p>{task.description}</p>
-                          <div className="task-meta">
-                            <span className={`priority ${task.priority.toLowerCase()}`}>
-                              {task.priority}
-                            </span>
-                            <select
-                              value={task.assignee_id || ''}
-                              onChange={(e) => handleAssigneeChange(task.id, e.target.value)}
-                              className="assignee-select"
-                            >
-                              <option value="">Unassigned</option>
-                              {users.map(user => (
-                                <option key={user.id} value={user.id}>
-                                  {user.username}
-                                </option>
-                              ))}
-                            </select>
+        <div className="board-columns">
+          {Object.entries(tasks).map(([status, statusTasks]) => (
+            <div key={status} className="column">
+              <h3>{status}</h3>
+              <Droppable droppableId={status}>
+                {(provided) => (
+                  <div
+                    {...provided.droppableProps}
+                    ref={provided.innerRef}
+                    className="task-list"
+                  >
+                    {statusTasks.map((task, index) => (
+                      <Draggable
+                        key={task.id}
+                        draggableId={task.id.toString()}
+                        index={index}
+                      >
+                        {(provided) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                            className="task-card"
+                          >
+                            <h4>{task.title}</h4>
+                            <p>{task.description}</p>
+                            <div className="task-meta">
+                              <span className={`priority ${task.priority.toLowerCase()}`}>
+                                {task.priority}
+                              </span>
+                              <select
+                                value={task.assignee_id || ''}
+                                onChange={(e) => handleAssigneeChange(task.id, e.target.value)}
+                                className="assignee-select"
+                              >
+                                <option value="">Unassigned</option>
+                                {users.map(user => (
+                                  <option key={user.id} value={user.id}>
+                                    {user.username}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
-          </div>
-        ))}
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            </div>
+          ))}
+        </div>
       </div>
     </DragDropContext>
   );

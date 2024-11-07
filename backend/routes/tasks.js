@@ -55,12 +55,12 @@ router.get('/project/:projectId', async (req, res) => {
 // Update task assignment
 router.patch('/:taskId/assign', async (req, res) => {
   const { taskId } = req.params;
-  const { assignee_id } = req.body;
+  const { assignee } = req.body;
 
   try {
     const { rows } = await db.query(
       'UPDATE tasks SET assignee = $1 WHERE id = $2 RETURNING *',
-      [assignee_id, taskId]
+      [assignee, taskId]
     );
 
     if (rows.length === 0) {
@@ -74,7 +74,7 @@ router.patch('/:taskId/assign', async (req, res) => {
   }
 });
 
-// Create new task with dependencies and subtasks
+// Create new task
 router.post('/', async (req, res) => {
   console.log('Creating new task with data:', req.body);
   const { 
@@ -86,7 +86,7 @@ router.post('/', async (req, res) => {
     due_date,
     dependencies,
     subtasks,
-    assignee_id 
+    assignee 
   } = req.body;
   
   if (!project_id) {
@@ -102,7 +102,7 @@ router.post('/', async (req, res) => {
       `INSERT INTO tasks (project_id, title, description, status, priority, due_date, assignee)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-      [project_id, title, description, status, priority, due_date, assignee_id]
+      [project_id, title, description, status, priority, due_date, assignee]
     );
     
     const task = taskResult.rows[0];
