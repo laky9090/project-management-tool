@@ -5,6 +5,8 @@ import streamlit as st
 import logging
 import time
 from functools import wraps
+import hashlib
+import json
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -24,9 +26,15 @@ def get_connection():
         logger.error(f"Database connection error: {str(e)}")
         return None
 
+def generate_etag(data):
+    """Generate ETag for data"""
+    if isinstance(data, (list, dict)):
+        data = json.dumps(data, sort_keys=True)
+    return hashlib.md5(str(data).encode()).hexdigest()
+
 def cache_query(ttl_seconds=300):
     """
-    Cache decorator for database queries with TTL
+    Cache decorator for database queries with TTL and ETag support
     """
     def decorator(func):
         @wraps(func)
@@ -34,7 +42,7 @@ def cache_query(ttl_seconds=300):
             # Create cache key from function name and arguments
             cache_key = f"{func.__name__}_{str(args)}_{str(kwargs)}"
             
-            # Check if result is in session state cache
+            # Initialize cache in session state if needed
             if 'query_cache' not in st.session_state:
                 st.session_state.query_cache = {}
                 
@@ -48,17 +56,27 @@ def cache_query(ttl_seconds=300):
             
             # Execute query and cache result
             result = func(*args, **kwargs)
+            
+            # Generate ETag for the result
+            etag = generate_etag(result)
+            
+            # Cache the result with metadata
             st.session_state.query_cache[cache_key] = {
                 'data': result,
-                'timestamp': current_time
+                'timestamp': current_time,
+                'etag': etag
             }
+            
             logger.info(f"Cache miss for query: {cache_key}")
             return result
         return wrapper
     return decorator
 
 @cache_query(ttl_seconds=300)
-def execute_query(query, params=None):
+def execute_query(query, params=None, batch_size=1000):
+    """
+    Execute database query with caching and batch processing support
+    """
     conn = None
     cur = None
     try:
@@ -78,9 +96,14 @@ def execute_query(query, params=None):
             
         cur.execute(query, params)
         
-        # For SELECT queries
+        # For SELECT queries with batch processing
         if query.strip().upper().startswith('SELECT'):
-            results = cur.fetchall()
+            results = []
+            while True:
+                batch = cur.fetchmany(batch_size)
+                if not batch:
+                    break
+                results.extend(batch)
             logger.info(f"Query returned {len(results)} rows")
             return results
             
@@ -114,3 +137,36 @@ def execute_query(query, params=None):
         if conn:
             conn.close()
             logger.info("Database connection closed")
+
+def batch_execute(queries):
+    """
+    Execute multiple queries in a single transaction
+    """
+    conn = None
+    cur = None
+    try:
+        conn = get_connection()
+        if not conn:
+            logger.error("Failed to establish database connection")
+            return False
+            
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        for query, params in queries:
+            cur.execute(query, params)
+            
+        conn.commit()
+        logger.info(f"Batch execution completed successfully: {len(queries)} queries")
+        return True
+        
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        logger.error(f"Batch execution error: {str(e)}")
+        return False
+        
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
