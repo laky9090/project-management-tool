@@ -2,6 +2,7 @@ import streamlit as st
 from database.connection import execute_query
 import logging
 import time
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -28,9 +29,19 @@ def restore_project(project_id):
         return False
 
 def get_deleted_projects():
-    return execute_query(
-        "SELECT * FROM projects WHERE deleted_at IS NOT NULL ORDER BY created_at DESC"
-    )
+    try:
+        projects = execute_query(
+            "SELECT * FROM projects WHERE deleted_at IS NOT NULL ORDER BY created_at DESC"
+        )
+        # Convert datetime objects to ISO format strings
+        for project in projects:
+            project['created_at'] = project['created_at'].isoformat() if project['created_at'] else None
+            project['deleted_at'] = project['deleted_at'].isoformat() if project['deleted_at'] else None
+            project['deadline'] = project['deadline'].isoformat() if project['deadline'] else None
+        return projects
+    except Exception as e:
+        logger.error(f"Error getting deleted projects: {str(e)}")
+        return []
 
 def create_project_form():
     """Create new project form"""
@@ -137,7 +148,7 @@ def edit_project_form(project_id):
 def list_projects():
     """List all projects with edit functionality"""
     try:
-        # Get active projects
+        # Get active projects with task counts
         projects = execute_query('''
             SELECT p.*,
                    COUNT(t.id) as total_tasks,
@@ -151,8 +162,15 @@ def list_projects():
         
         selected_project = None
         
-        # Display active projects
+        # Process datetime fields before display
         if projects:
+            for project in projects:
+                # Convert datetime objects to ISO format strings
+                project['created_at'] = project['created_at'].isoformat() if project['created_at'] else None
+                project['deleted_at'] = project['deleted_at'].isoformat() if project['deleted_at'] else None
+                project['deadline'] = project['deadline'].isoformat() if project['deadline'] else None
+                
+            # Display active projects
             st.write("### Active Projects")
             for project in projects:
                 with st.container():
@@ -166,7 +184,8 @@ def list_projects():
                             selected_project = project['id']
                             
                     with col2:
-                        st.write(f"Due: {project['deadline'].strftime('%d/%m/%Y') if project['deadline'] else 'No deadline'}")
+                        deadline_str = datetime.fromisoformat(project['deadline']).strftime('%d/%m/%Y') if project['deadline'] else 'No deadline'
+                        st.write(f"Due: {deadline_str}")
                         
                     with col3:
                         if st.button("✏️", key=f"edit_project_{project['id']}", help="Edit project"):
@@ -197,7 +216,8 @@ def list_projects():
                     col1, col2 = st.columns([4, 1])
                     
                     with col1:
-                        st.write(f"{project['name']} (Deleted on: {project['deleted_at'].strftime('%d/%m/%Y')})")
+                        deleted_date = datetime.fromisoformat(project['deleted_at']).strftime('%d/%m/%Y') if project['deleted_at'] else 'Unknown'
+                        st.write(f"{project['name']} (Deleted on: {deleted_date})")
                         
                     with col2:
                         if st.button("🔄", key=f"restore_project_{project['id']}", help="Restore project"):
