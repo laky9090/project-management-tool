@@ -6,11 +6,12 @@ const db = require('../db/connection');
 router.get('/', async (req, res) => {
   try {
     const { rows } = await db.query(
-      'SELECT * FROM projects ORDER BY created_at DESC'
+      'SELECT * FROM projects WHERE deleted_at IS NULL ORDER BY created_at DESC'
     );
+    console.log('Fetched projects:', rows);
     res.json(rows);
   } catch (err) {
-    console.error(err);
+    console.error('Error fetching projects:', err);
     res.status(500).json({ error: 'Failed to fetch projects' });
   }
 });
