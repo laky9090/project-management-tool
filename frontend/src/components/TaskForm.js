@@ -21,11 +21,12 @@ const TaskForm = ({ projectId }) => {
         project_id: projectId
       });
 
-      const response = await api.createTask({
+      const taskData = {
         ...formData,
         project_id: projectId
-      });
+      };
 
+      const response = await api.createTask(taskData);
       console.log('Task created successfully:', response.data);
 
       if (fileAttachment && response.data.id) {
@@ -35,6 +36,7 @@ const TaskForm = ({ projectId }) => {
         console.log('File attachment uploaded successfully');
       }
 
+      // Reset form
       setFormData({
         title: '',
         description: '',
@@ -48,8 +50,7 @@ const TaskForm = ({ projectId }) => {
       alert('Task created successfully!');
 
     } catch (error) {
-      console.error('Detailed error:', error);
-      console.error('Error response:', error.response?.data);
+      console.error('Error creating task:', error);
       alert(`Failed to create task: ${error.response?.data?.error || error.message}`);
     }
   };

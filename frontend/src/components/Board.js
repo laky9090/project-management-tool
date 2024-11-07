@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import api from '../api/api';
 import './Board.css';
@@ -7,16 +7,10 @@ const Board = ({ projectId }) => {
   const [tasks, setTasks] = useState({ 'To Do': [], 'In Progress': [], 'Done': [] });
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    loadTasks();
-  }, [projectId]);
-
-  const loadTasks = async () => {
+  const loadTasks = useCallback(async () => {
     try {
       setError(null);
-      console.log('Loading tasks for project:', projectId);
       const response = await api.getProjectTasks(projectId);
-      console.log('Loaded tasks:', response.data);
       
       const groupedTasks = response.data.reduce((acc, task) => {
         if (!acc[task.status]) acc[task.status] = [];
@@ -29,7 +23,11 @@ const Board = ({ projectId }) => {
       console.error('Error loading tasks:', error);
       setError('Failed to load tasks. Please try again later.');
     }
-  };
+  }, [projectId]);
+
+  useEffect(() => {
+    loadTasks();
+  }, [loadTasks]);
 
   const onDragEnd = async (result) => {
     if (!result.destination) return;
@@ -47,17 +45,33 @@ const Board = ({ projectId }) => {
     }
   };
 
-  const handleAssigneeChange = async (taskId, assignee) => {
+  const handleAssigneeChange = async (taskId, assignee, oldValue) => {
     try {
       setError(null);
-      console.log('Updating task assignment:', { taskId, assignee });
       await api.updateTaskAssignment(taskId, assignee);
       await loadTasks();
     } catch (error) {
       console.error('Error updating task assignment:', error);
       setError('Failed to update task assignment. Please try again.');
+      // Revert to old value on error
+      const tasksCopy = { ...tasks };
+      Object.keys(tasksCopy).forEach(status => {
+        const task = tasksCopy[status].find(t => t.id === taskId);
+        if (task) task.assignee = oldValue;
+      });
+      setTasks(tasksCopy);
     }
   };
+
+  const debounce = (func, wait) => {
+    let timeout;
+    return (...args) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func(...args), wait);
+    };
+  };
+
+  const debouncedAssigneeChange = debounce(handleAssigneeChange, 500);
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
@@ -96,11 +110,28 @@ const Board = ({ projectId }) => {
                               <input
                                 type="text"
                                 value={task.assignee || ''}
-                                onChange={(e) => handleAssigneeChange(task.id, e.target.value)}
+                                onChange={(e) => {
+                                  const newAssignee = e.target.value;
+                                  const oldAssignee = task.assignee;
+                                  // Update local state immediately
+                                  const tasksCopy = { ...tasks };
+                                  Object.keys(tasksCopy).forEach(s => {
+                                    const t = tasksCopy[s].find(t => t.id === task.id);
+                                    if (t) t.assignee = newAssignee;
+                                  });
+                                  setTasks(tasksCopy);
+                                  // Debounce API call
+                                  debouncedAssigneeChange(task.id, newAssignee, oldAssignee);
+                                }}
                                 placeholder="Assign to..."
                                 className="assignee-input"
                               />
                             </div>
+                            {task.due_date && (
+                              <div className="task-due-date">
+                                Due: {new Date(task.due_date).toLocaleDateString()}
+                              </div>
+                            )}
                           </div>
                         )}
                       </Draggable>
