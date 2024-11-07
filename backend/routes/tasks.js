@@ -71,7 +71,7 @@ router.patch('/:taskId', async (req, res) => {
 
     const query = `
       UPDATE tasks 
-      SET ${updateFields.join(', ')}, updated_at = CURRENT_TIMESTAMP
+      SET ${updateFields.join(', ')}
       WHERE id = $${values.length + 1}
       RETURNING *
     `;
@@ -117,7 +117,7 @@ router.patch('/:taskId/status', async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      'UPDATE tasks SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
+      'UPDATE tasks SET status = $1 WHERE id = $2 RETURNING *',
       [status, taskId]
     );
 
@@ -139,7 +139,7 @@ router.patch('/:taskId/assign', async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      'UPDATE tasks SET assignee = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
+      'UPDATE tasks SET assignee = $1 WHERE id = $2 RETURNING *',
       [assignee, taskId]
     );
 

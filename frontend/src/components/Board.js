@@ -104,7 +104,7 @@ const Board = ({ projectId }) => {
           {Object.entries(tasks).map(([status, statusTasks]) => (
             <div key={status} className="column">
               <h3>{status}</h3>
-              <Droppable droppableId={status} type="TASK">
+              <Droppable droppableId={status}>
                 {(provided) => (
                   <div
                     {...provided.droppableProps}
