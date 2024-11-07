@@ -2,6 +2,7 @@ import streamlit as st
 from database.connection import execute_query
 from datetime import datetime
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,7 @@ def create_project_form():
                 if result:
                     st.success(f"Project '{name}' created successfully!")
                     st.session_state.current_view = 'Board'
+                    time.sleep(0.5)
                     st.rerun()
                     return True
                     
@@ -60,7 +62,7 @@ def edit_project_form(project_id):
                 'deadline': project['deadline']
             }
         
-        with st.form("edit_project_form"):
+        with st.form(key=f"edit_project_form_{project_id}"):
             st.write("### Edit Project")
             
             name = st.text_input("Project Name", value=project['name'])
@@ -75,6 +77,7 @@ def edit_project_form(project_id):
             
             if cancel_button:
                 del st.session_state.original_project_values
+                st.session_state.editing_project = None
                 return True
                 
             if save_button:
@@ -87,6 +90,7 @@ def edit_project_form(project_id):
                     description == st.session_state.original_project_values['description'] and
                     deadline == st.session_state.original_project_values['deadline']):
                     st.warning("No changes were made.")
+                    st.session_state.editing_project = None
                     return True
                 
                 try:
@@ -103,7 +107,8 @@ def edit_project_form(project_id):
                         st.success("Project updated successfully!")
                         # Clear the original values from session state
                         del st.session_state.original_project_values
-                        st.rerun()
+                        st.session_state.editing_project = None
+                        time.sleep(0.5)  # Add delay to ensure message is visible
                         return True
                     else:
                         execute_query('ROLLBACK')
@@ -163,7 +168,6 @@ def list_projects():
                     # Show edit form if this project is being edited
                     if st.session_state.get('editing_project') == project['id']:
                         if edit_project_form(project['id']):
-                            st.session_state.editing_project = None
                             st.rerun()
             
             return selected_project
