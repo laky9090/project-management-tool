@@ -28,6 +28,7 @@ def create_project_form():
                 
                 if result:
                     st.success(f"Project '{name}' created successfully!")
+                    st.session_state.current_view = 'Board'
                     st.rerun()
                     return True
                     
@@ -42,51 +43,136 @@ def create_project_form():
 
 def edit_project_form(project_id):
     """Edit project form"""
-    project = execute_query('SELECT * FROM projects WHERE id = %s', (project_id,))[0]
-    
-    with st.form("edit_project_form"):
-        name = st.text_input("Project Name", value=project['name'])
-        description = st.text_area("Description", value=project['description'])
-        deadline = st.date_input("Deadline", value=project['deadline'])
+    try:
+        # Get current project data
+        project = execute_query('SELECT * FROM projects WHERE id = %s', (project_id,))
+        if not project:
+            st.error("Project not found!")
+            return False
+            
+        project = project[0]
         
-        if st.form_submit_button("Save Changes"):
-            try:
-                execute_query('''
-                    UPDATE projects 
-                    SET name = %s, description = %s, deadline = %s
-                    WHERE id = %s
-                ''', (name, description, deadline, project_id))
-                st.success("Project updated successfully!")
-                st.rerun()
+        # Store original values in session state for comparison
+        if 'original_project_values' not in st.session_state:
+            st.session_state.original_project_values = {
+                'name': project['name'],
+                'description': project['description'],
+                'deadline': project['deadline']
+            }
+        
+        with st.form("edit_project_form"):
+            st.write("### Edit Project")
+            
+            name = st.text_input("Project Name", value=project['name'])
+            description = st.text_area("Description", value=project['description'] or "")
+            deadline = st.date_input("Deadline", value=project['deadline'] if project['deadline'] else datetime.today())
+            
+            col1, col2 = st.columns([1, 1])
+            with col1:
+                save_button = st.form_submit_button("Save Changes")
+            with col2:
+                cancel_button = st.form_submit_button("Cancel")
+            
+            if cancel_button:
+                del st.session_state.original_project_values
                 return True
-            except Exception as e:
-                st.error(f"Error updating project: {str(e)}")
-                return False
-    return False
+                
+            if save_button:
+                if not name:
+                    st.error("Project name cannot be empty!")
+                    return False
+                    
+                # Check if any changes were made
+                if (name == st.session_state.original_project_values['name'] and
+                    description == st.session_state.original_project_values['description'] and
+                    deadline == st.session_state.original_project_values['deadline']):
+                    st.warning("No changes were made.")
+                    return True
+                
+                try:
+                    execute_query('BEGIN')
+                    result = execute_query('''
+                        UPDATE projects 
+                        SET name = %s, description = %s, deadline = %s
+                        WHERE id = %s
+                        RETURNING id
+                    ''', (name, description, deadline, project_id))
+                    
+                    if result:
+                        execute_query('COMMIT')
+                        st.success("Project updated successfully!")
+                        # Clear the original values from session state
+                        del st.session_state.original_project_values
+                        st.rerun()
+                        return True
+                    else:
+                        execute_query('ROLLBACK')
+                        st.error("Failed to update project")
+                        return False
+                        
+                except Exception as e:
+                    execute_query('ROLLBACK')
+                    logger.error(f"Error updating project: {str(e)}")
+                    st.error(f"Error updating project: {str(e)}")
+                    return False
+                    
+        return False
+        
+    except Exception as e:
+        logger.error(f"Error in edit form: {str(e)}")
+        st.error(f"An error occurred: {str(e)}")
+        return False
 
 def list_projects():
-    projects = execute_query('''
-        SELECT p.*
-        FROM projects p
-        ORDER BY p.created_at DESC
-    ''')
-    
-    selected_project = None
-    
-    if projects:
-        # Add edit button for each project
-        for project in projects:
-            col1, col2 = st.columns([4, 1])
-            with col1:
-                if st.button(f"{project['name']} - Due: {project['deadline'].strftime('%b %d, %Y') if project['deadline'] else 'No deadline'}", 
-                           key=f"select_project_{project['id']}"):
-                    selected_project = project['id']
-            with col2:
-                if st.button("✏️", key=f"edit_project_{project['id']}"):
-                    edit_project_form(project['id'])
+    """List all projects with edit functionality"""
+    try:
+        projects = execute_query('''
+            SELECT p.*,
+                   COUNT(t.id) as total_tasks,
+                   COUNT(CASE WHEN t.status = 'Done' THEN 1 END) as completed_tasks
+            FROM projects p
+            LEFT JOIN tasks t ON p.id = t.project_id
+            GROUP BY p.id
+            ORDER BY p.created_at DESC
+        ''')
+        
+        selected_project = None
+        
+        if projects:
+            for project in projects:
+                with st.container():
+                    col1, col2, col3 = st.columns([3, 1, 1])
+                    
+                    with col1:
+                        # Project name and progress
+                        if st.button(
+                            f"{project['name']} ({project['completed_tasks']}/{project['total_tasks']} tasks)",
+                            key=f"select_project_{project['id']}"
+                        ):
+                            selected_project = project['id']
+                            
+                    with col2:
+                        # Deadline
+                        st.write(f"Due: {project['deadline'].strftime('%b %d, %Y') if project['deadline'] else 'No deadline'}")
+                        
+                    with col3:
+                        # Edit button
+                        if st.button("✏️", key=f"edit_project_{project['id']}"):
+                            st.session_state.editing_project = project['id']
+                            
+                    # Show edit form if this project is being edited
+                    if st.session_state.get('editing_project') == project['id']:
+                        if edit_project_form(project['id']):
+                            st.session_state.editing_project = None
+                            st.rerun()
+            
+            return selected_project
+        else:
+            st.info("No projects found. Create one to get started!")
         
         return selected_project
-    else:
-        st.info("No projects found. Create one to get started!")
-    
-    return selected_project
+        
+    except Exception as e:
+        logger.error(f"Error listing projects: {str(e)}")
+        st.error(f"Error loading projects: {str(e)}")
+        return None
