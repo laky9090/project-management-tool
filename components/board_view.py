@@ -86,7 +86,6 @@ def get_task_subtasks(task_id):
         return []
 
 def update_task_assignee(task_id, assignee):
-    """Update task assignee"""
     try:
         result = execute_query("""
             UPDATE tasks 
@@ -100,55 +99,53 @@ def update_task_assignee(task_id, assignee):
         return False
 
 def render_task_card(task, is_deleted=False):
-    """Render a task card with all functionality matching the React frontend"""
     with st.container():
-        # Task title and action buttons in a single row
-        st.markdown(f"### {task['title']}")
+        col1, col2, col3 = st.columns([4, 1, 1])
         
-        # Action buttons in horizontal layout
-        if not is_deleted:
-            col1, col2 = st.columns([1, 1])
-            with col1:
+        with col1:
+            st.markdown(f"### {task['title']}")
+            
+        with col2:
+            if not is_deleted:
                 if st.button("✏️", key=f"edit_{task['id']}", help="Edit task"):
                     st.session_state[f"edit_mode_{task['id']}"] = True
-            with col2:
+                    
+        with col3:
+            if not is_deleted:
                 if st.button("🗑️", key=f"delete_{task['id']}", help="Delete task"):
                     if delete_task(task['id']):
                         st.success("Task deleted!")
                         time.sleep(0.5)
                         st.rerun()
-        else:
-            if st.button("🔄", key=f"restore_{task['id']}", help="Restore task"):
-                if restore_task(task['id']):
-                    st.success("Task restored!")
-                    time.sleep(0.5)
-                    st.rerun()
+            else:
+                if st.button("🔄", key=f"restore_{task['id']}", help="Restore task"):
+                    if restore_task(task['id']):
+                        st.success("Task restored!")
+                        time.sleep(0.5)
+                        st.rerun()
 
-        # Task description
         if task['description']:
             st.write(task['description'])
 
-        # Task metadata in a single row
-        with st.container():
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.write(f"**Priority:** {task['priority']}")
-            with col2:
-                st.write(f"**Due Date:** {task['due_date'].strftime('%d/%m/%Y') if task['due_date'] else 'Not set'}")
-            with col3:
-                if not is_deleted:
-                    new_status = st.selectbox(
-                        "Status",
-                        ["To Do", "In Progress", "Done"],
-                        index=["To Do", "In Progress", "Done"].index(task['status']),
-                        key=f"status_{task['id']}"
-                    )
-                    if new_status != task['status']:
-                        if execute_query(
-                            "UPDATE tasks SET status = %s WHERE id = %s",
-                            (new_status, task['id'])
-                        ):
-                            st.rerun()
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.write(f"**Priority:** {task['priority']}")
+        with col2:
+            st.write(f"**Due Date:** {task['due_date'].strftime('%d/%m/%Y') if task['due_date'] else 'Not set'}")
+        with col3:
+            if not is_deleted:
+                new_status = st.selectbox(
+                    "Status",
+                    ["To Do", "In Progress", "Done"],
+                    index=["To Do", "In Progress", "Done"].index(task['status']),
+                    key=f"status_{task['id']}"
+                )
+                if new_status != task['status']:
+                    if execute_query(
+                        "UPDATE tasks SET status = %s WHERE id = %s",
+                        (new_status, task['id'])
+                    ):
+                        st.rerun()
 
         # Assignee field
         new_assignee = st.text_input(
@@ -165,13 +162,12 @@ def render_task_card(task, is_deleted=False):
             else:
                 st.error("Failed to update assignee")
 
-        # Edit form (if in edit mode)
+        # Edit form with cancel button
         if not is_deleted and st.session_state.get(f"edit_mode_{task['id']}", False):
             with st.form(key=f"edit_task_{task['id']}"):
                 new_title = st.text_input("Title", value=task['title'])
                 new_description = st.text_area("Description", value=task['description'])
                 
-                # Form fields in a single row
                 col1, col2 = st.columns(2)
                 with col1:
                     new_priority = st.selectbox(
@@ -182,7 +178,13 @@ def render_task_card(task, is_deleted=False):
                 with col2:
                     new_due_date = st.date_input("Due Date", value=task['due_date'])
                 
-                if st.form_submit_button("Save Changes"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    submit = st.form_submit_button("Save Changes")
+                with col2:
+                    cancel = st.form_submit_button("Cancel")
+
+                if submit and new_title:
                     try:
                         result = execute_query('''
                             UPDATE tasks 
@@ -200,6 +202,10 @@ def render_task_card(task, is_deleted=False):
                             st.error("Failed to update task")
                     except Exception as e:
                         st.error(f"Error updating task: {str(e)}")
+                
+                if cancel:
+                    st.session_state[f"edit_mode_{task['id']}"] = False
+                    st.rerun()
 
         # Dependencies section
         if not is_deleted:
@@ -250,13 +256,19 @@ def render_board(project_id):
         if st.button("➕ Add New Task"):
             st.session_state.show_task_form = True
 
-        # Show task creation form
+        # Show task creation form with cancel button
         if st.session_state.get('show_task_form', False):
-            if create_task_form(project_id):
-                st.session_state.show_task_form = False
-                st.rerun()
+            col1, col2 = st.columns([1, 6])
+            with col1:
+                if st.button("❌ Cancel", key="cancel_task_form"):
+                    st.session_state.show_task_form = False
+                    st.rerun()
+            with col2:
+                if create_task_form(project_id):
+                    st.session_state.show_task_form = False
+                    st.rerun()
 
-        # Fetch all tasks for the project
+        # Fetch and display tasks
         tasks = execute_query("""
             SELECT t.*, 
                 array_agg(DISTINCT jsonb_build_object(
@@ -280,21 +292,16 @@ def render_board(project_id):
         """, (project_id,))
 
         if tasks:
-            # Group tasks by status
             task_groups = {"To Do": [], "In Progress": [], "Done": []}
             for task in tasks:
                 task_groups[task['status']].append(task)
 
-            # Create board columns
-            board_cols = st.columns(len(task_groups))
-            
-            # Render tasks in each column
-            for idx, (status, status_tasks) in enumerate(task_groups.items()):
-                with board_cols[idx]:
+            cols = st.columns(len(task_groups))
+            for i, (status, status_tasks) in enumerate(task_groups.items()):
+                with cols[i]:
                     st.write(f"### {status}")
                     for task in status_tasks:
                         with st.container():
-                            st.markdown("---")
                             render_task_card(task)
         else:
             st.info("No active tasks found. Create your first task to get started!")
@@ -307,7 +314,6 @@ def render_board(project_id):
             with st.expander("Show Deleted Tasks"):
                 for task in deleted_tasks:
                     with st.container():
-                        st.markdown("---")
                         render_task_card(task, is_deleted=True)
         else:
             st.info("No deleted tasks found.")
