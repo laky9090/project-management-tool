@@ -26,6 +26,7 @@ def get_project_tasks(project_id, exclude_task_id=None):
         return []
 
 def create_task_form(project_id):
+    """Create new task form with transaction handling"""
     # Initialize subtask count if not exists
     if 'subtask_count' not in st.session_state:
         st.session_state.subtask_count = 1
@@ -40,8 +41,8 @@ def create_task_form(project_id):
             st.write("### Create New Task")
             
             # Basic task information
-            title = st.text_input("Title", key="task_title")
-            description = st.text_area("Description", key="task_desc")
+            title = st.text_input("Title")
+            description = st.text_area("Description")
             
             # Task metadata
             col1, col2, col3, col4 = st.columns(4)
@@ -93,11 +94,17 @@ def create_task_form(project_id):
                 type=['txt', 'pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx']
             )
             
-            # Create form submit button
+            # Submit button
             submitted = st.form_submit_button("Create Task")
             
-            if submitted and title:
+            if submitted:
+                if not title:
+                    st.error("Task title is required")
+                    return False
+                    
                 try:
+                    logger.info(f"Starting task creation for project {project_id}")
+                    
                     # Start transaction
                     execute_query("BEGIN")
                     
@@ -105,24 +112,14 @@ def create_task_form(project_id):
                     result = execute_query('''
                         INSERT INTO tasks (project_id, title, description, status, priority, due_date, assignee)
                         VALUES (%s, %s, %s, %s, %s, %s, %s)
-                        RETURNING id, title;
+                        RETURNING id;
                     ''', (project_id, title, description, status, priority, due_date, assignee))
                     
                     if not result:
                         raise Exception("Failed to create task")
                         
                     task_id = result[0]['id']
-                    
-                    # Add dependencies
-                    if dependencies:
-                        for dep_id, _ in dependencies:
-                            dep_result = execute_query('''
-                                INSERT INTO task_dependencies (task_id, depends_on_id)
-                                VALUES (%s, %s)
-                                RETURNING id
-                            ''', (task_id, dep_id))
-                            if not dep_result:
-                                raise Exception("Failed to add dependencies")
+                    logger.info(f"Created task with ID {task_id}")
                     
                     # Add subtasks
                     if subtasks:
@@ -134,28 +131,35 @@ def create_task_form(project_id):
                             ''', (task_id, subtask['title'], subtask['description'], subtask['completed']))
                             if not subtask_result:
                                 raise Exception("Failed to create subtask")
+                        logger.info(f"Added {len(subtasks)} subtasks to task {task_id}")
                     
                     # Handle file upload
                     if uploaded_file:
                         file_id = save_uploaded_file(uploaded_file, task_id)
                         if not file_id:
                             raise Exception("Failed to save attachment")
+                        logger.info(f"Added attachment to task {task_id}")
                     
                     # Commit transaction
                     execute_query("COMMIT")
                     st.success(f"✅ Task '{title}' created successfully!")
-                    st.session_state.show_task_form = False  # Hide the form
-                    time.sleep(0.5)  # Ensure transaction completes
-                    st.rerun()
+                    
+                    # Reset form state
+                    st.session_state.subtask_count = 1
+                    st.session_state.show_task_form = False
+                    
+                    time.sleep(0.5)
                     return True
                     
                 except Exception as e:
                     execute_query("ROLLBACK")
-                    st.error(f"Error creating task: {str(e)}")
+                    logger.error(f"Error creating task: {str(e)}")
+                    st.error(f"Failed to create task: {str(e)}")
                     return False
                     
     except Exception as e:
-        st.error(f"Form error: {str(e)}")
+        logger.error(f"Form error: {str(e)}")
+        st.error(f"An error occurred: {str(e)}")
         return False
     
     return False

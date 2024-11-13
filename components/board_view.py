@@ -8,36 +8,119 @@ import time
 logger = logging.getLogger(__name__)
 
 def delete_task(task_id):
+    """Delete a task (soft delete with transaction)"""
     try:
+        logger.info(f"Starting delete operation for task {task_id}")
+        execute_query("BEGIN")
+        
         result = execute_query(
             "UPDATE tasks SET deleted_at = CURRENT_TIMESTAMP WHERE id = %s RETURNING id",
             (task_id,)
         )
-        return bool(result)
+        
+        if result:
+            logger.info(f"Task {task_id} marked as deleted successfully")
+            execute_query("COMMIT")
+            st.success("Task deleted successfully!")
+            time.sleep(0.5)
+            return True
+        else:
+            logger.error(f"No task found with ID {task_id}")
+            execute_query("ROLLBACK")
+            st.error("Task not found")
+            return False
+            
     except Exception as e:
-        logger.error(f"Error deleting task: {str(e)}")
+        execute_query("ROLLBACK")
+        logger.error(f"Error deleting task {task_id}: {str(e)}")
+        st.error(f"Failed to delete task: {str(e)}")
         return False
 
 def update_task_status(task_id, status):
+    """Update task status with transaction"""
     try:
+        logger.info(f"Starting status update for task {task_id} to {status}")
+        execute_query("BEGIN")
+        
         result = execute_query(
-            "UPDATE tasks SET status = %s WHERE id = %s RETURNING id",
+            "UPDATE tasks SET status = %s WHERE id = %s RETURNING id, title",
             (status, task_id)
         )
-        return bool(result)
+        
+        if result:
+            logger.info(f"Status updated successfully for task {task_id}")
+            execute_query("COMMIT")
+            st.success(f"Task status updated to {status}")
+            time.sleep(0.5)
+            return True
+        else:
+            logger.error(f"No task found with ID {task_id}")
+            execute_query("ROLLBACK")
+            st.error("Task not found")
+            return False
+            
     except Exception as e:
+        execute_query("ROLLBACK")
         logger.error(f"Error updating task status: {str(e)}")
+        st.error(f"Failed to update task status: {str(e)}")
         return False
 
 def update_task_assignee(task_id, assignee):
+    """Update task assignee with transaction"""
     try:
+        logger.info(f"Starting assignee update for task {task_id} to {assignee}")
+        execute_query("BEGIN")
+        
         result = execute_query(
-            "UPDATE tasks SET assignee = %s WHERE id = %s RETURNING id",
+            "UPDATE tasks SET assignee = %s WHERE id = %s RETURNING id, title",
             (assignee, task_id)
         )
-        return bool(result)
+        
+        if result:
+            logger.info(f"Assignee updated successfully for task {task_id}")
+            execute_query("COMMIT")
+            st.success(f"Task assigned to {assignee}")
+            time.sleep(0.5)
+            return True
+        else:
+            logger.error(f"No task found with ID {task_id}")
+            execute_query("ROLLBACK")
+            st.error("Task not found")
+            return False
+            
     except Exception as e:
+        execute_query("ROLLBACK")
         logger.error(f"Error updating task assignee: {str(e)}")
+        st.error(f"Failed to update task assignee: {str(e)}")
+        return False
+
+def restore_task(task_id):
+    """Restore a deleted task with transaction"""
+    try:
+        logger.info(f"Starting restore operation for task {task_id}")
+        execute_query("BEGIN")
+        
+        result = execute_query(
+            "UPDATE tasks SET deleted_at = NULL WHERE id = %s RETURNING id, title",
+            (task_id,)
+        )
+        
+        if result:
+            logger.info(f"Task {task_id} restored successfully")
+            execute_query("COMMIT")
+            st.success("Task restored successfully!")
+            time.sleep(0.5)
+            return True
+        else:
+            logger.error(f"No task found with ID {task_id}")
+            execute_query("ROLLBACK")
+            st.error("Task not found")
+            return False
+            
+    except Exception as e:
+        execute_query("ROLLBACK")
+        logger.error(f"Error restoring task: {str(e)}")
+        st.error(f"Failed to restore task: {str(e)}")
         return False
 
 def render_list_view(tasks):
@@ -118,19 +201,28 @@ def render_list_view(tasks):
                     cancel = st.form_submit_button("Cancel")
 
                 if submit and new_title:
-                    result = execute_query('''
-                        UPDATE tasks 
-                        SET title = %s, description = %s, priority = %s, due_date = %s
-                        WHERE id = %s
-                        RETURNING id
-                    ''', (new_title, new_description, new_priority, new_due_date, task['id']))
-                    
-                    if result:
-                        st.success("Task updated successfully!")
-                        st.session_state[f"edit_mode_{task['id']}"] = False
-                        st.rerun()
-                    else:
-                        st.error("Failed to update task")
+                    try:
+                        execute_query("BEGIN")
+                        result = execute_query('''
+                            UPDATE tasks 
+                            SET title = %s, description = %s, priority = %s, due_date = %s
+                            WHERE id = %s
+                            RETURNING id
+                        ''', (new_title, new_description, new_priority, new_due_date, task['id']))
+                        
+                        if result:
+                            execute_query("COMMIT")
+                            st.success("Task updated successfully!")
+                            st.session_state[f"edit_mode_{task['id']}"] = False
+                            time.sleep(0.5)
+                            st.rerun()
+                        else:
+                            execute_query("ROLLBACK")
+                            st.error("Failed to update task")
+                    except Exception as e:
+                        execute_query("ROLLBACK")
+                        logger.error(f"Error updating task: {str(e)}")
+                        st.error(f"Failed to update task: {str(e)}")
 
                 if cancel:
                     st.session_state[f"edit_mode_{task['id']}"] = False
@@ -175,14 +267,32 @@ def get_deleted_tasks(project_id):
     )
 
 def restore_task(task_id):
+    """Restore a deleted task with transaction"""
     try:
+        logger.info(f"Starting restore operation for task {task_id}")
+        execute_query("BEGIN")
+        
         result = execute_query(
-            "UPDATE tasks SET deleted_at = NULL WHERE id = %s RETURNING id",
+            "UPDATE tasks SET deleted_at = NULL WHERE id = %s RETURNING id, title",
             (task_id,)
         )
-        return bool(result)
+        
+        if result:
+            logger.info(f"Task {task_id} restored successfully")
+            execute_query("COMMIT")
+            st.success("Task restored successfully!")
+            time.sleep(0.5)
+            return True
+        else:
+            logger.error(f"No task found with ID {task_id}")
+            execute_query("ROLLBACK")
+            st.error("Task not found")
+            return False
+            
     except Exception as e:
+        execute_query("ROLLBACK")
         logger.error(f"Error restoring task: {str(e)}")
+        st.error(f"Failed to restore task: {str(e)}")
         return False
 
 def delete_subtask(subtask_id):
@@ -323,6 +433,7 @@ def render_task_card(task, is_deleted=False):
 
                 if submit and new_title:
                     try:
+                        execute_query("BEGIN")
                         result = execute_query('''
                             UPDATE tasks 
                             SET title = %s, description = %s, priority = %s, due_date = %s
@@ -331,14 +442,18 @@ def render_task_card(task, is_deleted=False):
                         ''', (new_title, new_description, new_priority, new_due_date, task['id']))
                         
                         if result:
+                            execute_query("COMMIT")
                             st.success("Task updated successfully!")
                             st.session_state[f"edit_mode_{task['id']}"] = False
                             time.sleep(0.5)
                             st.rerun()
                         else:
+                            execute_query("ROLLBACK")
                             st.error("Failed to update task")
                     except Exception as e:
-                        st.error(f"Error updating task: {str(e)}")
+                        execute_query("ROLLBACK")
+                        logger.error(f"Error updating task: {str(e)}")
+                        st.error(f"Failed to update task: {str(e)}")
                 
                 if cancel:
                     st.session_state[f"edit_mode_{task['id']}"] = False
