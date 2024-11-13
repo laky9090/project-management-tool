@@ -1,80 +1,182 @@
+/* Task form container */
 .task-form {
-  background-color: white;
-  padding: 20px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    background-color: white;
+    padding: 3rem;
+    border-radius: 16px;
+    margin-bottom: 3rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    border: 1px solid #f1f5f9;
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .task-form h3 {
-  margin-bottom: 16px;
-  color: #212529;
+    margin-bottom: 2.5rem;
+    color: #0f172a;
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: 0.025em;
+    line-height: 1.4;
 }
 
 .form-group {
-  margin-bottom: 16px;
+    margin-bottom: 2.5rem;
 }
 
 .form-row {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 16px;
+    display: flex;
+    gap: 2.5rem;
+    margin-bottom: 2.5rem;
 }
 
 .form-row .form-group {
-  flex: 1;
-  margin-bottom: 0;
+    flex: 1;
+    margin-bottom: 0;
 }
 
+/* Form elements */
 input, select, textarea {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  font-size: 14px;
+    width: 100%;
+    padding: 0.75rem 1.25rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    color: #0f172a;
+    transition: all 0.2s ease;
+    background-color: #f8fafc;
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+    background-color: white;
 }
 
 textarea {
-  min-height: 100px;
-  resize: vertical;
+    min-height: 140px;
+    resize: vertical;
+    line-height: 1.7;
 }
 
 .form-actions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
+    display: flex;
+    gap: 1.5rem;
+    justify-content: flex-end;
+    margin-top: 3rem;
 }
 
+/* Button styles */
 button {
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: none;
+    font-size: 0.875rem;
+    letter-spacing: 0.025em;
 }
 
 button[type="submit"] {
-  background-color: #007bff;
-  color: white;
+    background-color: #2563eb;
+    color: white;
 }
 
 button[type="submit"]:hover {
-  background-color: #0056b3;
+    background-color: #1d4ed8;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.1);
 }
 
 .cancel-button {
-  background-color: #6c757d;
-  color: white;
+    background-color: #f8fafc;
+    color: #475569;
 }
 
 .cancel-button:hover {
-  background-color: #5a6268;
+    background-color: #f1f5f9;
+    color: #0f172a;
 }
 
+/* Error message */
 .error-message {
-  background-color: #f8d7da;
-  color: #721c24;
-  padding: 12px;
-  border-radius: 4px;
-  margin-bottom: 16px;
+    background-color: #fef2f2;
+    color: #991b1b;
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 2.5rem;
+    border: 1px solid #fee2e2;
+}
+
+/* File input styling */
+input[type="file"] {
+    background-color: #f8fafc;
+    padding: 1.5rem;
+    border: 2px dashed #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+}
+
+input[type="file"]:hover {
+    border-color: #cbd5e1;
+    background-color: #f1f5f9;
+}
+
+/* Date input specific styling */
+input[type="date"] {
+    padding: 0.75rem 1.25rem;
+    cursor: pointer;
+}
+
+/* Label styling */
+label {
+    display: block;
+    margin-bottom: 0.75rem;
+    color: #475569;
+    font-size: 0.875rem;
+    font-weight: 500;
+    letter-spacing: 0.015em;
+}
+
+/* Placeholder styling */
+input::placeholder,
+textarea::placeholder {
+    color: #94a3b8;
+}
+
+/* Helper text */
+.helper-text {
+    margin-top: 0.75rem;
+    font-size: 0.75rem;
+    color: #64748b;
+    line-height: 1.5;
+}
+
+/* Select styling */
+select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236B7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+    background-position: right 1rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-right: 2.5rem;
+}
+
+/* Form groups */
+fieldset {
+    border: none;
+    padding: 0;
+    margin: 0 0 2.5rem 0;
+}
+
+legend {
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 1rem;
+    font-size: 1rem;
 }

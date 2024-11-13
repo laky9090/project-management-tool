@@ -1,84 +1,192 @@
-/* Task row styling */
+/* Task card styling */
+.stMarkdown {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    line-height: 1.6;
+    color: #1e293b;
+}
+
 [data-testid="stHorizontalBlock"] {
     background: white;
-    padding: 12px 8px;
-    margin: 4px 0;
-    border-radius: 4px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    transition: background-color 0.2s;
+    padding: 2.5rem;
+    margin: 1rem 0;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid #f1f5f9;
 }
 
 [data-testid="stHorizontalBlock"]:hover {
-    background: #f8f9fa;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+    border-color: #e2e8f0;
 }
 
-/* Column headers */
-[data-testid="column"] p {
-    margin: 0;
-    padding: 8px 4px;
-    font-size: 14px;
-    font-weight: 500;
+/* Column header styles */
+.column-header {
+    margin-bottom: 2.5rem;
+    color: #0f172a;
+    text-align: center;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid #f1f5f9;
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: 0.025em;
 }
 
-/* Status selectbox */
-[data-testid="stSelectbox"] {
-    min-width: 120px;
+/* Column styles */
+.column-container {
+    background-color: #f8fafc;
+    border-radius: 16px;
+    padding: 2.5rem;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
-/* Input fields */
-input[type="text"] {
-    padding: 4px 8px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    font-size: 14px;
-    width: 100%;
+/* Task metadata */
+.task-metadata {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin: 1.5rem 0;
+    padding: 1.25rem;
+    background-color: #f8fafc;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    color: #64748b;
 }
 
-/* Action buttons */
-button {
-    padding: 4px 8px;
-    border-radius: 4px;
-    border: none;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    margin: 0 2px;
-}
-
-button:hover {
-    background-color: #e9ecef;
-}
-
-/* Edit form styling */
-form {
-    background: white;
-    padding: 16px;
-    border-radius: 4px;
-    margin-top: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-/* Status colors */
-.status-todo {
-    color: #6c757d;
+/* Status colors with improved contrast */
+.status-done {
+    color: #059669;
+    font-weight: 600;
 }
 
 .status-progress {
-    color: #fd7e14;
+    color: #d97706;
+    font-weight: 600;
 }
 
-.status-done {
-    color: #198754;
-}
-
-/* Priority colors */
-.priority-low {
-    color: #198754;
+/* Priority indicators */
+.priority-high {
+    color: #dc2626;
+    font-weight: 600;
 }
 
 .priority-medium {
-    color: #fd7e14;
+    color: #d97706;
+    font-weight: 600;
 }
 
-.priority-high {
-    color: #dc3545;
+.priority-low {
+    color: #059669;
+    font-weight: 600;
+}
+
+/* Form elements */
+input, select, textarea {
+    width: 100%;
+    padding: 0.75rem 1.25rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    color: #0f172a;
+    transition: all 0.2s ease;
+    background-color: #f8fafc;
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+    background-color: white;
+}
+
+textarea {
+    min-height: 140px;
+    resize: vertical;
+    line-height: 1.7;
+}
+
+/* Button styles */
+button {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: none;
+    font-size: 0.875rem;
+}
+
+button:hover {
+    transform: translateY(-1px);
+}
+
+button.primary {
+    background-color: #2563eb;
+    color: white;
+}
+
+button.primary:hover {
+    background-color: #1d4ed8;
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.1);
+}
+
+button.secondary {
+    background-color: #f8fafc;
+    color: #475569;
+}
+
+button.secondary:hover {
+    background-color: #f1f5f9;
+    color: #0f172a;
+}
+
+/* Task form container */
+.task-form-container {
+    background-color: white;
+    padding: 3rem;
+    border-radius: 16px;
+    margin-bottom: 3rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    border: 1px solid #f1f5f9;
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Streamlit specific overrides */
+.stSelectbox > div > div {
+    background-color: #f8fafc;
+    border-radius: 8px;
+}
+
+.stTextInput > div > div > input {
+    background-color: #f8fafc;
+    border-radius: 8px;
+}
+
+/* Progress bar customization */
+div.stProgress > div > div {
+    height: 8px;
+    background-color: #f8fafc;
+    border-radius: 4px;
+}
+
+div.stProgress > div > div > div {
+    background-color: #059669;
+    border-radius: 4px;
+}
+
+/* Board containers */
+.board-columns {
+    display: flex;
+    gap: 3rem;
+    padding: 3rem;
+    min-height: calc(100vh - 200px);
+}
+
+/* Task list container */
+.task-list {
+    min-height: 150px;
 }
