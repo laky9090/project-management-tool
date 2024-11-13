@@ -1,75 +1,84 @@
-/* Task card styling */
-.stMarkdown {
-    font-family: 'Segoe UI', sans-serif;
-}
-
+/* Task row styling */
 [data-testid="stHorizontalBlock"] {
     background: white;
-    padding: 8px;
+    padding: 12px 8px;
     margin: 4px 0;
     border-radius: 4px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    transition: background-color 0.2s;
 }
 
 [data-testid="stHorizontalBlock"]:hover {
     background: #f8f9fa;
 }
 
-/* Status colors */
-.status-done {
-    color: #00c875;
+/* Column headers */
+[data-testid="column"] p {
+    margin: 0;
+    padding: 8px 4px;
+    font-size: 14px;
     font-weight: 500;
 }
 
-.status-progress {
-    color: #fdab3d;
-    font-weight: 500;
+/* Status selectbox */
+[data-testid="stSelectbox"] {
+    min-width: 120px;
 }
 
-.priority-high {
-    color: #e2445c;
-    font-weight: 500;
+/* Input fields */
+input[type="text"] {
+    padding: 4px 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+    width: 100%;
 }
 
-.priority-medium {
-    color: #fdab3d;
-    font-weight: 500;
+/* Action buttons */
+button {
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin: 0 2px;
 }
 
-.priority-low {
-    color: #00c875;
-    font-weight: 500;
-}
-
-/* Progress bar customization */
-div.stProgress > div > div {
-    height: 4px;
+button:hover {
     background-color: #e9ecef;
 }
 
-div.stProgress > div > div > div {
-    background-color: #00c875;
+/* Edit form styling */
+form {
+    background: white;
+    padding: 16px;
+    border-radius: 4px;
+    margin-top: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-/* Task metadata */
-.task-metadata {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12px;
+/* Status colors */
+.status-todo {
     color: #6c757d;
 }
 
-/* Subtask list */
-.subtask-list {
-    margin-top: 8px;
-    padding-left: 16px;
+.status-progress {
+    color: #fd7e14;
 }
 
-/* Dependencies list */
-.dependency-list {
-    margin-top: 8px;
-    padding: 8px;
-    background: #f8f9fa;
-    border-radius: 4px;
+.status-done {
+    color: #198754;
+}
+
+/* Priority colors */
+.priority-low {
+    color: #198754;
+}
+
+.priority-medium {
+    color: #fd7e14;
+}
+
+.priority-high {
+    color: #dc3545;
 }
