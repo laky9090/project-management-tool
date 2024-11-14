@@ -18,6 +18,26 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Get deleted projects
+router.get('/deleted', async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT p.*, 
+       COUNT(t.id) as total_tasks,
+       COUNT(CASE WHEN t.status = 'Done' THEN 1 END) as completed_tasks
+       FROM projects p
+       LEFT JOIN tasks t ON p.id = t.project_id
+       WHERE p.deleted_at IS NOT NULL
+       GROUP BY p.id
+       ORDER BY p.deleted_at DESC`
+    );
+    res.json(rows || []);  // Ensure we always return an array
+  } catch (err) {
+    console.error('Error fetching deleted projects:', err);
+    res.status(500).json({ error: 'Failed to fetch deleted projects' });
+  }
+});
+
 // Create new project
 router.post('/', async (req, res) => {
   const { name, description, deadline } = req.body;
@@ -91,6 +111,27 @@ router.delete('/:id', async (req, res) => {
       error: 'Failed to delete project',
       details: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
+  }
+});
+
+// Restore project
+router.patch('/:id/restore', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const { rows } = await db.query(
+      'UPDATE projects SET deleted_at = NULL WHERE id = $1 AND deleted_at IS NOT NULL RETURNING *',
+      [id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Project not found or already restored' });
+    }
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('Error restoring project:', err);
+    res.status(500).json({ error: 'Failed to restore project' });
   }
 });
 
