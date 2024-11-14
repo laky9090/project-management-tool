@@ -30,7 +30,7 @@ router.get('/project/:projectId', async (req, res) => {
           array_agg(DISTINCT jsonb_build_object(
               'id', s.id,
               'title', s.title,
-              'description', s.description,
+              'comment', s.description,
               'completed', s.completed
           )) FILTER (WHERE s.id IS NOT NULL) as subtasks
        FROM tasks t
@@ -51,7 +51,7 @@ router.get('/project/:projectId', async (req, res) => {
 
 // Create new task
 router.post('/', async (req, res) => {
-  const { project_id, title, description, status, priority, due_date, assignee } = req.body;
+  const { project_id, title, comment, status, priority, due_date, assignee } = req.body;
 
   if (!project_id || !title) {
     return res.status(400).json({ error: 'Project ID and title are required' });
@@ -59,10 +59,10 @@ router.post('/', async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      `INSERT INTO tasks (project_id, title, description, status, priority, due_date, assignee)
+      `INSERT INTO tasks (project_id, title, comment, status, priority, due_date, assignee)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-      [project_id, title, description, status || 'To Do', priority || 'Medium', due_date, assignee]
+      [project_id, title, comment, status || 'To Do', priority || 'Medium', due_date, assignee]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
