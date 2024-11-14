@@ -27,23 +27,14 @@ const Board = ({ projectId }) => {
   }, [loadTasks]);
 
   const handleTaskCreated = useCallback((newTask) => {
-    setTasks(prevTasks => {
-      // Add the new task at the beginning of the list for immediate visibility
-      const updatedTasks = [newTask, ...prevTasks];
-      return updatedTasks;
-    });
-    setShowTaskForm(false); // Close form after successful creation
-    loadTasks(); // Refresh the task list to ensure consistency
-  }, [loadTasks]);
-
-  const handleCancelCreate = useCallback(() => {
+    setTasks(prevTasks => [newTask, ...prevTasks]);
     setShowTaskForm(false);
-  }, []);
+    loadTasks();
+  }, [loadTasks]);
 
   const handleUpdateTask = async (taskId, updatedData) => {
     try {
       setError(null);
-      // Optimistically update UI
       setTasks(prevTasks => 
         prevTasks.map(task =>
           task.id === taskId ? { ...task, ...updatedData } : task
@@ -55,27 +46,25 @@ const Board = ({ projectId }) => {
     } catch (error) {
       console.error('Error updating task:', error);
       setError('Failed to update task. Please try again.');
-      loadTasks(); // Revert to server state on error
+      loadTasks();
     }
   };
 
   const handleDeleteTask = async (taskId) => {
     try {
       setError(null);
-      // Optimistically update UI
       setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
       await api.deleteTask(taskId);
     } catch (error) {
       console.error('Error deleting task:', error);
       setError('Failed to delete task. Please try again.');
-      loadTasks(); // Revert to server state on error
+      loadTasks();
     }
   };
 
   const handleAssigneeChange = async (taskId, assignee) => {
     try {
       setError(null);
-      // Optimistically update UI
       setTasks(prevTasks =>
         prevTasks.map(task =>
           task.id === taskId ? { ...task, assignee } : task
@@ -127,7 +116,7 @@ const Board = ({ projectId }) => {
         <TaskForm 
           projectId={projectId} 
           onTaskCreated={handleTaskCreated} 
-          onCancel={handleCancelCreate}
+          onCancel={() => setShowTaskForm(false)}
         />
       )}
 

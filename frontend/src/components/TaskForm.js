@@ -14,19 +14,6 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const resetForm = () => {
-    setFormData({
-      title: '',
-      description: '',
-      status: 'To Do',
-      priority: 'Medium',
-      assignee: '',
-      due_date: new Date().toISOString().split('T')[0]
-    });
-    setError(null);
-    setIsSubmitting(false);
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
@@ -44,18 +31,12 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
         project_id: projectId
       };
 
-      // Make API call first
       const response = await api.createTask(taskData);
       const newTask = response.data;
 
-      // Update UI after successful creation
       if (onTaskCreated) {
         onTaskCreated(newTask);
       }
-
-      // Reset form and close
-      resetForm();
-      if (onCancel) onCancel();
     } catch (error) {
       console.error('Error creating task:', error);
       setError(error.response?.data?.error || error.message || 'Failed to create task');
@@ -74,84 +55,110 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="task-form">
-      <h3>Create New Task</h3>
-      {error && <div className="error-message">{error}</div>}
-      <div className="form-group">
-        <input
-          type="text"
-          name="title"
-          value={formData.title}
-          onChange={handleChange}
-          placeholder="Task Title"
-          required
-        />
-      </div>
-      <div className="form-group">
-        <textarea
-          name="description"
-          value={formData.description}
-          onChange={handleChange}
-          placeholder="Description"
-        />
-      </div>
-      <div className="form-row">
+    <div className="task-form-overlay">
+      <form onSubmit={handleSubmit} className="task-form">
+        <h3>Create New Task</h3>
+        
+        {error && <div className="error-message">{error}</div>}
+        
         <div className="form-group">
-          <select 
-            name="status" 
-            value={formData.status} 
-            onChange={handleChange}
-          >
-            <option value="To Do">To Do</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Done">Done</option>
-          </select>
-        </div>
-        <div className="form-group">
-          <select 
-            name="priority" 
-            value={formData.priority} 
-            onChange={handleChange}
-          >
-            <option value="Low">Low</option>
-            <option value="Medium">Medium</option>
-            <option value="High">High</option>
-          </select>
-        </div>
-      </div>
-      <div className="form-row">
-        <div className="form-group">
+          <label htmlFor="title">Title *</label>
           <input
+            id="title"
             type="text"
-            name="assignee"
-            value={formData.assignee}
+            name="title"
+            value={formData.title}
             onChange={handleChange}
-            placeholder="Assignee Name"
+            placeholder="Task Title"
+            required
           />
         </div>
+
         <div className="form-group">
-          <input
-            type="date"
-            name="due_date"
-            value={formData.due_date}
+          <label htmlFor="description">Description</label>
+          <textarea
+            id="description"
+            name="description"
+            value={formData.description}
             onChange={handleChange}
+            placeholder="Description"
           />
         </div>
-      </div>
-      <div className="form-actions">
-        <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Creating...' : 'Create Task'}
-        </button>
-        <button 
-          type="button" 
-          onClick={onCancel} 
-          className="cancel-button"
-          disabled={isSubmitting}
-        >
-          Cancel
-        </button>
-      </div>
-    </form>
+
+        <div className="form-row">
+          <div className="form-group">
+            <label htmlFor="status">Status</label>
+            <select 
+              id="status"
+              name="status" 
+              value={formData.status} 
+              onChange={handleChange}
+            >
+              <option value="To Do">To Do</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Done">Done</option>
+            </select>
+          </div>
+          
+          <div className="form-group">
+            <label htmlFor="priority">Priority</label>
+            <select 
+              id="priority"
+              name="priority" 
+              value={formData.priority} 
+              onChange={handleChange}
+            >
+              <option value="Low">Low</option>
+              <option value="Medium">Medium</option>
+              <option value="High">High</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="form-row">
+          <div className="form-group">
+            <label htmlFor="assignee">Assignee</label>
+            <input
+              id="assignee"
+              type="text"
+              name="assignee"
+              value={formData.assignee}
+              onChange={handleChange}
+              placeholder="Assignee Name"
+            />
+          </div>
+          
+          <div className="form-group">
+            <label htmlFor="due_date">Due Date</label>
+            <input
+              id="due_date"
+              type="date"
+              name="due_date"
+              value={formData.due_date}
+              onChange={handleChange}
+            />
+          </div>
+        </div>
+
+        <div className="form-actions">
+          <button 
+            type="button" 
+            onClick={onCancel} 
+            className="cancel-button"
+            disabled={isSubmitting}
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            className="submit-button"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Creating...' : 'Create Task'}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 };
 
