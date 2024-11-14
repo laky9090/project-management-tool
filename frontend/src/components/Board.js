@@ -127,8 +127,8 @@ const Board = ({ projectId }) => {
               <th onClick={() => handleSort('title')}>
                 Title {getSortIcon('title')}
               </th>
-              <th onClick={() => handleSort('description')}>
-                Description {getSortIcon('description')}
+              <th onClick={() => handleSort('comment')}>
+                Comment {getSortIcon('comment')}
               </th>
               <th onClick={() => handleSort('status')}>
                 Status {getSortIcon('status')}
@@ -163,11 +163,11 @@ const Board = ({ projectId }) => {
                 <td>
                   {editingTask === task.id ? (
                     <textarea
-                      defaultValue={task.description}
-                      onBlur={(e) => handleUpdateTask(task.id, { description: e.target.value })}
+                      defaultValue={task.comment}
+                      onBlur={(e) => handleUpdateTask(task.id, { comment: e.target.value })}
                     />
                   ) : (
-                    task.description
+                    task.comment
                   )}
                 </td>
                 <td>

@@ -5,7 +5,7 @@ import './TaskForm.css';
 const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
   const [formData, setFormData] = useState({
     title: '',
-    description: '',
+    comment: '',
     status: 'To Do',
     priority: 'Medium',
     assignee: '',
@@ -75,13 +75,13 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
         </div>
 
         <div className="form-group">
-          <label htmlFor="description">Description</label>
+          <label htmlFor="comment">Comment</label>
           <textarea
-            id="description"
-            name="description"
-            value={formData.description}
+            id="comment"
+            name="comment"
+            value={formData.comment}
             onChange={handleChange}
-            placeholder="Description"
+            placeholder="Add a comment"
           />
         </div>
 
