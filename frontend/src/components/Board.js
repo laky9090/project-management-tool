@@ -57,8 +57,7 @@ const Board = ({ projectId }) => {
       ...prevTasks,
       [newTask.status]: [...(prevTasks[newTask.status] || []), newTask]
     }));
-    loadTasks();
-  }, [loadTasks]);
+  }, []);
 
   const onDragEnd = async (result) => {
     if (!result.destination) return;

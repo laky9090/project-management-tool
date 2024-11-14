@@ -24,7 +24,13 @@ const api = {
       return response;
     } catch (error) {
       console.error('Error creating task:', error);
-      throw error;
+      // Add custom error information for better error handling
+      throw {
+        ...error,
+        isTaskCreationError: true,
+        taskData: task,
+        message: error.response?.data?.error || error.message || 'Failed to create task'
+      };
     }
   },
   updateTask: (taskId, data) => axios.patch(`${API_URL}/tasks/${taskId}`, data),
@@ -34,9 +40,17 @@ const api = {
   updateTaskAssignment: (taskId, assignee) => axios.patch(`${API_URL}/tasks/${taskId}/assign`, { assignee }),
   
   // File attachments
-  uploadTaskAttachment: (taskId, formData) => axios.post(`${API_URL}/tasks/${taskId}/attachments`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  }),
+  uploadTaskAttachment: async (taskId, formData) => {
+    try {
+      const response = await axios.post(`${API_URL}/tasks/${taskId}/attachments`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      return response;
+    } catch (error) {
+      console.error('Error uploading attachment:', error);
+      throw error;
+    }
+  },
   getTaskAttachments: (taskId) => axios.get(`${API_URL}/tasks/${taskId}/attachments`)
 };
 

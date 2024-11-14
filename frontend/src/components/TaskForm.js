@@ -14,7 +14,6 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
   const [fileAttachment, setFileAttachment] = useState(null);
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // Removed isLoading state
 
   const resetForm = () => {
     setFormData({
@@ -28,7 +27,6 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
     setFileAttachment(null);
     setError(null);
     setIsSubmitting(false);
-    // Removed setIsLoading(false);
   };
 
   const handleCancel = () => {
@@ -42,7 +40,6 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
 
     try {
       setIsSubmitting(true);
-      // Removed setIsLoading(true);
       setError(null);
 
       if (!formData.title.trim()) {
@@ -54,20 +51,29 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
         project_id: projectId
       };
 
+      // Create optimistic task for immediate UI update
+      const optimisticTask = {
+        ...taskData,
+        id: Date.now(), // Temporary ID
+        created_at: new Date().toISOString(),
+        isOptimistic: true // Flag to identify optimistic updates
+      };
+
+      // Update UI immediately
+      if (onTaskCreated) {
+        onTaskCreated(optimisticTask);
+      }
+
+      // Make API call
       const response = await api.createTask(taskData);
       const newTask = response.data;
 
+      // Handle file attachment if present
       if (fileAttachment && newTask.id) {
         const attachmentFormData = new FormData();
         attachmentFormData.append('file', fileAttachment);
         await api.uploadTaskAttachment(newTask.id, attachmentFormData);
       }
-
-      // Notify parent component with optimistic update
-      if (onTaskCreated) {
-        onTaskCreated(newTask);
-      }
-      // Removed await new Promise(resolve => setTimeout(resolve, 100)); // Small delay for state update
 
       // Reset form and close
       resetForm();
@@ -77,7 +83,6 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
       setError(error.response?.data?.error || error.message || 'Failed to create task');
     } finally {
       setIsSubmitting(false);
-      // Removed setIsLoading(false);
     }
   };
 
@@ -87,7 +92,6 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
       ...prevData,
       [name]: value
     }));
-    // Clear error when user starts typing
     if (error) setError(null);
   };
 
@@ -113,7 +117,6 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
           onChange={handleChange}
           placeholder="Task Title"
           required
-          // Removed disabled={isLoading}
         />
       </div>
       <div className="form-group">
@@ -122,7 +125,6 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
           value={formData.description}
           onChange={handleChange}
           placeholder="Description"
-          // Removed disabled={isLoading}
         />
       </div>
       <div className="form-row">
@@ -131,7 +133,6 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
             name="status" 
             value={formData.status} 
             onChange={handleChange}
-            // Removed disabled={isLoading}
           >
             <option value="To Do">To Do</option>
             <option value="In Progress">In Progress</option>
@@ -143,7 +144,6 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
             name="priority" 
             value={formData.priority} 
             onChange={handleChange}
-            // Removed disabled={isLoading}
           >
             <option value="Low">Low</option>
             <option value="Medium">Medium</option>
@@ -159,7 +159,6 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
             value={formData.assignee}
             onChange={handleChange}
             placeholder="Assignee Name"
-            // Removed disabled={isLoading}
           />
         </div>
         <div className="form-group">
@@ -168,7 +167,6 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
             name="due_date"
             value={formData.due_date}
             onChange={handleChange}
-            // Removed disabled={isLoading}
           />
         </div>
       </div>
@@ -177,7 +175,6 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
           type="file"
           onChange={handleFileChange}
           accept=".pdf,.txt,.doc,.docx,.png,.jpg,.jpeg"
-          // Removed disabled={isLoading}
         />
       </div>
       <div className="form-actions">
@@ -188,7 +185,6 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
           type="button" 
           onClick={handleCancel} 
           className="cancel-button"
-          // Removed disabled={isLoading}
         >
           Cancel
         </button>
