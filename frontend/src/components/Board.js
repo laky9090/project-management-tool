@@ -1,46 +1,21 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import TaskForm from './TaskForm';
 import api from '../api/api';
 import './Board.css';
 
-// Error boundary component
-class DragDropErrorBoundary extends React.Component {
-  state = { hasError: false };
-
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-
-  componentDidCatch(error, info) {
-    console.error('DragDrop error:', error, info);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return <div className="error-message">Error loading board. Please refresh the page.</div>;
-    }
-    return this.props.children;
-  }
-}
-
 const Board = ({ projectId }) => {
-  const [tasks, setTasks] = useState({ 'To Do': [], 'In Progress': [], 'Done': [] });
+  const [tasks, setTasks] = useState([]);
   const [error, setError] = useState(null);
   const [editingTask, setEditingTask] = useState(null);
   const [editingAssignee, setEditingAssignee] = useState(null);
   const [showTaskForm, setShowTaskForm] = useState(false);
+  const [sortConfig, setSortConfig] = useState({ key: 'created_at', direction: 'desc' });
 
   const loadTasks = useCallback(async () => {
     try {
       setError(null);
       const response = await api.getProjectTasks(projectId);
-      const newTasks = { 'To Do': [], 'In Progress': [], 'Done': [] };
-      response.data.forEach(task => {
-        const status = task.status || 'To Do';
-        newTasks[status].push(task);
-      });
-      setTasks(newTasks);
+      setTasks(response.data);
     } catch (error) {
       console.error('Error loading tasks:', error);
       setError('Failed to load tasks');
@@ -52,57 +27,22 @@ const Board = ({ projectId }) => {
   }, [loadTasks]);
 
   const handleTaskCreated = useCallback((newTask) => {
-    setTasks(prevTasks => {
-      const status = newTask.status || 'To Do';
-      const newTasks = { ...prevTasks };
-      newTasks[status] = [...(newTasks[status] || []), newTask];
-      return newTasks;
-    });
+    setTasks(prevTasks => [...prevTasks, newTask]);
   }, []);
 
   const handleCancelCreate = useCallback(() => {
     setShowTaskForm(false);
   }, []);
 
-  const onDragEnd = async (result) => {
-    if (!result.destination) return;
-
-    const { source, destination, draggableId } = result;
-    if (source.droppableId === destination.droppableId && source.index === destination.index) return;
-
-    try {
-      setError(null);
-      // Optimistically update UI
-      const draggedTask = tasks[source.droppableId][source.index];
-      const newTasks = { ...tasks };
-      newTasks[source.droppableId] = newTasks[source.droppableId].filter((_, index) => index !== source.index);
-      newTasks[destination.droppableId].splice(destination.index, 0, {
-        ...draggedTask,
-        status: destination.droppableId
-      });
-      setTasks(newTasks);
-
-      await api.updateTaskStatus(draggableId, destination.droppableId);
-    } catch (error) {
-      console.error('Error updating task status:', error);
-      setError('Failed to update task status. Please try again.');
-      loadTasks(); // Revert to server state on error
-    }
-  };
-
   const handleUpdateTask = async (taskId, updatedData) => {
     try {
       setError(null);
       // Optimistically update UI
-      setTasks(prevTasks => {
-        const newTasks = { ...prevTasks };
-        Object.keys(newTasks).forEach(status => {
-          newTasks[status] = newTasks[status].map(task =>
-            task.id === taskId ? { ...task, ...updatedData } : task
-          );
-        });
-        return newTasks;
-      });
+      setTasks(prevTasks => 
+        prevTasks.map(task =>
+          task.id === taskId ? { ...task, ...updatedData } : task
+        )
+      );
 
       await api.updateTask(taskId, updatedData);
       setEditingTask(null);
@@ -117,14 +57,7 @@ const Board = ({ projectId }) => {
     try {
       setError(null);
       // Optimistically update UI
-      setTasks(prevTasks => {
-        const newTasks = { ...prevTasks };
-        Object.keys(newTasks).forEach(status => {
-          newTasks[status] = newTasks[status].filter(task => task.id !== taskId);
-        });
-        return newTasks;
-      });
-
+      setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
       await api.deleteTask(taskId);
     } catch (error) {
       console.error('Error deleting task:', error);
@@ -137,159 +70,179 @@ const Board = ({ projectId }) => {
     try {
       setError(null);
       // Optimistically update UI
-      setTasks(prevTasks => {
-        const newTasks = { ...prevTasks };
-        Object.keys(newTasks).forEach(status => {
-          newTasks[status] = newTasks[status].map(task =>
-            task.id === taskId ? { ...task, assignee } : task
-          );
-        });
-        return newTasks;
-      });
+      setTasks(prevTasks =>
+        prevTasks.map(task =>
+          task.id === taskId ? { ...task, assignee } : task
+        )
+      );
 
       await api.updateTaskAssignment(taskId, assignee);
       setEditingAssignee(null);
     } catch (error) {
       console.error('Error updating task assignment:', error);
       setError('Failed to update task assignment. Please try again.');
-      loadTasks(); // Revert to server state on error
+      loadTasks();
     }
   };
 
-  const renderTaskCard = (task, provided) => (
-    <div
-      ref={provided.innerRef}
-      {...provided.draggableProps}
-      {...provided.dragHandleProps}
-      className="task-card"
-    >
-      <div className="task-header">
-        {editingTask === task.id ? (
-          <input
-            type="text"
-            defaultValue={task.title}
-            className="task-title-input"
-            onBlur={(e) => handleUpdateTask(task.id, { title: e.target.value })}
-            autoFocus
-          />
-        ) : (
-          <h4 className="task-title">{task.title}</h4>
-        )}
-        <div className="task-actions">
-          <button 
-            onClick={() => setEditingTask(editingTask === task.id ? null : task.id)} 
-            className="edit-button"
-          >
-            ✏️
-          </button>
-          <button 
-            onClick={() => handleDeleteTask(task.id)} 
-            className="delete-button"
-          >
-            🗑️
-          </button>
-        </div>
-      </div>
+  const handleSort = (key) => {
+    setSortConfig(prevConfig => ({
+      key,
+      direction: prevConfig.key === key && prevConfig.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
 
-      {editingTask === task.id ? (
-        <textarea
-          defaultValue={task.description}
-          className="task-description-input"
-          onBlur={(e) => handleUpdateTask(task.id, { description: e.target.value })}
-        />
-      ) : (
-        <p className="task-description">{task.description}</p>
-      )}
+  const sortedTasks = [...tasks].sort((a, b) => {
+    if (a[sortConfig.key] < b[sortConfig.key]) {
+      return sortConfig.direction === 'asc' ? -1 : 1;
+    }
+    if (a[sortConfig.key] > b[sortConfig.key]) {
+      return sortConfig.direction === 'asc' ? 1 : -1;
+    }
+    return 0;
+  });
 
-      <div className="task-meta">
-        <span className={`priority priority-${task.priority.toLowerCase()}`}>
-          {task.priority}
-        </span>
-        {editingAssignee === task.id ? (
-          <input
-            type="text"
-            className="assignee-input"
-            defaultValue={task.assignee || ''}
-            placeholder="Assign to..."
-            onBlur={(e) => handleAssigneeChange(task.id, e.target.value)}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter') {
-                handleAssigneeChange(task.id, e.target.value);
-              }
-            }}
-            autoFocus
-          />
-        ) : (
-          <span 
-            className="assignee" 
-            onClick={() => setEditingAssignee(task.id)}
-            title="Click to assign"
-          >
-            {task.assignee || 'Click to assign'}
-          </span>
-        )}
-      </div>
-
-      {task.due_date && (
-        <div className="due-date">
-          Due: {new Date(task.due_date).toLocaleDateString('fr-FR', { 
-            day: '2-digit', 
-            month: '2-digit', 
-            year: 'numeric' 
-          })}
-        </div>
-      )}
-    </div>
-  );
+  const getSortIcon = (key) => {
+    if (sortConfig.key === key) {
+      return sortConfig.direction === 'asc' ? ' ↑' : ' ↓';
+    }
+    return ' ↕';
+  };
 
   return (
-    <DragDropErrorBoundary>
-      <DragDropContext onDragEnd={onDragEnd}>
-        <div className="board">
-          {error && <div className="error-message">{error}</div>}
-          
-          <button className="add-task-button" onClick={() => setShowTaskForm(true)}>
-            ➕ Add New Task
-          </button>
+    <div className="board">
+      {error && <div className="error-message">{error}</div>}
+      
+      <button className="add-task-button" onClick={() => setShowTaskForm(true)}>
+        ➕ Add New Task
+      </button>
 
-          {showTaskForm && (
-            <TaskForm 
-              projectId={projectId} 
-              onTaskCreated={handleTaskCreated} 
-              onCancel={handleCancelCreate}
-            />
-          )}
+      {showTaskForm && (
+        <TaskForm 
+          projectId={projectId} 
+          onTaskCreated={handleTaskCreated} 
+          onCancel={handleCancelCreate}
+        />
+      )}
 
-          <div className="board-columns">
-            {Object.entries(tasks).map(([status, statusTasks]) => (
-              <div key={status} className="column">
-                <h3>{status}</h3>
-                <Droppable droppableId={status} type="task">
-                  {(provided) => (
-                    <div
-                      {...provided.droppableProps}
-                      ref={provided.innerRef}
-                      className="task-list"
-                    >
-                      {statusTasks.map((task, index) => (
-                        <Draggable
-                          key={task.id}
-                          draggableId={task.id.toString()}
-                          index={index}
-                        >
-                          {(provided) => renderTaskCard(task, provided)}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                    </div>
+      <div className="table-container">
+        <table className="task-table">
+          <thead>
+            <tr>
+              <th onClick={() => handleSort('title')}>
+                Title {getSortIcon('title')}
+              </th>
+              <th onClick={() => handleSort('description')}>
+                Description {getSortIcon('description')}
+              </th>
+              <th onClick={() => handleSort('status')}>
+                Status {getSortIcon('status')}
+              </th>
+              <th onClick={() => handleSort('priority')}>
+                Priority {getSortIcon('priority')}
+              </th>
+              <th onClick={() => handleSort('assignee')}>
+                Assignee {getSortIcon('assignee')}
+              </th>
+              <th onClick={() => handleSort('due_date')} className="date-column">
+                Due Date {getSortIcon('due_date')}
+              </th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedTasks.map(task => (
+              <tr key={task.id}>
+                <td>
+                  {editingTask === task.id ? (
+                    <input
+                      type="text"
+                      defaultValue={task.title}
+                      onBlur={(e) => handleUpdateTask(task.id, { title: e.target.value })}
+                      autoFocus
+                    />
+                  ) : (
+                    task.title
                   )}
-                </Droppable>
-              </div>
+                </td>
+                <td>
+                  {editingTask === task.id ? (
+                    <textarea
+                      defaultValue={task.description}
+                      onBlur={(e) => handleUpdateTask(task.id, { description: e.target.value })}
+                    />
+                  ) : (
+                    task.description
+                  )}
+                </td>
+                <td>
+                  <select
+                    value={task.status}
+                    onChange={(e) => handleUpdateTask(task.id, { status: e.target.value })}
+                  >
+                    <option value="To Do">To Do</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Done">Done</option>
+                  </select>
+                </td>
+                <td>
+                  <span className={`priority-indicator ${task.priority.toLowerCase()}`}>
+                    {task.priority}
+                  </span>
+                </td>
+                <td>
+                  {editingAssignee === task.id ? (
+                    <input
+                      type="text"
+                      defaultValue={task.assignee || ''}
+                      placeholder="Assign to..."
+                      onBlur={(e) => handleAssigneeChange(task.id, e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          handleAssigneeChange(task.id, e.target.value);
+                        }
+                      }}
+                      autoFocus
+                    />
+                  ) : (
+                    <span
+                      className="assignee"
+                      onClick={() => setEditingAssignee(task.id)}
+                      title="Click to assign"
+                    >
+                      {task.assignee || 'Click to assign'}
+                    </span>
+                  )}
+                </td>
+                <td className="date-column">
+                  {task.due_date && new Date(task.due_date).toLocaleDateString('fr-FR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                  })}
+                </td>
+                <td className="actions-column">
+                  <button
+                    onClick={() => setEditingTask(editingTask === task.id ? null : task.id)}
+                    className="edit-button"
+                    title="Edit"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    onClick={() => handleDeleteTask(task.id)}
+                    className="delete-button"
+                    title="Delete"
+                  >
+                    🗑️
+                  </button>
+                </td>
+              </tr>
             ))}
-          </div>
-        </div>
-      </DragDropContext>
-    </DragDropErrorBoundary>
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 };
 
