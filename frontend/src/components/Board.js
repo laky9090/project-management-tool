@@ -55,9 +55,10 @@ const Board = ({ projectId }) => {
   const handleTaskCreated = useCallback((newTask) => {
     setTasks(prevTasks => {
       const status = newTask.status || 'To Do';
-      const newTasks = { ...prevTasks };
-      newTasks[status] = [...(newTasks[status] || []), newTask];
-      return newTasks;
+      return {
+        ...prevTasks,
+        [status]: [...(prevTasks[status] || []), newTask]
+      };
     });
   }, []);
 

@@ -11,7 +11,6 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
     assignee: '',
     due_date: new Date().toISOString().split('T')[0]
   });
-  const [fileAttachment, setFileAttachment] = useState(null);
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -24,7 +23,6 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
       assignee: '',
       due_date: new Date().toISOString().split('T')[0]
     });
-    setFileAttachment(null);
     setError(null);
     setIsSubmitting(false);
   };
@@ -54,11 +52,13 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
       const response = await api.createTask(taskData);
       const newTask = response.data;
 
-      // Reset form and notify parent immediately
-      resetForm();
+      // Notify parent immediately before resetting form
       if (onTaskCreated) {
         onTaskCreated(newTask);
       }
+
+      // Reset form after notifying parent
+      resetForm();
       if (onCancel) onCancel();
     } catch (error) {
       console.error('Error creating task:', error);
@@ -74,16 +74,6 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
       ...prevData,
       [name]: value
     }));
-    if (error) setError(null);
-  };
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file && file.size > 5 * 1024 * 1024) {
-      setError('File size should not exceed 5MB');
-      return;
-    }
-    setFileAttachment(file);
     if (error) setError(null);
   };
 
@@ -151,13 +141,6 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
             onChange={handleChange}
           />
         </div>
-      </div>
-      <div className="form-group">
-        <input
-          type="file"
-          onChange={handleFileChange}
-          accept=".pdf,.txt,.doc,.docx,.png,.jpg,.jpeg"
-        />
       </div>
       <div className="form-actions">
         <button type="submit" disabled={isSubmitting}>
