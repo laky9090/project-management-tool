@@ -7,7 +7,6 @@ const Board = ({ projectId }) => {
   const [tasks, setTasks] = useState([]);
   const [error, setError] = useState(null);
   const [editingTask, setEditingTask] = useState(null);
-  const [editingAssignee, setEditingAssignee] = useState(null);
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [sortConfig, setSortConfig] = useState({ key: 'created_at', direction: 'desc' });
 
@@ -58,24 +57,6 @@ const Board = ({ projectId }) => {
     } catch (error) {
       console.error('Error deleting task:', error);
       setError('Failed to delete task. Please try again.');
-      loadTasks();
-    }
-  };
-
-  const handleAssigneeChange = async (taskId, assignee) => {
-    try {
-      setError(null);
-      setTasks(prevTasks =>
-        prevTasks.map(task =>
-          task.id === taskId ? { ...task, assignee } : task
-        )
-      );
-
-      await api.updateTaskAssignment(taskId, assignee);
-      setEditingAssignee(null);
-    } catch (error) {
-      console.error('Error updating task assignment:', error);
-      setError('Failed to update task assignment. Please try again.');
       loadTasks();
     }
   };
@@ -136,9 +117,6 @@ const Board = ({ projectId }) => {
               <th onClick={() => handleSort('priority')}>
                 Priority {getSortIcon('priority')}
               </th>
-              <th onClick={() => handleSort('assignee')}>
-                Assignee {getSortIcon('assignee')}
-              </th>
               <th onClick={() => handleSort('due_date')} className="date-column">
                 Due Date {getSortIcon('due_date')}
               </th>
@@ -148,26 +126,37 @@ const Board = ({ projectId }) => {
           <tbody>
             {sortedTasks.map(task => (
               <tr key={task.id}>
-                <td>
+                <td onClick={() => setEditingTask(task.id)}>
                   {editingTask === task.id ? (
                     <input
                       type="text"
                       defaultValue={task.title}
                       onBlur={(e) => handleUpdateTask(task.id, { title: e.target.value })}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          handleUpdateTask(task.id, { title: e.target.value });
+                        }
+                      }}
                       autoFocus
                     />
                   ) : (
                     task.title
                   )}
                 </td>
-                <td>
+                <td onClick={() => setEditingTask(task.id)}>
                   {editingTask === task.id ? (
-                    <textarea
-                      defaultValue={task.comment}
+                    <input
+                      type="text"
+                      defaultValue={task.comment || ''}
                       onBlur={(e) => handleUpdateTask(task.id, { comment: e.target.value })}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          handleUpdateTask(task.id, { comment: e.target.value });
+                        }
+                      }}
                     />
                   ) : (
-                    task.comment
+                    task.comment || ''
                   )}
                 </td>
                 <td>
@@ -180,41 +169,34 @@ const Board = ({ projectId }) => {
                     <option value="Done">Done</option>
                   </select>
                 </td>
-                <td>
-                  <span className={`priority-indicator ${task.priority.toLowerCase()}`}>
-                    {task.priority}
-                  </span>
-                </td>
-                <td>
-                  {editingAssignee === task.id ? (
-                    <input
-                      type="text"
-                      defaultValue={task.assignee || ''}
-                      placeholder="Assign to..."
-                      onBlur={(e) => handleAssigneeChange(task.id, e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          handleAssigneeChange(task.id, e.target.value);
-                        }
-                      }}
+                <td onClick={() => setEditingTask(task.id)}>
+                  {editingTask === task.id ? (
+                    <select
+                      defaultValue={task.priority}
+                      onChange={(e) => handleUpdateTask(task.id, { priority: e.target.value })}
                       autoFocus
-                    />
-                  ) : (
-                    <span
-                      className="assignee"
-                      onClick={() => setEditingAssignee(task.id)}
-                      title="Click to assign"
                     >
-                      {task.assignee || 'Click to assign'}
+                      <option value="Low">Low</option>
+                      <option value="Medium">Medium</option>
+                      <option value="High">High</option>
+                    </select>
+                  ) : (
+                    <span className={`priority-indicator ${task.priority.toLowerCase()}`}>
+                      {task.priority}
                     </span>
                   )}
                 </td>
-                <td className="date-column">
-                  {task.due_date && new Date(task.due_date).toLocaleDateString('fr-FR', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric'
-                  })}
+                <td className="date-column" onClick={() => setEditingTask(task.id)}>
+                  {editingTask === task.id ? (
+                    <input
+                      type="date"
+                      defaultValue={task.due_date}
+                      onChange={(e) => handleUpdateTask(task.id, { due_date: e.target.value })}
+                      autoFocus
+                    />
+                  ) : (
+                    task.due_date && new Date(task.due_date).toLocaleDateString('fr-FR')
+                  )}
                 </td>
                 <td className="actions-column">
                   <button
