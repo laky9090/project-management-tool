@@ -22,7 +22,7 @@ def format_priority(priority):
 def format_date(date):
     if pd.isna(date):
         return ""
-    return date.strftime("%b %d, %Y")
+    return date.strftime("%d/%m/%Y")  # Updated date format to match DD/MM/YYYY
 
 def render_task_list(project_id):
     st.write("## Task List")
@@ -61,8 +61,16 @@ def render_task_list(project_id):
         df['priority'] = df['priority'].apply(format_priority)
         df['due_date'] = df['due_date'].apply(format_date)
         
-        # Create the Excel-like table container
+        # Create the Excel-like table container with centered date column
         st.markdown("""
+            <style>
+                .task-list-table td:nth-child(5) {
+                    text-align: center !important;
+                }
+                .task-list-table th:nth-child(5) {
+                    text-align: center !important;
+                }
+            </style>
             <div class="task-list-container">
                 <div style="overflow-x: auto;">
         """, unsafe_allow_html=True)

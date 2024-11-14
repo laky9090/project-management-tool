@@ -514,3 +514,27 @@ td.date {
     text-align: right;
     color: #6b7280;
 }
+
+/* Add these styles to the existing task.css file */
+
+/* Due date styling */
+td.due-date, 
+.due-date-column,
+[data-testid="stTable"] td:nth-child(4) {
+    text-align: center !important;
+}
+
+/* Table cell alignment for dates */
+.task-table td.date,
+.streamlit-table td.date,
+[data-testid="stTable"] td.date {
+    text-align: center !important;
+    min-width: 120px;
+}
+
+/* Header alignment for date columns */
+.task-table th.date-header,
+.streamlit-table th.date-header,
+[data-testid="stTable"] th:nth-child(4) {
+    text-align: center !important;
+}

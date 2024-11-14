@@ -47,6 +47,10 @@
   white-space: nowrap;
 }
 
+.task-table th.date-column {
+  text-align: center;
+}
+
 .task-table th:hover {
   background: #f1f5f9;
 }
@@ -57,18 +61,11 @@
   vertical-align: top;
 }
 
-.task-table tbody tr:nth-child(even) {
-  background: var(--background-light);
-}
-
-.task-table tbody tr:hover {
-  background: #f1f5f9;
-}
-
 /* Column specific styles */
 .date-column {
-  text-align: right;
+  text-align: center !important;
   white-space: nowrap;
+  min-width: 120px;
 }
 
 .actions-column {
@@ -191,4 +188,13 @@
   .task-table td {
     padding: 8px 12px;
   }
+}
+
+/* Streamlit task.css */
+.task-table th.date-column {
+  text-align: center !important;
+}
+
+.task-table td.date-column {
+  text-align: center !important;
 }
