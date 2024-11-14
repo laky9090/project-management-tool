@@ -57,8 +57,7 @@ const Board = ({ projectId }) => {
       ...prevTasks,
       [newTask.status]: [...(prevTasks[newTask.status] || []), newTask]
     }));
-    // Force a re-render after state update
-    setTimeout(() => loadTasks(), 100);
+    loadTasks();
   }, [loadTasks]);
 
   const onDragEnd = async (result) => {

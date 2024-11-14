@@ -14,7 +14,7 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
   const [fileAttachment, setFileAttachment] = useState(null);
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  // Removed isLoading state
 
   const resetForm = () => {
     setFormData({
@@ -28,7 +28,7 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
     setFileAttachment(null);
     setError(null);
     setIsSubmitting(false);
-    setIsLoading(false);
+    // Removed setIsLoading(false);
   };
 
   const handleCancel = () => {
@@ -42,7 +42,7 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
 
     try {
       setIsSubmitting(true);
-      setIsLoading(true);
+      // Removed setIsLoading(true);
       setError(null);
 
       if (!formData.title.trim()) {
@@ -67,7 +67,7 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
       if (onTaskCreated) {
         onTaskCreated(newTask);
       }
-      await new Promise(resolve => setTimeout(resolve, 100)); // Small delay for state update
+      // Removed await new Promise(resolve => setTimeout(resolve, 100)); // Small delay for state update
 
       // Reset form and close
       resetForm();
@@ -77,7 +77,7 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
       setError(error.response?.data?.error || error.message || 'Failed to create task');
     } finally {
       setIsSubmitting(false);
-      setIsLoading(false);
+      // Removed setIsLoading(false);
     }
   };
 
@@ -113,7 +113,7 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
           onChange={handleChange}
           placeholder="Task Title"
           required
-          disabled={isLoading}
+          // Removed disabled={isLoading}
         />
       </div>
       <div className="form-group">
@@ -122,7 +122,7 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
           value={formData.description}
           onChange={handleChange}
           placeholder="Description"
-          disabled={isLoading}
+          // Removed disabled={isLoading}
         />
       </div>
       <div className="form-row">
@@ -131,7 +131,7 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
             name="status" 
             value={formData.status} 
             onChange={handleChange}
-            disabled={isLoading}
+            // Removed disabled={isLoading}
           >
             <option value="To Do">To Do</option>
             <option value="In Progress">In Progress</option>
@@ -143,7 +143,7 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
             name="priority" 
             value={formData.priority} 
             onChange={handleChange}
-            disabled={isLoading}
+            // Removed disabled={isLoading}
           >
             <option value="Low">Low</option>
             <option value="Medium">Medium</option>
@@ -159,7 +159,7 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
             value={formData.assignee}
             onChange={handleChange}
             placeholder="Assignee Name"
-            disabled={isLoading}
+            // Removed disabled={isLoading}
           />
         </div>
         <div className="form-group">
@@ -168,7 +168,7 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
             name="due_date"
             value={formData.due_date}
             onChange={handleChange}
-            disabled={isLoading}
+            // Removed disabled={isLoading}
           />
         </div>
       </div>
@@ -177,18 +177,18 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
           type="file"
           onChange={handleFileChange}
           accept=".pdf,.txt,.doc,.docx,.png,.jpg,.jpeg"
-          disabled={isLoading}
+          // Removed disabled={isLoading}
         />
       </div>
       <div className="form-actions">
-        <button type="submit" disabled={isSubmitting || isLoading}>
+        <button type="submit" disabled={isSubmitting}>
           {isSubmitting ? 'Creating...' : 'Create Task'}
         </button>
         <button 
           type="button" 
           onClick={handleCancel} 
           className="cancel-button"
-          disabled={isLoading}
+          // Removed disabled={isLoading}
         >
           Cancel
         </button>

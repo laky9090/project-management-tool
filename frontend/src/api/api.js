@@ -15,7 +15,18 @@ const api = {
   
   // Tasks
   getProjectTasks: (projectId) => axios.get(`${API_URL}/tasks/project/${projectId}`),
-  createTask: (task) => axios.post(`${API_URL}/tasks`, task),
+  createTask: async (task) => {
+    try {
+      const response = await axios.post(`${API_URL}/tasks`, task);
+      if (!response.data) {
+        throw new Error('No data received from server');
+      }
+      return response;
+    } catch (error) {
+      console.error('Error creating task:', error);
+      throw error;
+    }
+  },
   updateTask: (taskId, data) => axios.patch(`${API_URL}/tasks/${taskId}`, data),
   deleteTask: (taskId) => axios.delete(`${API_URL}/tasks/${taskId}`),
   restoreTask: (taskId) => axios.patch(`${API_URL}/tasks/${taskId}/restore`),
