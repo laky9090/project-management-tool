@@ -3,6 +3,26 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import api from '../api/api';
 import './Board.css';
 
+// Error boundary component
+class DragDropErrorBoundary extends React.Component {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, info) {
+    console.error('DragDrop error:', error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <div className="error-message">Error loading board. Please refresh the page.</div>;
+    }
+    return this.props.children;
+  }
+}
+
 const Board = ({ projectId }) => {
   const [tasks, setTasks] = useState({ 'To Do': [], 'In Progress': [], 'Done': [] });
   const [error, setError] = useState(null);
@@ -15,8 +35,9 @@ const Board = ({ projectId }) => {
       const response = await api.getProjectTasks(projectId);
       
       const groupedTasks = response.data.reduce((acc, task) => {
-        if (!acc[task.status]) acc[task.status] = [];
-        acc[task.status].push(task);
+        const status = task.status || 'To Do';
+        if (!acc[status]) acc[status] = [];
+        acc[status].push(task);
         return acc;
       }, { 'To Do': [], 'In Progress': [], 'Done': [] });
       
@@ -32,28 +53,24 @@ const Board = ({ projectId }) => {
   }, [loadTasks]);
 
   const handleTaskCreated = (newTask) => {
-    // Optimistically update the UI
-    setTasks(prevTasks => {
-      const status = newTask.status || 'To Do';
-      return {
-        ...prevTasks,
-        [status]: [...(prevTasks[status] || []), newTask]
-      };
-    });
+    setTasks(prevTasks => ({
+      ...prevTasks,
+      [newTask.status]: [...(prevTasks[newTask.status] || []), newTask]
+    }));
   };
 
   const onDragEnd = async (result) => {
     if (!result.destination) return;
 
     const { source, destination, draggableId } = result;
-    if (source.droppableId === destination.droppableId) return;
+    if (source.droppableId === destination.droppableId && source.index === destination.index) return;
 
     try {
       setError(null);
       // Optimistically update UI
       const draggedTask = tasks[source.droppableId][source.index];
       const newTasks = { ...tasks };
-      newTasks[source.droppableId].splice(source.index, 1);
+      newTasks[source.droppableId] = newTasks[source.droppableId].filter((_, index) => index !== source.index);
       newTasks[destination.droppableId].splice(destination.index, 0, {
         ...draggedTask,
         status: destination.droppableId
@@ -221,38 +238,40 @@ const Board = ({ projectId }) => {
   );
 
   return (
-    <DragDropContext onDragEnd={onDragEnd}>
-      <div className="board">
-        {error && <div className="error-message">{error}</div>}
-        <div className="board-columns">
-          {Object.entries(tasks).map(([status, statusTasks]) => (
-            <div key={status} className="column">
-              <h3>{status}</h3>
-              <Droppable droppableId={status}>
-                {(provided) => (
-                  <div
-                    {...provided.droppableProps}
-                    ref={provided.innerRef}
-                    className="task-list"
-                  >
-                    {statusTasks.map((task, index) => (
-                      <Draggable
-                        key={task.id}
-                        draggableId={task.id.toString()}
-                        index={index}
-                      >
-                        {(provided) => renderTaskCard(task, provided)}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
-            </div>
-          ))}
+    <DragDropErrorBoundary>
+      <DragDropContext onDragEnd={onDragEnd}>
+        <div className="board">
+          {error && <div className="error-message">{error}</div>}
+          <div className="board-columns">
+            {Object.entries(tasks).map(([status, statusTasks]) => (
+              <div key={status} className="column">
+                <h3>{status}</h3>
+                <Droppable droppableId={status} type="task">
+                  {(provided) => (
+                    <div
+                      {...provided.droppableProps}
+                      ref={provided.innerRef}
+                      className="task-list"
+                    >
+                      {statusTasks.map((task, index) => (
+                        <Draggable
+                          key={task.id}
+                          draggableId={task.id.toString()}
+                          index={index}
+                        >
+                          {(provided) => renderTaskCard(task, provided)}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
-    </DragDropContext>
+      </DragDropContext>
+    </DragDropErrorBoundary>
   );
 };
 

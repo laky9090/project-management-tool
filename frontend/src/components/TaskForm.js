@@ -54,10 +54,11 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
         await api.uploadTaskAttachment(newTask.id, attachmentFormData);
       }
 
-      // Notify parent component
+      // Notify parent component with optimistic update
       if (onTaskCreated) {
         onTaskCreated(newTask);
       }
+      await new Promise(resolve => setTimeout(resolve, 100)); // Small delay for state update
 
       // Reset form and close
       resetForm();
