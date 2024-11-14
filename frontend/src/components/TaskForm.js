@@ -54,14 +54,7 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
       const response = await api.createTask(taskData);
       const newTask = response.data;
 
-      // Handle file attachment if present
-      if (fileAttachment && newTask.id) {
-        const attachmentFormData = new FormData();
-        attachmentFormData.append('file', fileAttachment);
-        await api.uploadTaskAttachment(newTask.id, attachmentFormData);
-      }
-
-      // Reset form and notify parent
+      // Reset form and notify parent immediately
       resetForm();
       if (onTaskCreated) {
         onTaskCreated(newTask);
