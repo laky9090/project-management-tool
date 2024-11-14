@@ -566,100 +566,259 @@ td.due-date,
 
 /* Table styles */
 .task-list-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: var(--base-font-size);
-    background: white;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--base-font-size);
+  background: white;
 }
 
 .task-list-table th,
 .task-list-table td {
-    padding: 12px 16px;
-    border: 1px solid var(--border-color);
-    vertical-align: middle;
+  padding: 12px 16px;
+  border: 1px solid var(--border-color);
+  vertical-align: middle;
 }
 
 .task-list-table th {
-    background: var(--background-light);
-    font-weight: 600;
-    color: var(--text-secondary);
-    text-align: left;
-    cursor: pointer;
-    user-select: none;
+  background: var(--background-light);
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: left;
+  cursor: pointer;
+  user-select: none;
 }
 
 .task-list-table th:hover {
-    background: #f1f5f9;
+  background: #f1f5f9;
 }
 
 .task-list-table tr:nth-child(even) {
-    background-color: var(--background-light);
+  background-color: var(--background-light);
 }
 
 /* Priority indicator styles in table */
 .task-list-table .priority-indicator {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 500;
 }
 
 /* Status badge styles in table */
 .task-list-table .status-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.875rem;
-    font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
 /* Table container */
 .task-list-container {
-    margin-top: 1rem;
-    border-radius: 8px;
-    box-shadow: var(--shadow-sm);
-    overflow: hidden;
+  margin-top: 1rem;
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
 }
 
 /* Date column alignment */
 .task-list-table td:nth-child(5),
 .task-list-table th:nth-child(5) {
-    text-align: center !important;
+  text-align: center !important;
 }
 
 /* Status-based row coloring */
 tr[data-status="To Do"] {
-    background-color: var(--status-todo-bg) !important;
-    color: var(--status-todo-text) !important;
+  background-color: var(--status-todo-bg) !important;
+  color: var(--status-todo-text) !important;
 }
 
 tr[data-status="In Progress"] {
-    background-color: var(--status-inprogress-bg) !important;
-    color: var(--status-inprogress-text) !important;
+  background-color: var(--status-inprogress-bg) !important;
+  color: var(--status-inprogress-text) !important;
 }
 
 tr[data-status="Done"] {
-    background-color: var(--status-done-bg) !important;
-    color: var(--status-done-text) !important;
+  background-color: var(--status-done-bg) !important;
+  color: var(--status-done-text) !important;
 }
 
 /* Hover effects for status-based rows */
 tr[data-status="To Do"]:hover {
-    background-color: #e2e8f0 !important;
+  background-color: #e2e8f0 !important;
 }
 
 tr[data-status="In Progress"]:hover {
-    background-color: #fde68a !important;
+  background-color: #fde68a !important;
 }
 
 tr[data-status="Done"]:hover {
-    background-color: #bbf7d0 !important;
+  background-color: #bbf7d0 !important;
 }
 
 /* Override even row styling */
 .task-list-table tr:nth-child(even) {
-    background-color: inherit;
+  background-color: inherit;
+}
+
+/* Base styles */
+:root {
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --base-font-size: 14px;
+  --primary-color: #3b82f6;
+  --border-color: #e5e7eb;
+  --background-light: #f8fafc;
+  --text-primary: #1f2937;
+  --text-secondary: #4b5563;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --spacing-base: 1rem;
+  
+  /* Status Colors */
+  --status-todo-bg: #f1f5f9;
+  --status-todo-text: #475569;
+  --status-inprogress-bg: #fef3c7;
+  --status-inprogress-text: #92400e;
+  --status-done-bg: #dcfce7;
+  --status-done-text: #166534;
+  
+  /* Priority Colors */
+  --priority-high-bg: #fee2e2;
+  --priority-high-text: #991b1b;
+  --priority-medium-bg: #fef3c7;
+  --priority-medium-text: #92400e;
+  --priority-low-bg: #dcfce7;
+  --priority-low-text: #166534;
+}
+
+/* Task container */
+.task-card, [data-testid="stHorizontalBlock"] {
+  background: white;
+  padding: var(--spacing-base);
+  margin: calc(var(--spacing-base) * 0.5) 0;
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  transition: all 0.2s ease;
+}
+
+/* Table styles */
+.task-list-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--base-font-size);
+}
+
+.task-list-table th,
+.task-list-table td {
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  text-align: left;
+}
+
+/* Status column styling */
+.task-list-table td:nth-child(3) {
+  text-align: center;
+}
+
+.task-list-table tr[data-status="To Do"] td:nth-child(3) {
+  background-color: var(--status-todo-bg) !important;
+  color: var(--status-todo-text) !important;
+}
+
+.task-list-table tr[data-status="In Progress"] td:nth-child(3) {
+  background-color: var(--status-inprogress-bg) !important;
+  color: var(--status-inprogress-text) !important;
+}
+
+.task-list-table tr[data-status="Done"] td:nth-child(3) {
+  background-color: var(--status-done-bg) !important;
+  color: var(--status-done-text) !important;
+}
+
+/* Priority styles */
+.priority-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.priority-high {
+  background-color: var(--priority-high-bg);
+  color: var(--priority-high-text);
+}
+
+.priority-medium {
+  background-color: var(--priority-medium-bg);
+  color: var(--priority-medium-text);
+}
+
+.priority-low {
+  background-color: var(--priority-low-bg);
+  color: var(--priority-low-text);
+}
+
+/* Due date styling */
+td.due-date,
+.due-date-column,
+[data-testid="stTable"] td:nth-child(4) {
+  text-align: center !important;
+}
+
+/* Table cell alignment for dates */
+.task-table td.date,
+.streamlit-table td.date,
+[data-testid="stTable"] td.date {
+  text-align: center !important;
+  min-width: 120px;
+}
+
+/* Header alignment for date columns */
+.task-table th.date-header,
+.streamlit-table th.date-header,
+[data-testid="stTable"] th:nth-child(4) {
+  text-align: center !important;
+}
+
+/* Inline editing styles */
+.editable {
+  cursor: text;
+  transition: all 0.2s ease;
+  padding: 8px !important;
+}
+
+.editable:hover {
+  background-color: var(--background-light);
+}
+
+.editable:focus {
+  outline: 2px solid var(--primary-color);
+  background-color: white;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+/* Status badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Remove row-based coloring */
+tr[data-status] {
+  background-color: inherit !important;
+  color: var(--text-primary) !important;
+}
+
+/* Override hover effects */
+tr[data-status]:hover {
+  background-color: var(--background-light) !important;
 }

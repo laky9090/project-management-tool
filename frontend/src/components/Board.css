@@ -68,6 +68,35 @@
   background-color: var(--background-light);
 }
 
+/* Status column styling */
+.task-table td:nth-child(3) select {
+  width: 100%;
+  padding: 8px;
+  border-radius: 4px;
+  background-color: inherit;
+  color: inherit;
+}
+
+.task-table tr[data-status="To Do"] td:nth-child(3) {
+  background-color: var(--status-todo-bg);
+  color: var(--status-todo-text);
+}
+
+.task-table tr[data-status="In Progress"] td:nth-child(3) {
+  background-color: var(--status-inprogress-bg);
+  color: var(--status-inprogress-text);
+}
+
+.task-table tr[data-status="Done"] td:nth-child(3) {
+  background-color: var(--status-done-bg);
+  color: var(--status-done-text);
+}
+
+.task-table tr[data-status="Canceled"] td:nth-child(3) {
+  background-color: var(--status-canceled-bg);
+  color: var(--status-canceled-text);
+}
+
 /* Input and select styles within table */
 .task-table td input,
 .task-table td select {
@@ -228,47 +257,4 @@
   .task-table td {
     padding: 8px 12px;
   }
-}
-
-/* Add status-based row coloring to existing Board.css */
-.task-table tr[data-status="To Do"] {
-    background-color: var(--status-todo-bg);
-    color: var(--status-todo-text);
-}
-
-.task-table tr[data-status="In Progress"] {
-    background-color: var(--status-inprogress-bg);
-    color: var(--status-inprogress-text);
-}
-
-.task-table tr[data-status="Done"] {
-    background-color: var(--status-done-bg);
-    color: var(--status-done-text);
-}
-
-.task-table tr[data-status="Canceled"] {
-  background-color: var(--status-canceled-bg);
-  color: var(--status-canceled-text);
-}
-
-/* Hover effects */
-.task-table tr[data-status="To Do"]:hover {
-    background-color: #e2e8f0;
-}
-
-.task-table tr[data-status="In Progress"]:hover {
-    background-color: #fde68a;
-}
-
-.task-table tr[data-status="Done"]:hover {
-    background-color: #bbf7d0;
-}
-
-.task-table tr[data-status="Canceled"]:hover {
-  background-color: #fecaca;
-}
-
-/* Override even row styling */
-.task-table tbody tr:nth-child(even) {
-    background-color: inherit;
 }
