@@ -22,7 +22,7 @@ def format_priority(priority):
 def format_date(date):
     if pd.isna(date):
         return ""
-    return date.strftime("%d/%m/%Y")
+    return date.strftime("%d/%m/%Y")  # Updated date format to match DD/MM/YYYY
 
 def render_task_list(project_id):
     st.write("## Task List")
@@ -61,33 +61,21 @@ def render_task_list(project_id):
         df['priority'] = df['priority'].apply(format_priority)
         df['due_date'] = df['due_date'].apply(format_date)
         
-        # Add custom CSS for table alignment
+        # Create the Excel-like table container with centered date column
         st.markdown("""
             <style>
-                .task-list-table td, .task-list-table th {
+                .task-list-table td:nth-child(5) {
                     text-align: center !important;
-                    vertical-align: middle !important;
                 }
-                .task-list-table td:first-child,
-                .task-list-table th:first-child,
-                .task-list-table td:nth-child(2),
-                .task-list-table th:nth-child(2) {
-                    text-align: left !important;
-                }
-                .task-list-container {
-                    overflow-x: auto;
-                    margin: 1rem 0;
-                }
-                .status-badge, .priority-indicator {
-                    display: inline-flex;
-                    justify-content: center;
-                    align-items: center;
-                    margin: 0 auto;
+                .task-list-table th:nth-child(5) {
+                    text-align: center !important;
                 }
             </style>
+            <div class="task-list-container">
+                <div style="overflow-x: auto;">
         """, unsafe_allow_html=True)
         
-        # Display the table
+        # Display the table with custom styling
         st.markdown(
             df[['title', 'status', 'priority', 'assignee', 'due_date']].to_html(
                 escape=False,
@@ -97,6 +85,102 @@ def render_task_list(project_id):
             ),
             unsafe_allow_html=True
         )
+        
+        st.markdown("</div></div>", unsafe_allow_html=True)
+        
+        # Add JavaScript for sorting and column resizing
+        st.markdown("""
+            <script>
+                // Sorting functionality
+                document.querySelectorAll('#task-table th').forEach((header, index) => {
+                    header.addEventListener('click', () => {
+                        const table = document.getElementById('task-table');
+                        const tbody = table.querySelector('tbody');
+                        const rows = Array.from(tbody.querySelectorAll('tr'));
+                        
+                        const isAscending = header.classList.contains('asc');
+                        
+                        // Remove sorting classes from all headers
+                        table.querySelectorAll('th').forEach(th => {
+                            th.classList.remove('asc', 'desc');
+                        });
+                        
+                        // Sort the rows
+                        rows.sort((rowA, rowB) => {
+                            const cellA = rowA.cells[index].textContent.trim();
+                            const cellB = rowB.cells[index].textContent.trim();
+                            
+                            return isAscending ? 
+                                cellB.localeCompare(cellA) : 
+                                cellA.localeCompare(cellB);
+                        });
+                        
+                        // Update sorting indicator
+                        header.classList.toggle('desc', isAscending);
+                        header.classList.toggle('asc', !isAscending);
+                        
+                        // Rerender the sorted rows
+                        tbody.innerHTML = '';
+                        rows.forEach(row => tbody.appendChild(row));
+                    });
+                });
+                
+                // Column resizing functionality
+                let isResizing = false;
+                let currentHeader = null;
+                let startX, startWidth;
+                
+                document.querySelectorAll('#task-table th').forEach(header => {
+                    const resizeHandle = document.createElement('div');
+                    resizeHandle.className = 'resize-handle';
+                    header.appendChild(resizeHandle);
+                    
+                    resizeHandle.addEventListener('mousedown', e => {
+                        isResizing = true;
+                        currentHeader = header;
+                        startX = e.pageX;
+                        startWidth = header.offsetWidth;
+                        
+                        document.addEventListener('mousemove', handleMouseMove);
+                        document.addEventListener('mouseup', () => {
+                            isResizing = false;
+                            document.removeEventListener('mousemove', handleMouseMove);
+                        });
+                    });
+                });
+                
+                function handleMouseMove(e) {
+                    if (isResizing) {
+                        const width = startWidth + (e.pageX - startX);
+                        currentHeader.style.width = `${width}px`;
+                    }
+                }
+            </script>
+            
+            <style>
+                .resize-handle {
+                    position: absolute;
+                    right: 0;
+                    top: 0;
+                    bottom: 0;
+                    width: 4px;
+                    cursor: col-resize;
+                    background: transparent;
+                }
+                
+                .resize-handle:hover {
+                    background: #e2e8f0;
+                }
+                
+                #task-table th.asc::after {
+                    content: ' ↑';
+                }
+                
+                #task-table th.desc::after {
+                    content: ' ↓';
+                }
+            </style>
+        """, unsafe_allow_html=True)
         
     else:
         st.info("No tasks found. Create some tasks to see them listed here.")
