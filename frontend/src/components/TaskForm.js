@@ -41,22 +41,21 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
 
       const taskData = {
         ...formData,
-        project_id: projectId,
-        id: Date.now(), // Temporary ID for optimistic update
-        created_at: new Date().toISOString()
+        project_id: projectId
       };
 
-      // Optimistically update UI first
+      // Make API call first
+      const response = await api.createTask(taskData);
+      const newTask = response.data;
+
+      // Update UI after successful creation
       if (onTaskCreated) {
-        onTaskCreated(taskData);
+        onTaskCreated(newTask);
       }
 
-      // Reset form and close immediately
+      // Reset form and close
       resetForm();
       if (onCancel) onCancel();
-
-      // Make API call in background
-      await api.createTask(taskData);
     } catch (error) {
       console.error('Error creating task:', error);
       setError(error.response?.data?.error || error.message || 'Failed to create task');

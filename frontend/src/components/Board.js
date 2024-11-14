@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import TaskForm from './TaskForm';
 import api from '../api/api';
 import './Board.css';
 
@@ -28,23 +29,21 @@ const Board = ({ projectId }) => {
   const [error, setError] = useState(null);
   const [editingTask, setEditingTask] = useState(null);
   const [editingAssignee, setEditingAssignee] = useState(null);
+  const [showTaskForm, setShowTaskForm] = useState(false);
 
   const loadTasks = useCallback(async () => {
     try {
       setError(null);
       const response = await api.getProjectTasks(projectId);
-      
-      const groupedTasks = response.data.reduce((acc, task) => {
+      const newTasks = { 'To Do': [], 'In Progress': [], 'Done': [] };
+      response.data.forEach(task => {
         const status = task.status || 'To Do';
-        if (!acc[status]) acc[status] = [];
-        acc[status].push(task);
-        return acc;
-      }, { 'To Do': [], 'In Progress': [], 'Done': [] });
-      
-      setTasks(groupedTasks);
+        newTasks[status].push(task);
+      });
+      setTasks(newTasks);
     } catch (error) {
       console.error('Error loading tasks:', error);
-      setError('Failed to load tasks. Please try again later.');
+      setError('Failed to load tasks');
     }
   }, [projectId]);
 
@@ -59,6 +58,10 @@ const Board = ({ projectId }) => {
       newTasks[status] = [...(newTasks[status] || []), newTask];
       return newTasks;
     });
+  }, []);
+
+  const handleCancelCreate = useCallback(() => {
+    setShowTaskForm(false);
   }, []);
 
   const onDragEnd = async (result) => {
@@ -244,6 +247,19 @@ const Board = ({ projectId }) => {
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="board">
           {error && <div className="error-message">{error}</div>}
+          
+          <button className="add-task-button" onClick={() => setShowTaskForm(true)}>
+            ➕ Add New Task
+          </button>
+
+          {showTaskForm && (
+            <TaskForm 
+              projectId={projectId} 
+              onTaskCreated={handleTaskCreated} 
+              onCancel={handleCancelCreate}
+            />
+          )}
+
           <div className="board-columns">
             {Object.entries(tasks).map(([status, statusTasks]) => (
               <div key={status} className="column">
