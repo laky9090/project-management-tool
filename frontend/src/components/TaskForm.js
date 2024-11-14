@@ -51,20 +51,6 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
         project_id: projectId
       };
 
-      // Create optimistic task for immediate UI update
-      const optimisticTask = {
-        ...taskData,
-        id: Date.now(), // Temporary ID
-        created_at: new Date().toISOString(),
-        isOptimistic: true // Flag to identify optimistic updates
-      };
-
-      // Update UI immediately
-      if (onTaskCreated) {
-        onTaskCreated(optimisticTask);
-      }
-
-      // Make API call
       const response = await api.createTask(taskData);
       const newTask = response.data;
 
@@ -75,8 +61,11 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
         await api.uploadTaskAttachment(newTask.id, attachmentFormData);
       }
 
-      // Reset form and close
+      // Reset form and notify parent
       resetForm();
+      if (onTaskCreated) {
+        onTaskCreated(newTask);
+      }
       if (onCancel) onCancel();
     } catch (error) {
       console.error('Error creating task:', error);

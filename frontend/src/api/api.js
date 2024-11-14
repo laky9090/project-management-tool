@@ -24,13 +24,7 @@ const api = {
       return response;
     } catch (error) {
       console.error('Error creating task:', error);
-      // Add custom error information for better error handling
-      throw {
-        ...error,
-        isTaskCreationError: true,
-        taskData: task,
-        message: error.response?.data?.error || error.message || 'Failed to create task'
-      };
+      throw error;
     }
   },
   updateTask: (taskId, data) => axios.patch(`${API_URL}/tasks/${taskId}`, data),

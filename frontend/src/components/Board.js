@@ -53,11 +53,16 @@ const Board = ({ projectId }) => {
   }, [loadTasks]);
 
   const handleTaskCreated = useCallback((newTask) => {
-    setTasks(prevTasks => ({
-      ...prevTasks,
-      [newTask.status]: [...(prevTasks[newTask.status] || []), newTask]
-    }));
-  }, []);
+    setTasks(prevTasks => {
+      const status = newTask.status || 'To Do';
+      return {
+        ...prevTasks,
+        [status]: [...(prevTasks[status] || []), newTask]
+      };
+    });
+    // Force a refresh of tasks from server
+    loadTasks();
+  }, [loadTasks]);
 
   const onDragEnd = async (result) => {
     if (!result.destination) return;
