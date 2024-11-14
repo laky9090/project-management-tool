@@ -27,11 +27,6 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
     setIsSubmitting(false);
   };
 
-  const handleCancel = () => {
-    resetForm();
-    if (onCancel) onCancel();
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
@@ -46,23 +41,28 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
 
       const taskData = {
         ...formData,
-        project_id: projectId
+        project_id: projectId,
+        id: Date.now(), // Temporary ID for optimistic update
+        created_at: new Date().toISOString()
       };
 
-      const response = await api.createTask(taskData);
-      const newTask = response.data;
-
-      // Notify parent immediately before resetting form
+      // Optimistically update UI
       if (onTaskCreated) {
-        onTaskCreated(newTask);
+        onTaskCreated(taskData);
       }
 
-      // Reset form after notifying parent
+      // Reset form immediately
       resetForm();
       if (onCancel) onCancel();
+
+      // Make API call
+      const response = await api.createTask(taskData);
+      
+      // No need to update UI again as it's already updated
     } catch (error) {
       console.error('Error creating task:', error);
       setError(error.response?.data?.error || error.message || 'Failed to create task');
+      // Optionally revert the optimistic update here
     } finally {
       setIsSubmitting(false);
     }
@@ -148,7 +148,7 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
         </button>
         <button 
           type="button" 
-          onClick={handleCancel} 
+          onClick={onCancel} 
           className="cancel-button"
         >
           Cancel
