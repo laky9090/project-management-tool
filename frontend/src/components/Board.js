@@ -31,6 +31,17 @@ const Board = ({ projectId }) => {
     loadTasks();
   }, [loadTasks]);
 
+  const handleTaskCreated = (newTask) => {
+    // Optimistically update the UI
+    setTasks(prevTasks => {
+      const status = newTask.status || 'To Do';
+      return {
+        ...prevTasks,
+        [status]: [...(prevTasks[status] || []), newTask]
+      };
+    });
+  };
+
   const onDragEnd = async (result) => {
     if (!result.destination) return;
 
@@ -39,46 +50,87 @@ const Board = ({ projectId }) => {
 
     try {
       setError(null);
+      // Optimistically update UI
+      const draggedTask = tasks[source.droppableId][source.index];
+      const newTasks = { ...tasks };
+      newTasks[source.droppableId].splice(source.index, 1);
+      newTasks[destination.droppableId].splice(destination.index, 0, {
+        ...draggedTask,
+        status: destination.droppableId
+      });
+      setTasks(newTasks);
+
       await api.updateTaskStatus(draggableId, destination.droppableId);
-      await loadTasks();
     } catch (error) {
       console.error('Error updating task status:', error);
       setError('Failed to update task status. Please try again.');
+      loadTasks(); // Revert to server state on error
     }
   };
 
   const handleUpdateTask = async (taskId, updatedData) => {
     try {
       setError(null);
+      // Optimistically update UI
+      setTasks(prevTasks => {
+        const newTasks = { ...prevTasks };
+        Object.keys(newTasks).forEach(status => {
+          newTasks[status] = newTasks[status].map(task =>
+            task.id === taskId ? { ...task, ...updatedData } : task
+          );
+        });
+        return newTasks;
+      });
+
       await api.updateTask(taskId, updatedData);
       setEditingTask(null);
-      await loadTasks();
     } catch (error) {
       console.error('Error updating task:', error);
       setError('Failed to update task. Please try again.');
+      loadTasks(); // Revert to server state on error
     }
   };
 
   const handleDeleteTask = async (taskId) => {
     try {
       setError(null);
+      // Optimistically update UI
+      setTasks(prevTasks => {
+        const newTasks = { ...prevTasks };
+        Object.keys(newTasks).forEach(status => {
+          newTasks[status] = newTasks[status].filter(task => task.id !== taskId);
+        });
+        return newTasks;
+      });
+
       await api.deleteTask(taskId);
-      await loadTasks();
     } catch (error) {
       console.error('Error deleting task:', error);
       setError('Failed to delete task. Please try again.');
+      loadTasks(); // Revert to server state on error
     }
   };
 
   const handleAssigneeChange = async (taskId, assignee) => {
     try {
       setError(null);
+      // Optimistically update UI
+      setTasks(prevTasks => {
+        const newTasks = { ...prevTasks };
+        Object.keys(newTasks).forEach(status => {
+          newTasks[status] = newTasks[status].map(task =>
+            task.id === taskId ? { ...task, assignee } : task
+          );
+        });
+        return newTasks;
+      });
+
       await api.updateTaskAssignment(taskId, assignee);
-      await loadTasks();
       setEditingAssignee(null);
     } catch (error) {
       console.error('Error updating task assignment:', error);
       setError('Failed to update task assignment. Please try again.');
+      loadTasks(); // Revert to server state on error
     }
   };
 

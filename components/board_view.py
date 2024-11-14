@@ -9,6 +9,10 @@ logger = logging.getLogger(__name__)
 
 def delete_task(task_id):
     try:
+        # Clear cache before deleting
+        if 'query_cache' in st.session_state:
+            st.session_state.query_cache.clear()
+            
         result = execute_query(
             "UPDATE tasks SET deleted_at = CURRENT_TIMESTAMP WHERE id = %s RETURNING id",
             (task_id,)
@@ -19,13 +23,33 @@ def delete_task(task_id):
         return False
 
 def get_deleted_tasks(project_id):
-    return execute_query(
-        "SELECT * FROM tasks WHERE project_id = %s AND deleted_at IS NOT NULL",
-        (project_id,)
-    )
+    try:
+        # Use a different cache key for deleted tasks
+        if 'deleted_tasks_cache' not in st.session_state:
+            st.session_state.deleted_tasks_cache = {}
+            
+        cache_key = f"deleted_tasks_{project_id}"
+        if cache_key in st.session_state.deleted_tasks_cache:
+            return st.session_state.deleted_tasks_cache[cache_key]
+            
+        tasks = execute_query(
+            "SELECT * FROM tasks WHERE project_id = %s AND deleted_at IS NOT NULL",
+            (project_id,)
+        )
+        st.session_state.deleted_tasks_cache[cache_key] = tasks
+        return tasks
+    except Exception as e:
+        logger.error(f"Error fetching deleted tasks: {str(e)}")
+        return []
 
 def restore_task(task_id):
     try:
+        # Clear cache before restoring
+        if 'query_cache' in st.session_state:
+            st.session_state.query_cache.clear()
+        if 'deleted_tasks_cache' in st.session_state:
+            st.session_state.deleted_tasks_cache.clear()
+            
         result = execute_query(
             "UPDATE tasks SET deleted_at = NULL WHERE id = %s RETURNING id",
             (task_id,)
@@ -145,6 +169,9 @@ def render_task_card(task, is_deleted=False):
                         "UPDATE tasks SET status = %s WHERE id = %s",
                         (new_status, task['id'])
                     ):
+                        # Clear cache after status update
+                        if 'query_cache' in st.session_state:
+                            st.session_state.query_cache.clear()
                         st.rerun()
 
         # Assignee field
@@ -265,6 +292,9 @@ def render_board(project_id):
                     st.rerun()
             with col2:
                 if create_task_form(project_id):
+                    # Clear cache after task creation
+                    if 'query_cache' in st.session_state:
+                        st.session_state.query_cache.clear()
                     st.session_state.show_task_form = False
                     st.rerun()
 

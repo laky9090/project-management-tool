@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import api from '../api/api';
 import './TaskForm.css';
 
-const TaskForm = ({ projectId, onCancel }) => {
+const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -13,8 +13,9 @@ const TaskForm = ({ projectId, onCancel }) => {
   });
   const [fileAttachment, setFileAttachment] = useState(null);
   const [error, setError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleCancel = () => {
+  const resetForm = () => {
     setFormData({
       title: '',
       description: '',
@@ -25,12 +26,19 @@ const TaskForm = ({ projectId, onCancel }) => {
     });
     setFileAttachment(null);
     setError(null);
+  };
+
+  const handleCancel = () => {
+    resetForm();
     if (onCancel) onCancel();
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
     try {
+      setIsSubmitting(true);
       setError(null);
       const taskData = {
         ...formData,
@@ -38,28 +46,27 @@ const TaskForm = ({ projectId, onCancel }) => {
       };
 
       const response = await api.createTask(taskData);
+      const newTask = response.data;
 
-      if (fileAttachment && response.data.id) {
+      if (fileAttachment && newTask.id) {
         const attachmentFormData = new FormData();
         attachmentFormData.append('file', fileAttachment);
-        await api.uploadTaskAttachment(response.data.id, attachmentFormData);
+        await api.uploadTaskAttachment(newTask.id, attachmentFormData);
       }
 
-      // Reset form
-      setFormData({
-        title: '',
-        description: '',
-        status: 'To Do',
-        priority: 'Medium',
-        assignee: '',
-        due_date: new Date().toISOString().split('T')[0]
-      });
-      setFileAttachment(null);
-      setError(null);
-      if (onCancel) onCancel(); // Close form after successful creation
+      // Notify parent component
+      if (onTaskCreated) {
+        onTaskCreated(newTask);
+      }
+
+      // Reset form and close
+      resetForm();
+      if (onCancel) onCancel();
     } catch (error) {
       console.error('Error creating task:', error);
       setError(error.response?.data?.error || 'Failed to create task');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -140,8 +147,12 @@ const TaskForm = ({ projectId, onCancel }) => {
         />
       </div>
       <div className="form-actions">
-        <button type="submit">Create Task</button>
-        <button type="button" onClick={handleCancel} className="cancel-button">Cancel</button>
+        <button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? 'Creating...' : 'Create Task'}
+        </button>
+        <button type="button" onClick={handleCancel} className="cancel-button">
+          Cancel
+        </button>
       </div>
     </form>
   );
