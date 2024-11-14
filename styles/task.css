@@ -538,3 +538,74 @@ td.due-date,
 [data-testid="stTable"] th:nth-child(4) {
     text-align: center !important;
 }
+
+/* Update the existing styles to ensure center alignment */
+.task-table td, 
+.task-table th,
+[data-testid="stTable"] td,
+[data-testid="stTable"] th {
+    text-align: center !important;
+    vertical-align: middle !important;
+}
+
+/* Exception for title and comment columns */
+.task-table td:first-child,
+.task-table th:first-child,
+.task-table td:nth-child(2),
+.task-table th:nth-child(2),
+[data-testid="stTable"] td:first-child,
+[data-testid="stTable"] th:first-child,
+[data-testid="stTable"] td:nth-child(2),
+[data-testid="stTable"] th:nth-child(2) {
+    text-align: left !important;
+}
+
+/* Table specific styles */
+.task-list-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+}
+
+.task-list-table td,
+.task-list-table th {
+    padding: 12px;
+    text-align: center !important;
+    vertical-align: middle !important;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.task-list-table th {
+    background-color: var(--background-light);
+    font-weight: 500;
+}
+
+/* Exception for task title and description */
+.task-list-table td:first-child,
+.task-list-table th:first-child,
+.task-list-table td:nth-child(2),
+.task-list-table th:nth-child(2) {
+    text-align: left !important;
+}
+
+/* Status and priority indicators */
+.status-badge,
+.priority-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+/* Form input alignment */
+input[type="text"],
+input[type="date"],
+select {
+    text-align: center !important;
+}
+
+/* Exception for text areas and title inputs */
+textarea,
+input[type="text"].task-title {
+    text-align: left !important;
+}
