@@ -36,8 +36,9 @@ const Board = ({ projectId }) => {
   const handleUpdateTask = async (taskId, updatedData) => {
     try {
       setError(null);
-      if (updatedData.due_date === '') {
-        updatedData.due_date = null;
+      // Format date if it exists
+      if (updatedData.due_date) {
+        updatedData.due_date = new Date(updatedData.due_date).toISOString().split('T')[0];
       }
       await api.updateTask(taskId, updatedData);
       setTasks(prevTasks => 
@@ -146,11 +147,16 @@ const Board = ({ projectId }) => {
           <tbody>
             {sortedTasks.map(task => (
               <tr key={task.id}>
-                <td onClick={() => setEditingTask(task.id)}>
+                <td onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setEditingTask(task.id);
+                }}>
                   {editingTask === task.id ? (
                     <input
                       type="text"
                       defaultValue={task.title}
+                      onClick={(e) => e.stopPropagation()}
                       onBlur={(e) => {
                         const newValue = e.target.value.trim();
                         if (newValue !== task.title) {
@@ -168,11 +174,16 @@ const Board = ({ projectId }) => {
                     task.title
                   )}
                 </td>
-                <td onClick={() => setEditingTask(task.id)}>
+                <td onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setEditingTask(task.id);
+                }}>
                   {editingTask === task.id ? (
                     <input
                       type="text"
                       defaultValue={task.comment || ''}
+                      onClick={(e) => e.stopPropagation()}
                       onBlur={(e) => {
                         const newValue = e.target.value.trim();
                         if (newValue !== task.comment) {
@@ -209,12 +220,23 @@ const Board = ({ projectId }) => {
                     <option value="High">High</option>
                   </select>
                 </td>
-                <td className="date-column">
+                <td className="date-column" onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setEditingTask(task.id);
+                }}>
                   {editingTask === task.id ? (
                     <input
                       type="date"
                       defaultValue={task.due_date}
-                      onChange={(e) => handleUpdateTask(task.id, { due_date: e.target.value || null })}
+                      onClick={(e) => e.stopPropagation()}
+                      onBlur={(e) => {
+                        const newValue = e.target.value;
+                        if (newValue !== task.due_date) {
+                          handleUpdateTask(task.id, { due_date: newValue || null });
+                        }
+                      }}
+                      autoFocus
                     />
                   ) : (
                     task.due_date && new Date(task.due_date).toLocaleDateString('fr-FR')
@@ -222,14 +244,22 @@ const Board = ({ projectId }) => {
                 </td>
                 <td className="actions-column">
                   <button
-                    onClick={() => setEditingTask(editingTask === task.id ? null : task.id)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setEditingTask(editingTask === task.id ? null : task.id);
+                    }}
                     className="edit-button"
                     title="Edit"
                   >
                     ✏️
                   </button>
                   <button
-                    onClick={() => handleDeleteTask(task.id)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleDeleteTask(task.id);
+                    }}
                     className="delete-button"
                     title="Delete"
                   >
@@ -275,7 +305,11 @@ const Board = ({ projectId }) => {
                     </td>
                     <td className="actions-column">
                       <button
-                        onClick={() => handleRestoreTask(task.id)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleRestoreTask(task.id);
+                        }}
                         className="restore-button"
                         title="Restore"
                       >
