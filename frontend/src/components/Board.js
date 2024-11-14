@@ -52,12 +52,14 @@ const Board = ({ projectId }) => {
     loadTasks();
   }, [loadTasks]);
 
-  const handleTaskCreated = (newTask) => {
+  const handleTaskCreated = useCallback((newTask) => {
     setTasks(prevTasks => ({
       ...prevTasks,
       [newTask.status]: [...(prevTasks[newTask.status] || []), newTask]
     }));
-  };
+    // Force a re-render after state update
+    setTimeout(() => loadTasks(), 100);
+  }, [loadTasks]);
 
   const onDragEnd = async (result) => {
     if (!result.destination) return;

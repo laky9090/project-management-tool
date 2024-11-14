@@ -143,18 +143,28 @@ def create_task_form(project_id):
                     
                     # Commit transaction
                     execute_query("COMMIT")
+                    
+                    # Clear cache after successful task creation
+                    if 'query_cache' in st.session_state:
+                        st.session_state.query_cache.clear()
+                    
                     st.success(f"✅ Task '{title}' created successfully!")
                     st.session_state.show_task_form = False  # Hide the form
-                    time.sleep(0.5)  # Ensure transaction completes
+                    
+                    # Ensure update is reflected immediately
+                    time.sleep(0.1)  # Small delay to ensure transaction completes
                     st.rerun()
+                    
                     return True
                     
                 except Exception as e:
                     execute_query("ROLLBACK")
+                    logger.error(f"Error creating task: {str(e)}")
                     st.error(f"Error creating task: {str(e)}")
                     return False
                     
     except Exception as e:
+        logger.error(f"Form error: {str(e)}")
         st.error(f"Form error: {str(e)}")
         return False
     

@@ -14,6 +14,7 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
   const [fileAttachment, setFileAttachment] = useState(null);
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const resetForm = () => {
     setFormData({
@@ -26,6 +27,8 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
     });
     setFileAttachment(null);
     setError(null);
+    setIsSubmitting(false);
+    setIsLoading(false);
   };
 
   const handleCancel = () => {
@@ -39,7 +42,13 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
 
     try {
       setIsSubmitting(true);
+      setIsLoading(true);
       setError(null);
+
+      if (!formData.title.trim()) {
+        throw new Error('Task title is required');
+      }
+
       const taskData = {
         ...formData,
         project_id: projectId
@@ -65,9 +74,10 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
       if (onCancel) onCancel();
     } catch (error) {
       console.error('Error creating task:', error);
-      setError(error.response?.data?.error || 'Failed to create task');
+      setError(error.response?.data?.error || error.message || 'Failed to create task');
     } finally {
       setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
 
@@ -77,10 +87,18 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
       ...prevData,
       [name]: value
     }));
+    // Clear error when user starts typing
+    if (error) setError(null);
   };
 
   const handleFileChange = (e) => {
-    setFileAttachment(e.target.files[0]);
+    const file = e.target.files[0];
+    if (file && file.size > 5 * 1024 * 1024) {
+      setError('File size should not exceed 5MB');
+      return;
+    }
+    setFileAttachment(file);
+    if (error) setError(null);
   };
 
   return (
@@ -95,6 +113,7 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
           onChange={handleChange}
           placeholder="Task Title"
           required
+          disabled={isLoading}
         />
       </div>
       <div className="form-group">
@@ -103,18 +122,29 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
           value={formData.description}
           onChange={handleChange}
           placeholder="Description"
+          disabled={isLoading}
         />
       </div>
       <div className="form-row">
         <div className="form-group">
-          <select name="status" value={formData.status} onChange={handleChange}>
+          <select 
+            name="status" 
+            value={formData.status} 
+            onChange={handleChange}
+            disabled={isLoading}
+          >
             <option value="To Do">To Do</option>
             <option value="In Progress">In Progress</option>
             <option value="Done">Done</option>
           </select>
         </div>
         <div className="form-group">
-          <select name="priority" value={formData.priority} onChange={handleChange}>
+          <select 
+            name="priority" 
+            value={formData.priority} 
+            onChange={handleChange}
+            disabled={isLoading}
+          >
             <option value="Low">Low</option>
             <option value="Medium">Medium</option>
             <option value="High">High</option>
@@ -129,6 +159,7 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
             value={formData.assignee}
             onChange={handleChange}
             placeholder="Assignee Name"
+            disabled={isLoading}
           />
         </div>
         <div className="form-group">
@@ -137,6 +168,7 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
             name="due_date"
             value={formData.due_date}
             onChange={handleChange}
+            disabled={isLoading}
           />
         </div>
       </div>
@@ -145,13 +177,19 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
           type="file"
           onChange={handleFileChange}
           accept=".pdf,.txt,.doc,.docx,.png,.jpg,.jpeg"
+          disabled={isLoading}
         />
       </div>
       <div className="form-actions">
-        <button type="submit" disabled={isSubmitting}>
+        <button type="submit" disabled={isSubmitting || isLoading}>
           {isSubmitting ? 'Creating...' : 'Create Task'}
         </button>
-        <button type="button" onClick={handleCancel} className="cancel-button">
+        <button 
+          type="button" 
+          onClick={handleCancel} 
+          className="cancel-button"
+          disabled={isLoading}
+        >
           Cancel
         </button>
       </div>
