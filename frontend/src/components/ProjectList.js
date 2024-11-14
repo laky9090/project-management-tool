@@ -4,6 +4,7 @@ import './ProjectList.css';
 
 const ProjectList = ({ onSelectProject }) => {
   const [projects, setProjects] = useState([]);
+  const [deletedProjects, setDeletedProjects] = useState([]);
   const [editingProject, setEditingProject] = useState(null);
   const [newProject, setNewProject] = useState({
     name: '',
@@ -17,8 +18,12 @@ const ProjectList = ({ onSelectProject }) => {
 
   const loadProjects = async () => {
     try {
-      const response = await api.getProjects();
-      setProjects(response.data);
+      const [activeResponse, deletedResponse] = await Promise.all([
+        api.getProjects(),
+        api.getDeletedProjects()
+      ]);
+      setProjects(activeResponse.data);
+      setDeletedProjects(deletedResponse.data);
     } catch (error) {
       console.error('Error loading projects:', error);
     }
@@ -54,9 +59,23 @@ const ProjectList = ({ onSelectProject }) => {
     e.stopPropagation();
     try {
       await api.deleteProject(projectId);
+      const deletedProject = projects.find(p => p.id === projectId);
       setProjects(projects.filter(p => p.id !== projectId));
+      setDeletedProjects([...deletedProjects, { ...deletedProject, deleted_at: new Date() }]);
     } catch (error) {
       console.error('Error deleting project:', error);
+    }
+  };
+
+  const handleRestoreProject = async (projectId, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      await api.restoreProject(projectId);
+      setDeletedProjects(deletedProjects.filter(p => p.id !== projectId));
+      loadProjects(); // Reload active projects
+    } catch (error) {
+      console.error('Error restoring project:', error);
     }
   };
 
@@ -151,6 +170,32 @@ const ProjectList = ({ onSelectProject }) => {
           </div>
         ))}
       </div>
+
+      {deletedProjects.length > 0 && (
+        <div className="deleted-projects">
+          <h3>Deleted Projects</h3>
+          {deletedProjects.map(project => (
+            <div key={project.id} className="project-card deleted">
+              <div className="project-content">
+                <h4>{project.name}</h4>
+                <p>{project.description}</p>
+                <span className="deadline">
+                  Deleted: {new Date(project.deleted_at).toLocaleDateString()}
+                </span>
+              </div>
+              <div className="project-actions">
+                <button
+                  onClick={(e) => handleRestoreProject(project.id, e)}
+                  className="restore-button"
+                  title="Restore project"
+                >
+                  🔄
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

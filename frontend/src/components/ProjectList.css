@@ -79,7 +79,8 @@
 }
 
 .edit-button,
-.delete-button {
+.delete-button,
+.restore-button {
   padding: 4px 8px;
   background: none;
   border: none;
@@ -90,7 +91,8 @@
 }
 
 .edit-button:hover,
-.delete-button:hover {
+.delete-button:hover,
+.restore-button:hover {
   opacity: 1;
   background-color: #f8fafc;
   border-radius: 4px;
@@ -133,4 +135,36 @@
 
 .edit-actions button:hover {
   opacity: 0.9;
+}
+
+/* Deleted projects styles */
+.deleted-projects {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.project-card.deleted {
+  background-color: #f9fafb;
+}
+
+.project-card.deleted:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.project-card.deleted .project-actions {
+  opacity: 1;
+}
+
+/* Make project actions more visible in Streamlit */
+.stButton > button[title="Edit project"],
+.stButton > button[title="Delete project"],
+.stButton > button[title="Restore project"] {
+  background: none !important;
+  border: none !important;
+  padding: 0.5rem !important;
+  font-size: 1.2rem !important;
+  min-width: unset !important;
+  width: auto !important;
 }

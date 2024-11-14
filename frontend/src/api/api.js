@@ -9,9 +9,11 @@ axios.defaults.withCredentials = true;
 const api = {
   // Projects
   getProjects: () => axios.get(`${API_URL}/projects`),
+  getDeletedProjects: () => axios.get(`${API_URL}/projects/deleted`),
   createProject: (project) => axios.post(`${API_URL}/projects`, project),
   updateProject: (projectId, data) => axios.patch(`${API_URL}/projects/${projectId}`, data),
   deleteProject: (projectId) => axios.delete(`${API_URL}/projects/${projectId}`),
+  restoreProject: (projectId) => axios.patch(`${API_URL}/projects/${projectId}/restore`),
   
   // Tasks
   getProjectTasks: (projectId) => axios.get(`${API_URL}/tasks/project/${projectId}`),
