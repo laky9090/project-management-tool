@@ -9,6 +9,12 @@
   --text-secondary: #4b5563;
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
   --spacing-base: 1rem;
+  --status-todo-bg: #f1f5f9;
+  --status-todo-text: #475569;
+  --status-inprogress-bg: #fef3c7;
+  --status-inprogress-text: #92400e;
+  --status-done-bg: #dcfce7;
+  --status-done-text: #166534;
 }
 
 .board {
@@ -220,4 +226,38 @@
   .task-table td {
     padding: 8px 12px;
   }
+}
+
+/* Add status-based row coloring to existing Board.css */
+.task-table tr[data-status="To Do"] {
+    background-color: var(--status-todo-bg);
+    color: var(--status-todo-text);
+}
+
+.task-table tr[data-status="In Progress"] {
+    background-color: var(--status-inprogress-bg);
+    color: var(--status-inprogress-text);
+}
+
+.task-table tr[data-status="Done"] {
+    background-color: var(--status-done-bg);
+    color: var(--status-done-text);
+}
+
+/* Hover effects */
+.task-table tr[data-status="To Do"]:hover {
+    background-color: #e2e8f0;
+}
+
+.task-table tr[data-status="In Progress"]:hover {
+    background-color: #fde68a;
+}
+
+.task-table tr[data-status="Done"]:hover {
+    background-color: #bbf7d0;
+}
+
+/* Override even row styling */
+.task-table tbody tr:nth-child(even) {
+    background-color: inherit;
 }

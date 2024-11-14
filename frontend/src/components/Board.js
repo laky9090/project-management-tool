@@ -146,7 +146,7 @@ const Board = ({ projectId }) => {
           </thead>
           <tbody>
             {sortedTasks.map(task => (
-              <tr key={task.id}>
+              <tr key={task.id} data-status={task.status}>
                 <td onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -288,7 +288,7 @@ const Board = ({ projectId }) => {
               </thead>
               <tbody>
                 {deletedTasks.map(task => (
-                  <tr key={task.id} className="deleted-task-row">
+                  <tr key={task.id} className="deleted-task-row" data-status={task.status}>
                     <td>{task.title}</td>
                     <td>
                       <span className={`status-badge ${task.status.toLowerCase().replace(' ', '-')}`}>

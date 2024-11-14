@@ -629,3 +629,37 @@ td.due-date,
 .task-list-table th:nth-child(5) {
     text-align: center !important;
 }
+
+/* Status-based row coloring */
+tr[data-status="To Do"] {
+    background-color: var(--status-todo-bg) !important;
+    color: var(--status-todo-text) !important;
+}
+
+tr[data-status="In Progress"] {
+    background-color: var(--status-inprogress-bg) !important;
+    color: var(--status-inprogress-text) !important;
+}
+
+tr[data-status="Done"] {
+    background-color: var(--status-done-bg) !important;
+    color: var(--status-done-text) !important;
+}
+
+/* Hover effects for status-based rows */
+tr[data-status="To Do"]:hover {
+    background-color: #e2e8f0 !important;
+}
+
+tr[data-status="In Progress"]:hover {
+    background-color: #fde68a !important;
+}
+
+tr[data-status="Done"]:hover {
+    background-color: #bbf7d0 !important;
+}
+
+/* Override even row styling */
+.task-list-table tr:nth-child(even) {
+    background-color: inherit;
+}

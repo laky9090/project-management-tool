@@ -110,58 +110,22 @@ def render_task_list(project_id):
                 .task-list-table th:nth-child(5) {
                     text-align: center !important;
                 }
+                /* New styles for row coloring */
+                .task-list-table tr[data-status='todo'] {
+                    background-color: #f5f5f5; /* Light gray for TODO */
+                }
+                .task-list-table tr[data-status='inprogress'] {
+                    background-color: #f0f8ff; /* Light blue for In Progress */
+                }
+                .task-list-table tr[data-status='done'] {
+                    background-color: #e0ffe0; /* Light green for Done */
+                }
             </style>
             <div class="task-list-container">
                 <div style="overflow-x: auto;">
         """, unsafe_allow_html=True)
         
-        # Add JavaScript for inline editing
-        st.markdown("""
-            <script>
-                function makeEditable(cell, taskId, field) {
-                    cell.contentEditable = true;
-                    cell.dataset.originalValue = cell.textContent;
-                    
-                    cell.addEventListener('blur', async () => {
-                        const newValue = cell.textContent.trim();
-                        if (newValue !== cell.dataset.originalValue) {
-                            const response = await fetch('/api/tasks/' + taskId, {
-                                method: 'PATCH',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                },
-                                body: JSON.stringify({ [field]: newValue })
-                            });
-                            
-                            if (!response.ok) {
-                                cell.textContent = cell.dataset.originalValue;
-                            }
-                        }
-                    });
-                    
-                    cell.addEventListener('keydown', (e) => {
-                        if (e.key === 'Enter') {
-                            e.preventDefault();
-                            cell.blur();
-                        }
-                        if (e.key === 'Escape') {
-                            cell.textContent = cell.dataset.originalValue;
-                            cell.blur();
-                        }
-                    });
-                }
-                
-                document.addEventListener('DOMContentLoaded', () => {
-                    document.querySelectorAll('.editable').forEach(cell => {
-                        const taskId = cell.dataset.taskId;
-                        const field = cell.dataset.field;
-                        makeEditable(cell, taskId, field);
-                    });
-                });
-            </script>
-        """, unsafe_allow_html=True)
-        
-        # Generate table HTML with editable cells
+        # Generate table HTML with editable cells and status-based row coloring
         table_html = "<table class='task-list-table'><thead><tr>"
         columns = ['Title', 'Comment', 'Status', 'Priority', 'Due Date']
         for col in columns:
@@ -170,7 +134,8 @@ def render_task_list(project_id):
         table_html += "</tr></thead><tbody>"
         
         for _, row in df.iterrows():
-            table_html += "<tr>"
+            # Add data-status attribute for row coloring
+            table_html += f"<tr data-status='{row['status']}'>"
             # Title cell
             table_html += f"""<td class='editable' data-task-id='{row["id"]}' 
                              data-field='title' contenteditable='true'>{row["title"]}</td>"""
