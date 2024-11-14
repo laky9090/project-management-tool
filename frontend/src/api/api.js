@@ -10,12 +10,15 @@ const api = {
   // Projects
   getProjects: () => axios.get(`${API_URL}/projects`),
   createProject: (project) => axios.post(`${API_URL}/projects`, project),
+  updateProject: (projectId, data) => axios.patch(`${API_URL}/projects/${projectId}`, data),
+  deleteProject: (projectId) => axios.delete(`${API_URL}/projects/${projectId}`),
   
   // Tasks
   getProjectTasks: (projectId) => axios.get(`${API_URL}/tasks/project/${projectId}`),
   createTask: (task) => axios.post(`${API_URL}/tasks`, task),
   updateTask: (taskId, data) => axios.patch(`${API_URL}/tasks/${taskId}`, data),
   deleteTask: (taskId) => axios.delete(`${API_URL}/tasks/${taskId}`),
+  restoreTask: (taskId) => axios.patch(`${API_URL}/tasks/${taskId}/restore`),
   updateTaskStatus: (taskId, status) => axios.patch(`${API_URL}/tasks/${taskId}/status`, { status }),
   updateTaskAssignment: (taskId, assignee) => axios.patch(`${API_URL}/tasks/${taskId}/assign`, { assignee }),
   

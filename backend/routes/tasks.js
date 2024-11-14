@@ -42,11 +42,35 @@ router.get('/project/:projectId', async (req, res) => {
        ORDER BY t.created_at DESC`,
       [req.params.projectId]
     );
-    
     res.json(tasks);
   } catch (err) {
     console.error('Error fetching tasks:', err);
     res.status(500).json({ error: 'Failed to fetch tasks' });
+  }
+});
+
+// Create new task
+router.post('/', async (req, res) => {
+  const { project_id, title, description, status, priority, due_date, assignee } = req.body;
+
+  if (!project_id || !title) {
+    return res.status(400).json({ error: 'Project ID and title are required' });
+  }
+
+  try {
+    const { rows } = await db.query(
+      `INSERT INTO tasks (project_id, title, description, status, priority, due_date, assignee)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING *`,
+      [project_id, title, description, status || 'To Do', priority || 'Medium', due_date, assignee]
+    );
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    console.error('Error creating task:', err);
+    res.status(500).json({ 
+      error: 'Failed to create task',
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 
@@ -72,7 +96,7 @@ router.patch('/:taskId', async (req, res) => {
     const query = `
       UPDATE tasks 
       SET ${updateFields.join(', ')}
-      WHERE id = $${values.length + 1}
+      WHERE id = $${values.length + 1} AND deleted_at IS NULL
       RETURNING *
     `;
 
@@ -95,7 +119,7 @@ router.delete('/:taskId', async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      'UPDATE tasks SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING id',
+      'UPDATE tasks SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1 AND deleted_at IS NULL RETURNING id',
       [taskId]
     );
 
@@ -110,6 +134,27 @@ router.delete('/:taskId', async (req, res) => {
   }
 });
 
+// Restore task
+router.patch('/:taskId/restore', async (req, res) => {
+  const { taskId } = req.params;
+
+  try {
+    const { rows } = await db.query(
+      'UPDATE tasks SET deleted_at = NULL WHERE id = $1 AND deleted_at IS NOT NULL RETURNING *',
+      [taskId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Task not found or already restored' });
+    }
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('Error restoring task:', err);
+    res.status(500).json({ error: 'Failed to restore task' });
+  }
+});
+
 // Update task status
 router.patch('/:taskId/status', async (req, res) => {
   const { taskId } = req.params;
@@ -117,7 +162,7 @@ router.patch('/:taskId/status', async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      'UPDATE tasks SET status = $1 WHERE id = $2 RETURNING *',
+      'UPDATE tasks SET status = $1 WHERE id = $2 AND deleted_at IS NULL RETURNING *',
       [status, taskId]
     );
 
@@ -139,7 +184,7 @@ router.patch('/:taskId/assign', async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      'UPDATE tasks SET assignee = $1 WHERE id = $2 RETURNING *',
+      'UPDATE tasks SET assignee = $1 WHERE id = $2 AND deleted_at IS NULL RETURNING *',
       [assignee, taskId]
     );
 
