@@ -53,6 +53,7 @@
   vertical-align: middle;
   cursor: pointer;
   transition: background-color 0.2s ease;
+  position: relative;
 }
 
 .task-table td:hover {
@@ -68,13 +69,16 @@
   border-radius: 4px;
   font-size: var(--base-font-size);
   font-family: var(--font-family);
+  background-color: white;
+  position: relative;
+  z-index: 2;
 }
 
 .task-table td input:focus,
 .task-table td select:focus {
   outline: 2px solid var(--primary-color);
   background-color: white;
-  z-index: 1;
+  z-index: 3;
   position: relative;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }

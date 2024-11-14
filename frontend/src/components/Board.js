@@ -127,6 +127,7 @@ const Board = ({ projectId }) => {
             {sortedTasks.map(task => (
               <tr key={task.id}>
                 <td onClick={(e) => {
+                  e.preventDefault();
                   e.stopPropagation();
                   setEditingTask(task.id);
                 }}>
@@ -134,15 +135,22 @@ const Board = ({ projectId }) => {
                     <input
                       type="text"
                       defaultValue={task.title}
+                      onFocus={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
                       onBlur={(e) => {
-                        const value = e.target.value;
-                        setTimeout(() => {
-                          handleUpdateTask(task.id, { title: value });
-                        }, 100);
+                        const newValue = e.target.value.trim();
+                        if (newValue !== task.title) {
+                          handleUpdateTask(task.id, { title: newValue });
+                        }
                       }}
                       onKeyPress={(e) => {
                         if (e.key === 'Enter') {
-                          handleUpdateTask(task.id, { title: e.target.value });
+                          const newValue = e.target.value.trim();
+                          if (newValue !== task.title) {
+                            handleUpdateTask(task.id, { title: newValue });
+                          }
                         }
                       }}
                       onClick={(e) => e.stopPropagation()}
@@ -153,6 +161,7 @@ const Board = ({ projectId }) => {
                   )}
                 </td>
                 <td onClick={(e) => {
+                  e.preventDefault();
                   e.stopPropagation();
                   setEditingTask(task.id);
                 }}>
@@ -160,15 +169,22 @@ const Board = ({ projectId }) => {
                     <input
                       type="text"
                       defaultValue={task.comment || ''}
+                      onFocus={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
                       onBlur={(e) => {
-                        const value = e.target.value;
-                        setTimeout(() => {
-                          handleUpdateTask(task.id, { comment: value });
-                        }, 100);
+                        const newValue = e.target.value.trim();
+                        if (newValue !== task.comment) {
+                          handleUpdateTask(task.id, { comment: newValue });
+                        }
                       }}
                       onKeyPress={(e) => {
                         if (e.key === 'Enter') {
-                          handleUpdateTask(task.id, { comment: e.target.value });
+                          const newValue = e.target.value.trim();
+                          if (newValue !== task.comment) {
+                            handleUpdateTask(task.id, { comment: newValue });
+                          }
                         }
                       }}
                       onClick={(e) => e.stopPropagation()}
@@ -188,17 +204,28 @@ const Board = ({ projectId }) => {
                   </select>
                 </td>
                 <td onClick={(e) => {
+                  e.preventDefault();
                   e.stopPropagation();
                   setEditingTask(task.id);
                 }}>
                   {editingTask === task.id ? (
                     <select
                       defaultValue={task.priority}
+                      onFocus={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      onBlur={(e) => {
+                        const newValue = e.target.value;
+                        if (newValue !== task.priority) {
+                          handleUpdateTask(task.id, { priority: newValue });
+                        }
+                      }}
                       onChange={(e) => {
-                        const value = e.target.value;
-                        setTimeout(() => {
-                          handleUpdateTask(task.id, { priority: value });
-                        }, 100);
+                        const newValue = e.target.value;
+                        if (newValue !== task.priority) {
+                          handleUpdateTask(task.id, { priority: newValue });
+                        }
                       }}
                       onClick={(e) => e.stopPropagation()}
                       autoFocus
@@ -214,6 +241,7 @@ const Board = ({ projectId }) => {
                   )}
                 </td>
                 <td className="date-column" onClick={(e) => {
+                  e.preventDefault();
                   e.stopPropagation();
                   setEditingTask(task.id);
                 }}>
@@ -221,11 +249,21 @@ const Board = ({ projectId }) => {
                     <input
                       type="date"
                       defaultValue={task.due_date}
+                      onFocus={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      onBlur={(e) => {
+                        const newValue = e.target.value;
+                        if (newValue !== task.due_date) {
+                          handleUpdateTask(task.id, { due_date: newValue });
+                        }
+                      }}
                       onChange={(e) => {
-                        const value = e.target.value;
-                        setTimeout(() => {
-                          handleUpdateTask(task.id, { due_date: value });
-                        }, 100);
+                        const newValue = e.target.value;
+                        if (newValue !== task.due_date) {
+                          handleUpdateTask(task.id, { due_date: newValue });
+                        }
                       }}
                       onClick={(e) => e.stopPropagation()}
                       autoFocus
@@ -236,14 +274,22 @@ const Board = ({ projectId }) => {
                 </td>
                 <td className="actions-column">
                   <button
-                    onClick={() => setEditingTask(editingTask === task.id ? null : task.id)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setEditingTask(editingTask === task.id ? null : task.id);
+                    }}
                     className="edit-button"
                     title="Edit"
                   >
                     ✏️
                   </button>
                   <button
-                    onClick={() => handleDeleteTask(task.id)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleDeleteTask(task.id);
+                    }}
                     className="delete-button"
                     title="Delete"
                   >
