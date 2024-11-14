@@ -21,8 +21,22 @@ st.set_page_config(
 )
 
 # Load custom CSS
-with open('styles/task.css') as f:
-    st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+def load_css():
+    with open('styles/task.css') as f:
+        st.markdown(f'''
+            <style>
+                {f.read()}
+            </style>
+        ''', unsafe_allow_html=True)
+
+# Initialize session states
+if 'current_view' not in st.session_state:
+    st.session_state.current_view = 'Board'
+if 'selected_project' not in st.session_state:
+    st.session_state.selected_project = None
+
+# Load CSS
+load_css()
 
 # Test database connection
 conn = get_connection()
@@ -39,12 +53,6 @@ except Exception as e:
     logger.error(f"Database initialization error: {str(e)}")
     st.error("Failed to initialize database. Please check the configuration.")
     st.stop()
-
-# Initialize session states
-if 'current_view' not in st.session_state:
-    st.session_state.current_view = 'Board'
-if 'selected_project' not in st.session_state:
-    st.session_state.selected_project = None
 
 # Sidebar
 with st.sidebar:

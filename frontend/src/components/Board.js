@@ -47,15 +47,15 @@ const Board = ({ projectId }) => {
     }
   };
 
-  const handleAssigneeChange = async (taskId, assignee) => {
+  const handleUpdateTask = async (taskId, updatedData) => {
     try {
       setError(null);
-      await api.updateTaskAssignment(taskId, assignee);
+      await api.updateTask(taskId, updatedData);
+      setEditingTask(null);
       await loadTasks();
-      setEditingAssignee(null);
     } catch (error) {
-      console.error('Error updating task assignment:', error);
-      setError('Failed to update task assignment. Please try again.');
+      console.error('Error updating task:', error);
+      setError('Failed to update task. Please try again.');
     }
   };
 
@@ -70,15 +70,15 @@ const Board = ({ projectId }) => {
     }
   };
 
-  const handleUpdateTask = async (taskId, updatedData) => {
+  const handleAssigneeChange = async (taskId, assignee) => {
     try {
       setError(null);
-      await api.updateTask(taskId, updatedData);
-      setEditingTask(null);
+      await api.updateTaskAssignment(taskId, assignee);
       await loadTasks();
+      setEditingAssignee(null);
     } catch (error) {
-      console.error('Error updating task:', error);
-      setError('Failed to update task. Please try again.');
+      console.error('Error updating task assignment:', error);
+      setError('Failed to update task assignment. Please try again.');
     }
   };
 
@@ -89,33 +89,46 @@ const Board = ({ projectId }) => {
       {...provided.dragHandleProps}
       className="task-card"
     >
-      {editingTask === task.id ? (
-        <div className="task-edit-form">
+      <div className="task-header">
+        {editingTask === task.id ? (
           <input
             type="text"
             defaultValue={task.title}
+            className="task-title-input"
             onBlur={(e) => handleUpdateTask(task.id, { title: e.target.value })}
+            autoFocus
           />
-          <textarea
-            defaultValue={task.description}
-            onBlur={(e) => handleUpdateTask(task.id, { description: e.target.value })}
-          />
-          <button onClick={() => setEditingTask(null)}>Cancel</button>
+        ) : (
+          <h4 className="task-title">{task.title}</h4>
+        )}
+        <div className="task-actions">
+          <button 
+            onClick={() => setEditingTask(editingTask === task.id ? null : task.id)} 
+            className="edit-button"
+          >
+            ✏️
+          </button>
+          <button 
+            onClick={() => handleDeleteTask(task.id)} 
+            className="delete-button"
+          >
+            🗑️
+          </button>
         </div>
+      </div>
+
+      {editingTask === task.id ? (
+        <textarea
+          defaultValue={task.description}
+          className="task-description-input"
+          onBlur={(e) => handleUpdateTask(task.id, { description: e.target.value })}
+        />
       ) : (
-        <>
-          <div className="task-header">
-            <h4>{task.title}</h4>
-            <div className="task-actions">
-              <button onClick={() => setEditingTask(task.id)} className="edit-button">✏️</button>
-              <button onClick={() => handleDeleteTask(task.id)} className="delete-button">🗑️</button>
-            </div>
-          </div>
-          <p>{task.description}</p>
-        </>
+        <p className="task-description">{task.description}</p>
       )}
+
       <div className="task-meta">
-        <span className={`priority ${task.priority.toLowerCase()}`}>
+        <span className={`priority priority-${task.priority.toLowerCase()}`}>
           {task.priority}
         </span>
         {editingAssignee === task.id ? (
@@ -136,15 +149,20 @@ const Board = ({ projectId }) => {
           <span 
             className="assignee" 
             onClick={() => setEditingAssignee(task.id)}
-            style={{ cursor: 'pointer' }}
+            title="Click to assign"
           >
-            {task.assignee ? `Assigned to: ${task.assignee}` : 'Click to assign'}
+            {task.assignee || 'Click to assign'}
           </span>
         )}
       </div>
+
       {task.due_date && (
-        <div className="task-due-date">
-          Due: {new Date(task.due_date).toLocaleDateString()}
+        <div className="due-date">
+          Due: {new Date(task.due_date).toLocaleDateString('fr-FR', { 
+            day: '2-digit', 
+            month: '2-digit', 
+            year: 'numeric' 
+          })}
         </div>
       )}
     </div>

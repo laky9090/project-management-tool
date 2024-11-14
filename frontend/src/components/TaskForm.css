@@ -180,3 +180,142 @@ legend {
     margin-bottom: 1rem;
     font-size: 1rem;
 }
+
+/* Shared Styles from Root */
+:root {
+    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --base-font-size: 12px;
+    --primary-color: #3b82f6;
+    --border-color: #e5e7eb;
+    --background-light: #f8fafc;
+    --text-primary: #1f2937;
+    --text-secondary: #4b5563;
+}
+
+.task-form {
+    background-color: white;
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    border: 1px solid var(--border-color);
+    font-family: var(--font-family);
+}
+
+.task-form h3 {
+    margin-bottom: 16px;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.form-row .form-group {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+/* Form elements */
+input, select, textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: var(--base-font-size);
+    color: var(--text-primary);
+    background-color: white;
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+.form-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 16px;
+}
+
+/* Button styles */
+button {
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: var(--base-font-size);
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: background-color 0.2s;
+}
+
+button[type="submit"] {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+button[type="submit"]:hover {
+    background-color: #2563eb;
+}
+
+.cancel-button {
+    background-color: #f3f4f6;
+    color: var(--text-secondary);
+}
+
+.cancel-button:hover {
+    background-color: var(--border-color);
+}
+
+/* Error message */
+.error-message {
+    background-color: #fee2e2;
+    color: #991b1b;
+    padding: 12px;
+    border-radius: 4px;
+    margin-bottom: 16px;
+    border: 1px solid #fecaca;
+    font-size: var(--base-font-size);
+}
+
+/* File input styling */
+input[type="file"] {
+    background-color: var(--background-light);
+    padding: 12px;
+    border: 1px dashed var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+input[type="file"]:hover {
+    border-color: var(--primary-color);
+    background-color: #f1f5f9;
+}
+
+/* Date input specific styling */
+input[type="date"] {
+    padding: 8px 12px;
+    cursor: pointer;
+}
+
+/* Placeholder styling */
+input::placeholder,
+textarea::placeholder {
+    color: var(--text-secondary);
+}

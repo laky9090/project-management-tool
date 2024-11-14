@@ -9,7 +9,7 @@ const authRouter = require('./routes/auth');
 const { authMiddleware } = require('./middleware/auth');
 
 const app = express();
-const port = process.env.PORT || 3001;
+const port = 3001;
 
 // Configure CORS
 app.use(cors({
@@ -30,7 +30,7 @@ app.use(express.json());
 
 // API Routes
 app.use('/api/auth', authRouter);
-app.use('/api/tasks', tasksRouter); // Removed authMiddleware
+app.use('/api/tasks', tasksRouter);
 app.use('/api/projects', projectsRouter);
 
 // Serve static files
