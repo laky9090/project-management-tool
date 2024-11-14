@@ -34,13 +34,13 @@ const Board = ({ projectId }) => {
   const handleUpdateTask = async (taskId, updatedData) => {
     try {
       setError(null);
+      await api.updateTask(taskId, updatedData);
       setTasks(prevTasks => 
         prevTasks.map(task =>
           task.id === taskId ? { ...task, ...updatedData } : task
         )
       );
-
-      await api.updateTask(taskId, updatedData);
+      // Only clear editingTask after successful update
       setEditingTask(null);
     } catch (error) {
       console.error('Error updating task:', error);
@@ -126,34 +126,52 @@ const Board = ({ projectId }) => {
           <tbody>
             {sortedTasks.map(task => (
               <tr key={task.id}>
-                <td onClick={() => setEditingTask(task.id)}>
+                <td onClick={(e) => {
+                  e.stopPropagation();
+                  setEditingTask(task.id);
+                }}>
                   {editingTask === task.id ? (
                     <input
                       type="text"
                       defaultValue={task.title}
-                      onBlur={(e) => handleUpdateTask(task.id, { title: e.target.value })}
+                      onBlur={(e) => {
+                        const value = e.target.value;
+                        setTimeout(() => {
+                          handleUpdateTask(task.id, { title: value });
+                        }, 100);
+                      }}
                       onKeyPress={(e) => {
                         if (e.key === 'Enter') {
                           handleUpdateTask(task.id, { title: e.target.value });
                         }
                       }}
+                      onClick={(e) => e.stopPropagation()}
                       autoFocus
                     />
                   ) : (
                     task.title
                   )}
                 </td>
-                <td onClick={() => setEditingTask(task.id)}>
+                <td onClick={(e) => {
+                  e.stopPropagation();
+                  setEditingTask(task.id);
+                }}>
                   {editingTask === task.id ? (
                     <input
                       type="text"
                       defaultValue={task.comment || ''}
-                      onBlur={(e) => handleUpdateTask(task.id, { comment: e.target.value })}
+                      onBlur={(e) => {
+                        const value = e.target.value;
+                        setTimeout(() => {
+                          handleUpdateTask(task.id, { comment: value });
+                        }, 100);
+                      }}
                       onKeyPress={(e) => {
                         if (e.key === 'Enter') {
                           handleUpdateTask(task.id, { comment: e.target.value });
                         }
                       }}
+                      onClick={(e) => e.stopPropagation()}
                     />
                   ) : (
                     task.comment || ''
@@ -169,11 +187,20 @@ const Board = ({ projectId }) => {
                     <option value="Done">Done</option>
                   </select>
                 </td>
-                <td onClick={() => setEditingTask(task.id)}>
+                <td onClick={(e) => {
+                  e.stopPropagation();
+                  setEditingTask(task.id);
+                }}>
                   {editingTask === task.id ? (
                     <select
                       defaultValue={task.priority}
-                      onChange={(e) => handleUpdateTask(task.id, { priority: e.target.value })}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setTimeout(() => {
+                          handleUpdateTask(task.id, { priority: value });
+                        }, 100);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
                       autoFocus
                     >
                       <option value="Low">Low</option>
@@ -186,12 +213,21 @@ const Board = ({ projectId }) => {
                     </span>
                   )}
                 </td>
-                <td className="date-column" onClick={() => setEditingTask(task.id)}>
+                <td className="date-column" onClick={(e) => {
+                  e.stopPropagation();
+                  setEditingTask(task.id);
+                }}>
                   {editingTask === task.id ? (
                     <input
                       type="date"
                       defaultValue={task.due_date}
-                      onChange={(e) => handleUpdateTask(task.id, { due_date: e.target.value })}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setTimeout(() => {
+                          handleUpdateTask(task.id, { due_date: value });
+                        }, 100);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
                       autoFocus
                     />
                   ) : (

@@ -50,22 +50,33 @@
 .task-table td {
   padding: 12px 16px;
   border-bottom: 1px solid var(--border-color);
-  vertical-align: top;
+  vertical-align: middle;
   cursor: pointer;
+  transition: background-color 0.2s ease;
 }
 
-/* Add cursor pointer to editable cells */
-.task-table td {
-  cursor: pointer;
+.task-table td:hover {
+  background-color: var(--background-light);
 }
 
-/* Style input and select elements within table */
+/* Input and select styles within table */
 .task-table td input,
 .task-table td select {
   width: 100%;
   padding: 8px;
   border: 1px solid var(--border-color);
   border-radius: 4px;
+  font-size: var(--base-font-size);
+  font-family: var(--font-family);
+}
+
+.task-table td input:focus,
+.task-table td select:focus {
+  outline: 2px solid var(--primary-color);
+  background-color: white;
+  z-index: 1;
+  position: relative;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 
 /* Column specific styles */
@@ -123,22 +134,6 @@
 
 .priority-indicator.low::before {
   background: #10b981;
-}
-
-/* Form elements within table */
-.task-table input,
-.task-table select,
-.task-table textarea {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  font-size: var(--base-font-size);
-}
-
-.task-table textarea {
-  min-height: 60px;
-  resize: vertical;
 }
 
 /* Action buttons */
