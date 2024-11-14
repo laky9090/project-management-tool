@@ -30,7 +30,7 @@ router.get('/project/:projectId', async (req, res) => {
           array_agg(DISTINCT jsonb_build_object(
               'id', s.id,
               'title', s.title,
-              'comment', s.description,
+              'comment', s.comment,
               'completed', s.completed
           )) FILTER (WHERE s.id IS NOT NULL) as subtasks
        FROM tasks t
