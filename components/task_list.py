@@ -2,6 +2,9 @@ import streamlit as st
 import pandas as pd
 from database.connection import execute_query
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 def format_status(status):
     status_class = status.lower().replace(" ", "")
@@ -22,7 +25,25 @@ def format_priority(priority):
 def format_date(date):
     if pd.isna(date):
         return ""
-    return date.strftime("%d/%m/%Y")  # Updated date format to match DD/MM/YYYY
+    return date.strftime("%d/%m/%Y")
+
+def update_task(task_id, field, value):
+    try:
+        if field == "due_date":
+            try:
+                # Convert date from DD/MM/YYYY to YYYY-MM-DD
+                value = datetime.strptime(value, "%d/%m/%Y").strftime("%Y-%m-%d")
+            except ValueError:
+                return False
+
+        result = execute_query(
+            f"UPDATE tasks SET {field} = %s WHERE id = %s RETURNING id",
+            (value, task_id)
+        )
+        return bool(result)
+    except Exception as e:
+        logger.error(f"Error updating task {field}: {str(e)}")
+        return False
 
 def render_task_list(project_id):
     st.write("## Task List")
@@ -64,6 +85,25 @@ def render_task_list(project_id):
         # Create the Excel-like table container with centered date column
         st.markdown("""
             <style>
+                .task-list-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                }
+                .task-list-table th, .task-list-table td {
+                    padding: 8px;
+                    border: 1px solid #e5e7eb;
+                }
+                .task-list-table td[contenteditable="true"] {
+                    cursor: text;
+                    background-color: #f8fafc;
+                }
+                .task-list-table td[contenteditable="true"]:hover {
+                    background-color: #f1f5f9;
+                }
+                .task-list-table td[contenteditable="true"]:focus {
+                    outline: 2px solid #3b82f6;
+                    background-color: white;
+                }
                 .task-list-table td:nth-child(5) {
                     text-align: center !important;
                 }
@@ -75,112 +115,81 @@ def render_task_list(project_id):
                 <div style="overflow-x: auto;">
         """, unsafe_allow_html=True)
         
-        # Display the table with custom styling
-        st.markdown(
-            df[['title', 'status', 'priority', 'assignee', 'due_date']].to_html(
-                escape=False,
-                index=True,
-                classes=['task-list-table'],
-                table_id='task-table'
-            ),
-            unsafe_allow_html=True
-        )
-        
-        st.markdown("</div></div>", unsafe_allow_html=True)
-        
-        # Add JavaScript for sorting and column resizing
+        # Add JavaScript for inline editing
         st.markdown("""
             <script>
-                // Sorting functionality
-                document.querySelectorAll('#task-table th').forEach((header, index) => {
-                    header.addEventListener('click', () => {
-                        const table = document.getElementById('task-table');
-                        const tbody = table.querySelector('tbody');
-                        const rows = Array.from(tbody.querySelectorAll('tr'));
-                        
-                        const isAscending = header.classList.contains('asc');
-                        
-                        // Remove sorting classes from all headers
-                        table.querySelectorAll('th').forEach(th => {
-                            th.classList.remove('asc', 'desc');
-                        });
-                        
-                        // Sort the rows
-                        rows.sort((rowA, rowB) => {
-                            const cellA = rowA.cells[index].textContent.trim();
-                            const cellB = rowB.cells[index].textContent.trim();
-                            
-                            return isAscending ? 
-                                cellB.localeCompare(cellA) : 
-                                cellA.localeCompare(cellB);
-                        });
-                        
-                        // Update sorting indicator
-                        header.classList.toggle('desc', isAscending);
-                        header.classList.toggle('asc', !isAscending);
-                        
-                        // Rerender the sorted rows
-                        tbody.innerHTML = '';
-                        rows.forEach(row => tbody.appendChild(row));
-                    });
-                });
-                
-                // Column resizing functionality
-                let isResizing = false;
-                let currentHeader = null;
-                let startX, startWidth;
-                
-                document.querySelectorAll('#task-table th').forEach(header => {
-                    const resizeHandle = document.createElement('div');
-                    resizeHandle.className = 'resize-handle';
-                    header.appendChild(resizeHandle);
+                function makeEditable(cell, taskId, field) {
+                    cell.contentEditable = true;
+                    cell.dataset.originalValue = cell.textContent;
                     
-                    resizeHandle.addEventListener('mousedown', e => {
-                        isResizing = true;
-                        currentHeader = header;
-                        startX = e.pageX;
-                        startWidth = header.offsetWidth;
-                        
-                        document.addEventListener('mousemove', handleMouseMove);
-                        document.addEventListener('mouseup', () => {
-                            isResizing = false;
-                            document.removeEventListener('mousemove', handleMouseMove);
-                        });
+                    cell.addEventListener('blur', async () => {
+                        const newValue = cell.textContent.trim();
+                        if (newValue !== cell.dataset.originalValue) {
+                            const response = await fetch('/api/tasks/' + taskId, {
+                                method: 'PATCH',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({ [field]: newValue })
+                            });
+                            
+                            if (!response.ok) {
+                                cell.textContent = cell.dataset.originalValue;
+                            }
+                        }
+                    });
+                    
+                    cell.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            cell.blur();
+                        }
+                        if (e.key === 'Escape') {
+                            cell.textContent = cell.dataset.originalValue;
+                            cell.blur();
+                        }
+                    });
+                }
+                
+                document.addEventListener('DOMContentLoaded', () => {
+                    document.querySelectorAll('.editable').forEach(cell => {
+                        const taskId = cell.dataset.taskId;
+                        const field = cell.dataset.field;
+                        makeEditable(cell, taskId, field);
                     });
                 });
-                
-                function handleMouseMove(e) {
-                    if (isResizing) {
-                        const width = startWidth + (e.pageX - startX);
-                        currentHeader.style.width = `${width}px`;
-                    }
-                }
             </script>
-            
-            <style>
-                .resize-handle {
-                    position: absolute;
-                    right: 0;
-                    top: 0;
-                    bottom: 0;
-                    width: 4px;
-                    cursor: col-resize;
-                    background: transparent;
-                }
-                
-                .resize-handle:hover {
-                    background: #e2e8f0;
-                }
-                
-                #task-table th.asc::after {
-                    content: ' ↑';
-                }
-                
-                #task-table th.desc::after {
-                    content: ' ↓';
-                }
-            </style>
         """, unsafe_allow_html=True)
+        
+        # Generate table HTML with editable cells
+        table_html = "<table class='task-list-table'><thead><tr>"
+        columns = ['Title', 'Comment', 'Status', 'Priority', 'Due Date']
+        for col in columns:
+            align_class = "center-align" if col == "Due Date" else ""
+            table_html += f"<th class='{align_class}'>{col}</th>"
+        table_html += "</tr></thead><tbody>"
+        
+        for _, row in df.iterrows():
+            table_html += "<tr>"
+            # Title cell
+            table_html += f"""<td class='editable' data-task-id='{row["id"]}' 
+                             data-field='title' contenteditable='true'>{row["title"]}</td>"""
+            # Comment cell
+            table_html += f"""<td class='editable' data-task-id='{row["id"]}' 
+                             data-field='comment' contenteditable='true'>{row["comment"] or ""}</td>"""
+            # Status cell
+            table_html += f"<td>{row['status']}</td>"
+            # Priority cell
+            table_html += f"<td>{row['priority']}</td>"
+            # Due Date cell
+            table_html += f"""<td class='editable date-cell' data-task-id='{row["id"]}' 
+                             data-field='due_date' contenteditable='true'>{row['due_date']}</td>"""
+            table_html += "</tr>"
+        
+        table_html += "</tbody></table>"
+        st.markdown(table_html, unsafe_allow_html=True)
+        
+        st.markdown("</div></div>", unsafe_allow_html=True)
         
     else:
         st.info("No tasks found. Create some tasks to see them listed here.")

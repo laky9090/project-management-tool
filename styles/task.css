@@ -538,3 +538,94 @@ td.due-date,
 [data-testid="stTable"] th:nth-child(4) {
     text-align: center !important;
 }
+
+/* Adding to existing CSS file */
+/* Inline editing styles */
+.editable {
+    cursor: text;
+    transition: all 0.2s ease;
+    padding: 8px !important;
+}
+
+.editable:hover {
+    background-color: var(--background-light);
+}
+
+.editable:focus {
+    outline: 2px solid var(--primary-color);
+    background-color: white;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+/* Date field specific styling */
+.date-cell {
+    text-align: center !important;
+    white-space: nowrap;
+    min-width: 120px;
+}
+
+/* Table styles */
+.task-list-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--base-font-size);
+    background: white;
+}
+
+.task-list-table th,
+.task-list-table td {
+    padding: 12px 16px;
+    border: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+
+.task-list-table th {
+    background: var(--background-light);
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-align: left;
+    cursor: pointer;
+    user-select: none;
+}
+
+.task-list-table th:hover {
+    background: #f1f5f9;
+}
+
+.task-list-table tr:nth-child(even) {
+    background-color: var(--background-light);
+}
+
+/* Priority indicator styles in table */
+.task-list-table .priority-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+/* Status badge styles in table */
+.task-list-table .status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+/* Table container */
+.task-list-container {
+    margin-top: 1rem;
+    border-radius: 8px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+/* Date column alignment */
+.task-list-table td:nth-child(5),
+.task-list-table th:nth-child(5) {
+    text-align: center !important;
+}
