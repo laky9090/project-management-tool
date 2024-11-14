@@ -64,8 +64,34 @@
   position: relative;
 }
 
-.task-table td:hover {
-  background-color: var(--background-light);
+/* Priority column styling */
+.task-table td:nth-child(4) select {
+  width: 100%;
+  padding: 8px;
+  border-radius: 4px;
+  background-color: inherit;
+  color: inherit;
+}
+
+.task-table tr td:nth-child(4) {
+  background-color: #f3f4f6; /* Default gray background */
+  color: #4b5563; /* Default text color */
+}
+
+/* Priority-specific colors only in priority column */
+.task-table tr td:nth-child(4)[data-priority="High"] {
+  background-color: #fee2e2 !important; /* Light red */
+  color: #991b1b !important;
+}
+
+.task-table tr td:nth-child(4)[data-priority="Medium"] {
+  background-color: #fef3c7 !important; /* Light yellow */
+  color: #92400e !important;
+}
+
+.task-table tr td:nth-child(4)[data-priority="Low"] {
+  background-color: #f1f5f9 !important; /* Light gray */
+  color: #475569 !important;
 }
 
 /* Status column styling */
@@ -132,55 +158,6 @@
   width: 100px;
 }
 
-/* Priority indicator */
-.priority-indicator {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 500;
-  padding: 4px 8px;
-  border-radius: 4px;
-}
-
-.priority-indicator.high {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.priority-indicator.medium {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.priority-indicator.low {
-  background: #dcfce7;
-  color: #166534;
-}
-
-/* Status badges */
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-weight: 500;
-}
-
-.status-badge.to-do {
-  background: #f1f5f9;
-  color: #475569;
-}
-
-.status-badge.in-progress {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.status-badge.done {
-  background: #dcfce7;
-  color: #166534;
-}
-
 /* Action buttons */
 .edit-button,
 .delete-button,
@@ -237,14 +214,6 @@
 .deleted-tasks-section h3 {
   color: var(--text-secondary);
   margin-bottom: 1rem;
-}
-
-.deleted-task-row {
-  background-color: #fafafa;
-}
-
-.deleted-task-row td {
-  color: var(--text-secondary);
 }
 
 /* Responsive adjustments */
