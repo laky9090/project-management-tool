@@ -271,7 +271,7 @@ def list_projects():
             st.write("### Active Projects")
             for project in projects:
                 with st.container():
-                    col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
+                    col1, col2, col3, col4, col5 = st.columns([3, 1, 1, 1, 1])
                     
                     with col1:
                         if st.button(
@@ -301,10 +301,58 @@ def list_projects():
                             else:
                                 st.error("Failed to delete project")
                     
+                    with col5:
+                        if st.button("🔄", key=f"restore_project_{project['id']}", help="Restore project"):
+                            if restore_project(project['id']):
+                                st.success(f"Project '{project['name']}' restored")
+                                time.sleep(0.5)
+                                st.rerun()
+                            else:
+                                st.error("Failed to restore project")
+                                
                     # Show edit form if this project is being edited
                     if st.session_state.get('editing_project') == project['id']:
-                        if edit_project_form(project['id']):
-                            st.rerun()
+                        name = st.text_input("Name", value=project['name'])
+                        description = st.text_area("Description", value=project['description'] or "")
+                        current_deadline = datetime.fromisoformat(project['deadline']).date() if project['deadline'] else None
+                        deadline = st.date_input("Deadline", value=current_deadline)
+                        
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            if st.button("Save", key=f"save_project_{project['id']}"):
+                                if not name:
+                                    st.error("Project name cannot be empty!")
+                                else:
+                                    try:
+                                        execute_query('BEGIN')
+                                        result = execute_query('''
+                                            UPDATE projects 
+                                            SET name = %s, 
+                                                description = %s, 
+                                                deadline = %s,
+                                                updated_at = CURRENT_TIMESTAMP
+                                            WHERE id = %s AND deleted_at IS NULL
+                                            RETURNING id
+                                        ''', (name, description, deadline, project['id']))
+                                        
+                                        if result:
+                                            execute_query('COMMIT')
+                                            st.success("Project updated successfully!")
+                                            st.session_state.editing_project = None
+                                            time.sleep(0.5)
+                                            st.rerun()
+                                        else:
+                                            execute_query('ROLLBACK')
+                                            st.error("Failed to update project")
+                                    except Exception as e:
+                                        execute_query('ROLLBACK')
+                                        logger.error(f"Error updating project: {str(e)}")
+                                        st.error(f"Error updating project: {str(e)}")
+                        
+                        with col2:
+                            if st.button("Cancel", key=f"cancel_edit_{project['id']}"):
+                                st.session_state.editing_project = None
+                                st.rerun()
         else:
             st.info("No active projects found. Create one to get started!")
         
