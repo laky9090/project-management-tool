@@ -20,6 +20,9 @@
 .project-form textarea {
   width: 100%;
   margin-bottom: 12px;
+  padding: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
 }
 
 .projects {
@@ -35,10 +38,17 @@
   cursor: pointer;
   transition: transform 0.2s;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
 }
 
 .project-card:hover {
   transform: translateY(-2px);
+}
+
+.project-content {
+  flex-grow: 1;
 }
 
 .project-card h4 {
@@ -55,4 +65,72 @@
 .deadline {
   font-size: 12px;
   color: #495057;
+}
+
+.project-actions {
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.project-card:hover .project-actions {
+  opacity: 1;
+}
+
+.edit-button,
+.delete-button {
+  padding: 4px 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  font-size: 1.2rem;
+}
+
+.edit-button:hover,
+.delete-button:hover {
+  opacity: 1;
+  background-color: #f8fafc;
+  border-radius: 4px;
+}
+
+.project-edit-form {
+  width: 100%;
+  padding: 8px;
+}
+
+.project-edit-form input,
+.project-edit-form textarea {
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.edit-actions button {
+  padding: 4px 12px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  background-color: #3b82f6;
+  color: white;
+  font-size: 14px;
+}
+
+.edit-actions button:last-child {
+  background-color: #6b7280;
+}
+
+.edit-actions button:hover {
+  opacity: 0.9;
 }
