@@ -105,21 +105,9 @@
   border-radius: 4px;
 }
 
-.priority-indicator::before {
-  content: '';
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
 .priority-indicator.high {
   background: #fee2e2;
   color: #991b1b;
-}
-
-.priority-indicator.high::before {
-  background: #ef4444;
 }
 
 .priority-indicator.medium {
@@ -127,22 +115,39 @@
   color: #92400e;
 }
 
-.priority-indicator.medium::before {
-  background: #f59e0b;
-}
-
 .priority-indicator.low {
   background: #dcfce7;
   color: #166534;
 }
 
-.priority-indicator.low::before {
-  background: #10b981;
+/* Status badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.status-badge.to-do {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.status-badge.in-progress {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-badge.done {
+  background: #dcfce7;
+  color: #166534;
 }
 
 /* Action buttons */
 .edit-button,
-.delete-button {
+.delete-button,
+.restore-button {
   padding: 4px 8px;
   margin: 0 4px;
   background: none;
@@ -153,7 +158,8 @@
 }
 
 .edit-button:hover,
-.delete-button:hover {
+.delete-button:hover,
+.restore-button:hover {
   opacity: 1;
 }
 
@@ -182,6 +188,26 @@
   border-radius: 6px;
   margin-bottom: 1rem;
   border: 1px solid #fecaca;
+}
+
+/* Deleted tasks section */
+.deleted-tasks-section {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.deleted-tasks-section h3 {
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
+.deleted-task-row {
+  background-color: #fafafa;
+}
+
+.deleted-task-row td {
+  color: var(--text-secondary);
 }
 
 /* Responsive adjustments */

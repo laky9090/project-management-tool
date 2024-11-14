@@ -37,7 +37,7 @@ router.get('/project/:projectId', async (req, res) => {
        LEFT JOIN task_dependencies d ON t.id = d.task_id
        LEFT JOIN tasks dt ON d.depends_on_id = dt.id
        LEFT JOIN subtasks s ON t.id = s.parent_task_id
-       WHERE t.project_id = $1 AND t.deleted_at IS NULL
+       WHERE t.project_id = $1
        GROUP BY t.id
        ORDER BY t.created_at DESC`,
       [req.params.projectId]
@@ -80,14 +80,19 @@ router.patch('/:taskId', async (req, res) => {
   const updates = req.body;
 
   try {
-    const allowedUpdates = ['title', 'description', 'status', 'priority', 'due_date', 'assignee'];
+    const allowedUpdates = ['title', 'comment', 'status', 'priority', 'due_date', 'assignee'];
     const updateFields = Object.keys(updates)
       .filter(key => allowedUpdates.includes(key))
       .map((key, index) => `${key} = $${index + 1}`);
     
     const values = Object.keys(updates)
       .filter(key => allowedUpdates.includes(key))
-      .map(key => updates[key]);
+      .map(key => {
+        if (key === 'due_date') {
+          return updates[key] === '' || updates[key] === null ? null : updates[key];
+        }
+        return updates[key];
+      });
 
     if (updateFields.length === 0) {
       return res.status(400).json({ error: 'No valid fields to update' });
@@ -119,7 +124,7 @@ router.delete('/:taskId', async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      'UPDATE tasks SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1 AND deleted_at IS NULL RETURNING id',
+      'UPDATE tasks SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1 AND deleted_at IS NULL RETURNING *',
       [taskId]
     );
 
@@ -127,7 +132,7 @@ router.delete('/:taskId', async (req, res) => {
       return res.status(404).json({ error: 'Task not found' });
     }
 
-    res.json({ message: 'Task deleted successfully' });
+    res.json(rows[0]);
   } catch (err) {
     console.error('Error deleting task:', err);
     res.status(500).json({ error: 'Failed to delete task' });
