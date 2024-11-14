@@ -27,8 +27,14 @@ const Board = ({ projectId }) => {
   }, [loadTasks]);
 
   const handleTaskCreated = useCallback((newTask) => {
-    setTasks(prevTasks => [...prevTasks, newTask]);
-  }, []);
+    setTasks(prevTasks => {
+      // Add the new task at the beginning of the list for immediate visibility
+      const updatedTasks = [newTask, ...prevTasks];
+      return updatedTasks;
+    });
+    setShowTaskForm(false); // Close form after successful creation
+    loadTasks(); // Refresh the task list to ensure consistency
+  }, [loadTasks]);
 
   const handleCancelCreate = useCallback(() => {
     setShowTaskForm(false);

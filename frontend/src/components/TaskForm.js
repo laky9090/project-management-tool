@@ -146,6 +146,7 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
           type="button" 
           onClick={onCancel} 
           className="cancel-button"
+          disabled={isSubmitting}
         >
           Cancel
         </button>
