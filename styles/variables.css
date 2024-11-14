@@ -1,0 +1,52 @@
+/* Base variables for both interfaces */
+:root {
+  /* Colors */
+  --primary-color: #3b82f6;
+  --border-color: #e5e7eb;
+  --background-light: #f8fafc;
+  --text-primary: #1f2937;
+  --text-secondary: #4b5563;
+  
+  /* Status Colors */
+  --status-todo-bg: #f1f5f9;
+  --status-todo-text: #475569;
+  --status-inprogress-bg: #fef3c7;
+  --status-inprogress-text: #92400e;
+  --status-done-bg: #dcfce7;
+  --status-done-text: #166534;
+  
+  /* Priority Colors */
+  --priority-high-bg: #fee2e2;
+  --priority-high-text: #991b1b;
+  --priority-medium-bg: #fef3c7;
+  --priority-medium-text: #92400e;
+  --priority-low-bg: #dcfce7;
+  --priority-low-text: #166534;
+  
+  /* Typography */
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --base-font-size: 14px;
+  --heading-1-size: calc(var(--base-font-size) * 1.5);
+  --heading-2-size: calc(var(--base-font-size) * 1.25);
+  --heading-3-size: calc(var(--base-font-size) * 1.1);
+  
+  /* Spacing */
+  --spacing-base: 1rem;
+  --spacing-small: calc(var(--spacing-base) * 0.5);
+  --spacing-medium: calc(var(--spacing-base) * 1.5);
+  --spacing-large: calc(var(--spacing-base) * 2);
+  
+  /* Effects */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+  --transition-base: all 0.2s ease;
+  
+  /* Border Radius */
+  --border-radius-sm: 4px;
+  --border-radius-md: 6px;
+  --border-radius-lg: 8px;
+  
+  /* Container Widths */
+  --container-max-width: 1800px;
+  --sidebar-width: 300px;
+}

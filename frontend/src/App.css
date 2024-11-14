@@ -1,20 +1,26 @@
+/* Import base variables */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 .app {
   display: flex;
   height: 100vh;
+  font-family: var(--font-family);
+  color: var(--text-primary);
 }
 
 .sidebar {
   width: 300px;
-  background-color: #f8f9fa;
-  padding: 20px;
-  border-right: 1px solid #dee2e6;
+  background-color: var(--background-light);
+  padding: calc(var(--spacing-base));
+  border-right: 1px solid var(--border-color);
   overflow-y: auto;
 }
 
 .main-content {
   flex: 1;
-  padding: 20px;
+  padding: calc(var(--spacing-base));
   overflow-y: auto;
+  background-color: white;
 }
 
 .no-project {
@@ -22,14 +28,27 @@
   justify-content: center;
   align-items: center;
   height: 100%;
-  color: #6c757d;
+  color: var(--text-secondary);
+  font-size: var(--base-font-size);
 }
 
 h1 {
-  margin-bottom: 20px;
-  color: #212529;
+  margin-bottom: calc(var(--spacing-base) * 1.5);
+  color: var(--text-primary);
+  font-size: calc(var(--base-font-size) * 1.5);
+  font-weight: 600;
 }
 
 h2 {
-  color: #343a40;
+  color: var(--text-primary);
+  font-size: calc(var(--base-font-size) * 1.25);
+  font-weight: 500;
+}
+
+/* Board container styles */
+.board-container {
+  padding: calc(var(--spacing-base));
+  background-color: var(--background-light);
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
 }

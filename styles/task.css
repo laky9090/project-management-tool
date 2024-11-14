@@ -9,14 +9,22 @@
   --text-secondary: #4b5563;
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
   --spacing-base: 1rem;
-}
-
-/* Global styles */
-.stMarkdown, .task-form, .board {
-  font-family: var(--font-family);
-  font-size: var(--base-font-size);
-  color: var(--text-primary);
-  line-height: 1.5;
+  
+  /* Status Colors */
+  --status-todo-bg: #f1f5f9;
+  --status-todo-text: #475569;
+  --status-inprogress-bg: #fef3c7;
+  --status-inprogress-text: #92400e;
+  --status-done-bg: #dcfce7;
+  --status-done-text: #166534;
+  
+  /* Priority Colors */
+  --priority-high-bg: #fee2e2;
+  --priority-high-text: #991b1b;
+  --priority-medium-bg: #fef3c7;
+  --priority-medium-text: #92400e;
+  --priority-low-bg: #dcfce7;
+  --priority-low-text: #166534;
 }
 
 /* Task container */
@@ -33,6 +41,211 @@
 .task-card:hover {
   box-shadow: 0 4px 6px rgba(0,0,0,0.1);
   transform: translateY(-1px);
+}
+
+/* Task Form Overlay */
+.task-form-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 2rem;
+  z-index: 1000;
+}
+
+/* Task Form */
+.task-form {
+  background: white;
+  padding: calc(var(--spacing-base) * 2);
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Form elements */
+.form-group {
+  margin-bottom: var(--spacing-base);
+}
+
+.form-row {
+  display: flex;
+  gap: var(--spacing-base);
+  margin-bottom: var(--spacing-base);
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: calc(var(--spacing-base) * 0.75);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: var(--base-font-size);
+  color: var(--text-primary);
+  background-color: var(--background-light);
+  transition: all 0.2s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  background-color: white;
+}
+
+/* Button styles */
+button {
+  padding: calc(var(--spacing-base) * 0.75) var(--spacing-base);
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  font-size: var(--base-font-size);
+}
+
+.primary-button, button[type="submit"], .add-task-button {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.primary-button:hover, button[type="submit"]:hover, .add-task-button:hover {
+  background-color: #2563eb;
+  transform: translateY(-1px);
+}
+
+.secondary-button, .cancel-button {
+  background-color: var(--background-light);
+  color: var(--text-secondary);
+}
+
+.secondary-button:hover, .cancel-button:hover {
+  background-color: var(--border-color);
+}
+
+/* Status badges */
+.status-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.status-badge.todo {
+  background: var(--status-todo-bg);
+  color: var(--status-todo-text);
+}
+
+.status-badge.inprogress {
+  background: var(--status-inprogress-bg);
+  color: var(--status-inprogress-text);
+}
+
+.status-badge.done {
+  background: var(--status-done-bg);
+  color: var(--status-done-text);
+}
+
+/* Priority indicators */
+.priority-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.priority-indicator.high {
+  background: var(--priority-high-bg);
+  color: var(--priority-high-text);
+}
+
+.priority-indicator.medium {
+  background: var(--priority-medium-bg);
+  color: var(--priority-medium-text);
+}
+
+.priority-indicator.low {
+  background: var(--priority-low-bg);
+  color: var(--priority-low-text);
+}
+
+/* Board layout */
+.board-columns {
+  display: flex;
+  gap: var(--spacing-base);
+  padding: var(--spacing-base);
+  overflow-x: auto;
+}
+
+.board-column {
+  flex: 1;
+  min-width: 300px;
+  background: var(--background-light);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.board-column-header {
+  padding: var(--spacing-base);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-color);
+  background: white;
+  border-radius: 8px 8px 0 0;
+}
+
+/* Error message */
+.error-message {
+  background: #fee2e2;
+  color: #991b1b;
+  padding: var(--spacing-base);
+  border-radius: 6px;
+  margin-bottom: var(--spacing-base);
+  border: 1px solid #fecaca;
+}
+
+/* Streamlit specific overrides */
+div[data-testid="stVerticalBlock"] {
+  gap: var(--spacing-base) !important;
+}
+
+div[data-testid="stHorizontalBlock"] {
+  gap: calc(var(--spacing-base) * 1.5) !important;
+}
+
+/* Make Streamlit buttons consistent with React buttons */
+.stButton > button {
+  background-color: var(--primary-color) !important;
+  color: white !important;
+  border: none !important;
+  padding: calc(var(--spacing-base) * 0.75) var(--spacing-base) !important;
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+}
+
+.stButton > button:hover {
+  background-color: #2563eb !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Global styles */
+.stMarkdown, .task-form, .board {
+  font-family: var(--font-family);
+  font-size: var(--base-font-size);
+  color: var(--text-primary);
+  line-height: 1.5;
 }
 
 /* Task header */
@@ -148,24 +361,6 @@ button.delete-button:hover {
   opacity: 1;
 }
 
-/* Form elements */
-input, select, textarea {
-  width: 100%;
-  padding: calc(var(--spacing-base) * 0.75);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  font-size: var(--base-font-size);
-  color: var(--text-primary);
-  background-color: white;
-  transition: all 0.2s ease;
-}
-
-input:focus, select:focus, textarea:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
-}
-
 /* Board layout */
 .board-columns {
   display: flex;
@@ -197,50 +392,12 @@ input:focus, select:focus, textarea:focus {
   min-height: 100px;
 }
 
-/* Streamlit specific overrides */
-div[data-testid="stVerticalBlock"] {
-  gap: var(--spacing-base) !important;
-}
-
-div[data-testid="stHorizontalBlock"] {
-  gap: calc(var(--spacing-base) * 1.5) !important;
-}
-
 /* Description */
 .task-description {
     color: var(--text-secondary);
     font-size: var(--base-font-size);
     line-height: 1.5;
     margin: calc(var(--spacing-base) * 1.5) 0;
-}
-
-/* Button styles */
-button {
-    padding: 6px 12px;
-    border-radius: 4px;
-    font-size: var(--base-font-size);
-    font-weight: 500;
-    cursor: pointer;
-    border: none;
-    transition: background-color 0.2s;
-}
-
-button.primary {
-    background-color: var(--primary-color);
-    color: white;
-}
-
-button.primary:hover {
-    background-color: #2563eb;
-}
-
-button.secondary {
-    background-color: #f3f4f6;
-    color: var(--text-secondary);
-}
-
-button.secondary:hover {
-    background-color: var(--border-color);
 }
 
 /* Table styles */

@@ -22,12 +22,33 @@ st.set_page_config(
 
 # Load custom CSS
 def load_css():
-    with open('styles/task.css') as f:
-        st.markdown(f'''
-            <style>
-                {f.read()}
-            </style>
-        ''', unsafe_allow_html=True)
+    try:
+        # Create a single combined CSS string for better performance
+        css_content = ""
+        
+        # Load in specific order: variables -> main -> task
+        css_files = ['styles/variables.css', 'styles/main.css', 'styles/task.css']
+        
+        for file_path in css_files:
+            try:
+                with open(file_path) as f:
+                    css_content += f.read() + "\n"
+            except Exception as e:
+                logger.error(f"Error reading CSS file {file_path}: {str(e)}")
+                
+        # Apply all styles at once
+        if css_content:
+            st.markdown(f"""
+                <style>
+                    {css_content}
+                </style>
+            """, unsafe_allow_html=True)
+            logger.info("CSS files loaded successfully")
+        else:
+            logger.error("No CSS content was loaded")
+            
+    except Exception as e:
+        logger.error(f"Error loading CSS files: {str(e)}")
 
 # Initialize session states
 if 'current_view' not in st.session_state:
@@ -35,7 +56,7 @@ if 'current_view' not in st.session_state:
 if 'selected_project' not in st.session_state:
     st.session_state.selected_project = None
 
-# Load CSS
+# Load CSS before any other components
 load_css()
 
 # Test database connection

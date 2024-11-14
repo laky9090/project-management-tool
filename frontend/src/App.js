@@ -2,7 +2,12 @@ import React, { useState } from 'react';
 import ProjectList from './components/ProjectList';
 import Board from './components/Board';
 import TaskForm from './components/TaskForm';
-import './App.css';
+
+// CSS imports in correct order to match Streamlit
+import './styles/variables.css';  // Base variables first
+import './App.css';              // Global styles second
+import './components/Board.css';  // Component styles last
+import './components/TaskForm.css';
 
 function App() {
   const [selectedProject, setSelectedProject] = useState(null);
@@ -16,8 +21,12 @@ function App() {
       <div className="main-content">
         {selectedProject ? (
           <>
-            <TaskForm projectId={selectedProject.id} />
-            <Board projectId={selectedProject.id} />
+            <div className="board-header">
+              <h2>{selectedProject.name}</h2>
+            </div>
+            <div className="board-container">
+              <Board projectId={selectedProject.id} />
+            </div>
           </>
         ) : (
           <div className="no-project">
