@@ -41,7 +41,7 @@ const Board = ({ projectId }) => {
         updatedData.due_date = new Date(updatedData.due_date).toISOString().split('T')[0];
       }
       await api.updateTask(taskId, updatedData);
-      setTasks(prevTasks => 
+      setTasks(prevTasks =>
         prevTasks.map(task =>
           task.id === taskId ? { ...task, ...updatedData } : task
         )
@@ -109,15 +109,15 @@ const Board = ({ projectId }) => {
   return (
     <div className="board">
       {error && <div className="error-message">{error}</div>}
-      
+
       <button className="add-task-button" onClick={() => setShowTaskForm(true)}>
         ➕ Add New Task
       </button>
 
       {showTaskForm && (
-        <TaskForm 
-          projectId={projectId} 
-          onTaskCreated={handleTaskCreated} 
+        <TaskForm
+          projectId={projectId}
+          onTaskCreated={handleTaskCreated}
           onCancel={() => setShowTaskForm(false)}
         />
       )}
@@ -208,6 +208,7 @@ const Board = ({ projectId }) => {
                     <option value="To Do">To Do</option>
                     <option value="In Progress">In Progress</option>
                     <option value="Done">Done</option>
+                    <option value="Canceled">Canceled</option>
                   </select>
                 </td>
                 <td>

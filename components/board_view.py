@@ -148,8 +148,8 @@ def render_task_card(task, is_deleted=False):
                         time.sleep(0.5)
                         st.rerun()
 
-        if task['description']:
-            st.write(task['description'])
+        if task['comment']:
+            st.write(task['comment'])
 
         col1, col2, col3 = st.columns(3)
         with col1:
@@ -160,8 +160,8 @@ def render_task_card(task, is_deleted=False):
             if not is_deleted:
                 new_status = st.selectbox(
                     "Status",
-                    ["To Do", "In Progress", "Done"],
-                    index=["To Do", "In Progress", "Done"].index(task['status']),
+                    ["To Do", "In Progress", "Done", "Canceled"],
+                    index=["To Do", "In Progress", "Done", "Canceled"].index(task['status']),
                     key=f"status_{task['id']}"
                 )
                 if new_status != task['status']:
@@ -322,7 +322,7 @@ def render_board(project_id):
         """, (project_id,))
 
         if tasks:
-            task_groups = {"To Do": [], "In Progress": [], "Done": []}
+            task_groups = {"To Do": [], "In Progress": [], "Done": [], "Canceled": []}
             for task in tasks:
                 task_groups[task['status']].append(task)
 
