@@ -271,7 +271,7 @@ def list_projects():
             st.write("### Active Projects")
             for project in projects:
                 with st.container():
-                    col1, col2, col3, col4, col5 = st.columns([3, 1, 1, 1, 1])
+                    col1, col2, col3, col4 = st.columns([6, 2, 1, 1])  # Updated column widths
                     
                     with col1:
                         if st.button(
@@ -281,12 +281,8 @@ def list_projects():
                             selected_project = project['id']
                             
                     with col2:
-                        try:
-                            deadline_str = datetime.fromisoformat(project['deadline']).strftime('%d/%m/%Y') if project['deadline'] else 'No deadline'
-                            st.write(f"Due: {deadline_str}")
-                        except Exception as e:
-                            logger.error(f"Error formatting deadline for project {project['id']}: {str(e)}")
-                            st.write("Due: Invalid date")
+                        deadline_str = datetime.fromisoformat(project['deadline']).strftime('%d/%m/%Y') if project['deadline'] else 'No deadline'
+                        st.write(f"Due: {deadline_str}")
                             
                     with col3:
                         if st.button("✏️", key=f"edit_project_{project['id']}", help="Edit project"):
@@ -300,22 +296,13 @@ def list_projects():
                                 st.rerun()
                             else:
                                 st.error("Failed to delete project")
-                    
-                    with col5:
-                        if st.button("🔄", key=f"restore_project_{project['id']}", help="Restore project"):
-                            if restore_project(project['id']):
-                                st.success(f"Project '{project['name']}' restored")
-                                time.sleep(0.5)
-                                st.rerun()
-                            else:
-                                st.error("Failed to restore project")
                                 
                     # Show edit form if this project is being edited
                     if st.session_state.get('editing_project') == project['id']:
-                        name = st.text_input("Name", value=project['name'])
-                        description = st.text_area("Description", value=project['description'] or "")
+                        name = st.text_input("Name", value=project['name'], key=f"edit_name_{project['id']}")
+                        description = st.text_area("Description", value=project['description'] or "", key=f"edit_desc_{project['id']}")
                         current_deadline = datetime.fromisoformat(project['deadline']).date() if project['deadline'] else None
-                        deadline = st.date_input("Deadline", value=current_deadline)
+                        deadline = st.date_input("Deadline", value=current_deadline, key=f"edit_deadline_{project['id']}")
                         
                         col1, col2 = st.columns(2)
                         with col1:
@@ -362,7 +349,7 @@ def list_projects():
             st.write("### Deleted Projects")
             for project in deleted_projects:
                 with st.container():
-                    col1, col2 = st.columns([4, 1])
+                    col1, col2 = st.columns([6, 1])
                     
                     with col1:
                         try:
@@ -380,10 +367,10 @@ def list_projects():
                                 st.rerun()
                             else:
                                 st.error("Failed to restore project")
-        
+                                
         return selected_project
         
     except Exception as e:
-        logger.error(f"Error listing projects: {str(e)}")
-        st.error(f"Error loading projects: {str(e)}")
+        logger.error(f"Error in list_projects: {str(e)}")
+        st.error(f"An error occurred: {str(e)}")
         return None

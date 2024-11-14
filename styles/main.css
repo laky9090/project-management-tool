@@ -62,54 +62,6 @@ h3 {
   font-weight: 500;
 }
 
-/* Status badges */
-.status-badge {
-  display: inline-block;
-  padding: calc(var(--spacing-small) * 0.5) var(--spacing-small);
-  border-radius: 999px;
-  font-size: calc(var(--base-font-size) * 0.85);
-  font-weight: 500;
-}
-
-.status-badge.completed, .status-badge.done {
-  background-color: #10b981;
-  color: white;
-}
-
-.status-badge.in-progress {
-  background-color: var(--primary-color);
-  color: white;
-}
-
-.status-badge.todo {
-  background-color: #6b7280;
-  color: white;
-}
-
-/* Priority badges */
-.priority {
-  display: inline-block;
-  padding: calc(var(--spacing-small) * 0.5) var(--spacing-small);
-  border-radius: 999px;
-  font-size: calc(var(--base-font-size) * 0.85);
-  font-weight: 500;
-}
-
-.priority-high {
-  background-color: #fee2e2;
-  color: #991b1b;
-}
-
-.priority-medium {
-  background-color: #fef3c7;
-  color: #92400e;
-}
-
-.priority-low {
-  background-color: #ecfdf5;
-  color: #065f46;
-}
-
 /* Button styles */
 button {
   padding: calc(var(--spacing-base) * 0.75) var(--spacing-base);
@@ -131,33 +83,42 @@ button {
   box-shadow: var(--shadow-sm);
 }
 
-/* Button style overrides for specific buttons */
-button[title="Edit project"] {
-  padding: 0.5rem;
-  background: none;
-  border: none;
-  cursor: pointer;
-}
-
-button[title="Delete project"] {
-  padding: 0.5rem;
-  background: none;
-  border: none;
-  cursor: pointer;
-}
-
+/* Project management buttons */
+button[title="Edit project"],
+button[title="Delete project"],
 button[title="Restore project"] {
-  padding: 0.5rem;
-  background: none;
-  border: none;
-  cursor: pointer;
+    padding: 0.5rem !important;
+    background: none !important;
+    border: none !important;
+    cursor: pointer !important;
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    font-size: 1.2rem !important;
+    width: auto !important;
+    min-width: unset !important;
 }
 
-/* Streamlit specific overrides */
-.stApp {
-  font-family: var(--font-family) !important;
+button[title="Edit project"]:hover,
+button[title="Delete project"]:hover,
+button[title="Restore project"]:hover {
+    background: var(--background-light) !important;
+    border-radius: 4px !important;
 }
 
+/* Make project buttons more visible in Streamlit */
+.stButton > button[title="Edit project"],
+.stButton > button[title="Delete project"],
+.stButton > button[title="Restore project"] {
+    background: none !important;
+    border: none !important;
+    padding: 0.5rem !important;
+    font-size: 1.2rem !important;
+    min-width: unset !important;
+    width: auto !important;
+}
+
+/* Additional Streamlit button overrides */
 .stButton > button {
   width: 100%;
   background-color: var(--primary-color) !important;
@@ -193,16 +154,56 @@ input:focus, select:focus, textarea:focus {
   background-color: white;
 }
 
-/* Add these utility classes for icon buttons */
-.icon-button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 1.2rem;
-  padding: 0.5rem;
-  transition: opacity 0.2s;
+/* Project list styles */
+.project-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  border-radius: var(--border-radius-md);
+  background-color: white;
+  margin-bottom: 0.5rem;
+  border: 1px solid var(--border-color);
 }
 
-.icon-button:hover {
-  opacity: 0.7;
+.project-container:hover {
+  background-color: var(--background-light);
+}
+
+.project-name {
+  flex-grow: 1;
+  font-weight: 500;
+}
+
+.project-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Project status indicators */
+.deadline-indicator {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+/* Project form styles */
+.project-form {
+  background-color: white;
+  padding: var(--spacing-base);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--spacing-base);
+}
+
+/* Streamlit specific styles */
+.stApp {
+  font-family: var(--font-family) !important;
+}
+
+/* Make project buttons stand out */
+div[data-testid="stHorizontalBlock"] .stButton > button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 38px !important;
 }
