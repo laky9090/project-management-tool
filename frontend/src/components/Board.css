@@ -27,6 +27,38 @@
   --priority-low-text: #475569;
 }
 
+/* Priority column styling */
+.task-table td:nth-child(4) {
+  transition: background-color 0.2s ease;
+}
+
+.task-table td[data-priority="High"] {
+  background-color: var(--priority-high-bg) !important;
+  color: var(--priority-high-text) !important;
+}
+
+.task-table td[data-priority="Medium"] {
+  background-color: var(--priority-medium-bg) !important;
+  color: var(--priority-medium-text) !important;
+}
+
+.task-table td[data-priority="Low"] {
+  background-color: var(--priority-low-bg) !important;
+  color: var(--priority-low-text) !important;
+}
+
+/* Priority select styling */
+.task-table td select {
+  width: 100%;
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background-color: transparent;
+  color: inherit;
+  font-weight: 500;
+}
+
+/* Rest of the existing styles */
 .board {
   font-family: var(--font-family);
   font-size: var(--base-font-size);
@@ -67,39 +99,17 @@
   padding: 12px 16px;
   border-bottom: 1px solid var(--border-color);
   vertical-align: middle;
-  transition: background-color 0.2s ease;
-}
-
-/* Priority column styling - Only apply to priority column */
-.task-table td:nth-child(4) {
-  text-align: center;
-}
-
-.task-table td:nth-child(4)[data-priority="High"] {
-  background-color: var(--priority-high-bg);
-  color: var(--priority-high-text);
-}
-
-.task-table td:nth-child(4)[data-priority="Medium"] {
-  background-color: var(--priority-medium-bg);
-  color: var(--priority-medium-text);
-}
-
-.task-table td:nth-child(4)[data-priority="Low"] {
-  background-color: var(--priority-low-bg);
-  color: var(--priority-low-text);
 }
 
 /* Status column styling */
-.task-table td:nth-child(3) select,
-.task-table td:nth-child(4) select {
+.task-table td:nth-child(3) select {
   width: 100%;
   padding: 8px;
   border-radius: 4px;
-  background-color: inherit;
-  color: inherit;
+  border: 1px solid var(--border-color);
 }
 
+/* Status colors */
 .task-table tr[data-status="To Do"] td:nth-child(3) {
   background-color: var(--status-todo-bg);
   color: var(--status-todo-text);
@@ -118,28 +128,6 @@
 .task-table tr[data-status="Canceled"] td:nth-child(3) {
   background-color: var(--status-canceled-bg);
   color: var(--status-canceled-text);
-}
-
-/* Input and select styles within table */
-.task-table td input,
-.task-table td select {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  font-size: var(--base-font-size);
-  font-family: var(--font-family);
-  background-color: inherit;
-  color: inherit;
-}
-
-.task-table td input:focus,
-.task-table td select:focus {
-  outline: 2px solid var(--primary-color);
-  background-color: white;
-  position: relative;
-  z-index: 3;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 
 /* Column specific styles */

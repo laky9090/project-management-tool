@@ -36,7 +36,6 @@ const Board = ({ projectId }) => {
   const handleUpdateTask = async (taskId, updatedData) => {
     try {
       setError(null);
-      // Format date if it exists
       if (updatedData.due_date) {
         updatedData.due_date = new Date(updatedData.due_date).toISOString().split('T')[0];
       }
@@ -211,7 +210,7 @@ const Board = ({ projectId }) => {
                     <option value="Canceled">Canceled</option>
                   </select>
                 </td>
-                <td>
+                <td data-priority={task.priority}>
                   <select
                     value={task.priority}
                     onChange={(e) => handleUpdateTask(task.id, { priority: e.target.value })}

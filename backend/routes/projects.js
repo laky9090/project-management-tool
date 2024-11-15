@@ -8,7 +8,7 @@ router.get('/', async (req, res) => {
     const { rows } = await db.query(
       'SELECT *, COALESCE(deleted_at, NULL) as deleted_at FROM projects WHERE deleted_at IS NULL ORDER BY created_at DESC'
     );
-    res.json(rows);
+    res.json(rows || []); // Ensure we always return an array
   } catch (err) {
     console.error('Error fetching projects:', err);
     res.status(500).json({ 
@@ -31,10 +31,13 @@ router.get('/deleted', async (req, res) => {
        GROUP BY p.id
        ORDER BY p.deleted_at DESC`
     );
-    res.json(rows || []);  // Ensure we always return an array
+    res.json(rows || []); // Ensure we always return an array
   } catch (err) {
     console.error('Error fetching deleted projects:', err);
-    res.status(500).json({ error: 'Failed to fetch deleted projects' });
+    res.status(500).json({ 
+      error: 'Failed to fetch deleted projects',
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 
@@ -72,7 +75,7 @@ router.patch('/:id', async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      'UPDATE projects SET name = $1, description = $2, deadline = $3 WHERE id = $4 AND deleted_at IS NULL RETURNING *',
+      'UPDATE projects SET name = $1, description = $2, deadline = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 AND deleted_at IS NULL RETURNING *',
       [name, description, deadline, id]
     );
 
@@ -95,17 +98,29 @@ router.delete('/:id', async (req, res) => {
   const { id } = req.params;
 
   try {
+    await db.query('BEGIN');
+    
+    // Soft delete the project
     const { rows } = await db.query(
       'UPDATE projects SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1 AND deleted_at IS NULL RETURNING id',
       [id]
     );
 
     if (rows.length === 0) {
+      await db.query('ROLLBACK');
       return res.status(404).json({ error: 'Project not found' });
     }
 
-    res.json({ message: 'Project deleted successfully' });
+    // Also soft delete associated tasks
+    await db.query(
+      'UPDATE tasks SET deleted_at = CURRENT_TIMESTAMP WHERE project_id = $1 AND deleted_at IS NULL',
+      [id]
+    );
+
+    await db.query('COMMIT');
+    res.json({ message: 'Project and associated tasks deleted successfully' });
   } catch (err) {
+    await db.query('ROLLBACK');
     console.error('Error deleting project:', err);
     res.status(500).json({ 
       error: 'Failed to delete project',
@@ -119,19 +134,33 @@ router.patch('/:id/restore', async (req, res) => {
   const { id } = req.params;
 
   try {
+    await db.query('BEGIN');
+    
     const { rows } = await db.query(
       'UPDATE projects SET deleted_at = NULL WHERE id = $1 AND deleted_at IS NOT NULL RETURNING *',
       [id]
     );
 
     if (rows.length === 0) {
+      await db.query('ROLLBACK');
       return res.status(404).json({ error: 'Project not found or already restored' });
     }
 
+    // Also restore associated tasks
+    await db.query(
+      'UPDATE tasks SET deleted_at = NULL WHERE project_id = $1 AND deleted_at IS NOT NULL',
+      [id]
+    );
+
+    await db.query('COMMIT');
     res.json(rows[0]);
   } catch (err) {
+    await db.query('ROLLBACK');
     console.error('Error restoring project:', err);
-    res.status(500).json({ error: 'Failed to restore project' });
+    res.status(500).json({ 
+      error: 'Failed to restore project',
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 
