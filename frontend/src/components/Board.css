@@ -87,6 +87,25 @@
   border-top: 1px solid var(--border-color);
 }
 
+.deleted-tasks-header {
+  cursor: pointer;
+  padding: 0.5rem 0;
+  user-select: none;
+}
+
+.deleted-tasks-header h3 {
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.toggle-icon {
+  font-size: 0.8em;
+  color: var(--text-secondary);
+}
+
 .deleted-tasks-section h3 {
   color: var(--text-secondary);
   margin-bottom: 1rem;
@@ -97,6 +116,7 @@
   width: 100%;
   border-collapse: collapse;
   font-size: var(--base-font-size);
+  display: none; /* Initially hidden */
 }
 
 .deleted-tasks th,

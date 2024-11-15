@@ -337,14 +337,20 @@ def render_board(project_id):
             st.info("No active tasks found. Create your first task to get started!")
 
         # Display deleted tasks
-        st.write("## Deleted Tasks")
         deleted_tasks = get_deleted_tasks(project_id)
         
         if deleted_tasks:
-            with st.expander("Show Deleted Tasks"):
+            st.write("## Deleted Tasks")
+            # Initialize show_deleted_tasks in session state if not exists
+            if 'show_deleted_tasks' not in st.session_state:
+                st.session_state.show_deleted_tasks = False
+            
+            # Add expander with count
+            with st.expander(f"Show Deleted Tasks ({len(deleted_tasks)})", expanded=st.session_state.show_deleted_tasks):
                 for task in deleted_tasks:
                     with st.container():
                         render_task_card(task, is_deleted=True)
+                        
         else:
             st.info("No deleted tasks found.")
             

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import TaskForm from './TaskForm';
 import api from '../api/api';
 import './Board.css';
-import './task.css';  // Updated import path to the correct location
+import './task.css';  // Fixed import path
 
 const Board = ({ projectId }) => {
   const [tasks, setTasks] = useState([]);
@@ -10,6 +10,7 @@ const Board = ({ projectId }) => {
   const [error, setError] = useState(null);
   const [editingTask, setEditingTask] = useState(null);
   const [showTaskForm, setShowTaskForm] = useState(false);
+  const [showDeletedTasks, setShowDeletedTasks] = useState(false);
   const [sortConfig, setSortConfig] = useState({ key: 'created_at', direction: 'desc' });
 
   const loadTasks = useCallback(async () => {
@@ -275,55 +276,62 @@ const Board = ({ projectId }) => {
 
       {deletedTasks.length > 0 && (
         <div className="deleted-tasks-section">
-          <h3>Deleted Tasks</h3>
-          <div className="table-container">
-            <table className="task-table deleted-tasks">
-              <thead>
-                <tr>
-                  <th>Title</th>
-                  <th>Comment</th>
-                  <th>Status</th>
-                  <th>Priority</th>
-                  <th className="date-column">Deleted Date</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {deletedTasks.map(task => (
-                  <tr key={task.id} className="deleted-task-row" data-status={task.status}>
-                    <td>{task.title}</td>
-                    <td>{task.comment || ''}</td>
-                    <td>
-                      <span className={`status-badge ${task.status.toLowerCase().replace(' ', '-')}`}>
-                        {task.status}
-                      </span>
-                    </td>
-                    <td data-priority={task.priority}>
-                      <span className={`priority-indicator ${task.priority.toLowerCase()}`}>
-                        {task.priority}
-                      </span>
-                    </td>
-                    <td className="date-column">
-                      {new Date(task.deleted_at).toLocaleDateString('fr-FR')}
-                    </td>
-                    <td className="actions-column">
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleRestoreTask(task.id);
-                        }}
-                        className="restore-button"
-                        title="Restore"
-                      >
-                        🔄
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="deleted-tasks-header" onClick={() => setShowDeletedTasks(!showDeletedTasks)}>
+            <h3>
+              Deleted Tasks ({deletedTasks.length})
+              <span className="toggle-icon">{showDeletedTasks ? '▼' : '▶'}</span>
+            </h3>
           </div>
+          {showDeletedTasks && (
+            <div className="table-container">
+              <table className="task-table deleted-tasks">
+                <thead>
+                  <tr>
+                    <th>Title</th>
+                    <th>Comment</th>
+                    <th>Status</th>
+                    <th>Priority</th>
+                    <th className="date-column">Deleted Date</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {deletedTasks.map(task => (
+                    <tr key={task.id} className="deleted-task-row" data-status={task.status}>
+                      <td>{task.title}</td>
+                      <td>{task.comment || ''}</td>
+                      <td>
+                        <span className={`status-badge ${task.status.toLowerCase().replace(' ', '-')}`}>
+                          {task.status}
+                        </span>
+                      </td>
+                      <td data-priority={task.priority}>
+                        <span className={`priority-indicator ${task.priority.toLowerCase()}`}>
+                          {task.priority}
+                        </span>
+                      </td>
+                      <td className="date-column">
+                        {new Date(task.deleted_at).toLocaleDateString('fr-FR')}
+                      </td>
+                      <td className="actions-column">
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleRestoreTask(task.id);
+                          }}
+                          className="restore-button"
+                          title="Restore"
+                        >
+                          🔄
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
     </div>
