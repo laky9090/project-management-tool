@@ -249,6 +249,10 @@ def list_projects():
         if 'editing_project' not in st.session_state:
             st.session_state.editing_project = None
             
+        # Initialize show_deleted_projects in session state if not exists
+        if 'show_deleted_projects' not in st.session_state:
+            st.session_state.show_deleted_projects = False
+            
         # Get active projects with task counts
         projects = execute_query('''
             SELECT p.*,
@@ -271,7 +275,7 @@ def list_projects():
             st.write("### Active Projects")
             for project in projects:
                 with st.container():
-                    col1, col2, col3, col4 = st.columns([6, 2, 1, 1])  # Updated column widths
+                    col1, col2, col3, col4 = st.columns([6, 2, 1, 1])
                     
                     with col1:
                         if st.button(
@@ -299,75 +303,37 @@ def list_projects():
                                 
                     # Show edit form if this project is being edited
                     if st.session_state.get('editing_project') == project['id']:
-                        name = st.text_input("Name", value=project['name'], key=f"edit_name_{project['id']}")
-                        description = st.text_area("Description", value=project['description'] or "", key=f"edit_desc_{project['id']}")
-                        current_deadline = datetime.fromisoformat(project['deadline']).date() if project['deadline'] else None
-                        deadline = st.date_input("Deadline", value=current_deadline, key=f"edit_deadline_{project['id']}")
-                        
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            if st.button("Save", key=f"save_project_{project['id']}"):
-                                if not name:
-                                    st.error("Project name cannot be empty!")
-                                else:
-                                    try:
-                                        execute_query('BEGIN')
-                                        result = execute_query('''
-                                            UPDATE projects 
-                                            SET name = %s, 
-                                                description = %s, 
-                                                deadline = %s,
-                                                updated_at = CURRENT_TIMESTAMP
-                                            WHERE id = %s AND deleted_at IS NULL
-                                            RETURNING id
-                                        ''', (name, description, deadline, project['id']))
-                                        
-                                        if result:
-                                            execute_query('COMMIT')
-                                            st.success("Project updated successfully!")
-                                            st.session_state.editing_project = None
-                                            time.sleep(0.5)
-                                            st.rerun()
-                                        else:
-                                            execute_query('ROLLBACK')
-                                            st.error("Failed to update project")
-                                    except Exception as e:
-                                        execute_query('ROLLBACK')
-                                        logger.error(f"Error updating project: {str(e)}")
-                                        st.error(f"Error updating project: {str(e)}")
-                        
-                        with col2:
-                            if st.button("Cancel", key=f"cancel_edit_{project['id']}"):
-                                st.session_state.editing_project = None
-                                st.rerun()
+                        if edit_project_form(project['id']):
+                            st.rerun()
         else:
             st.info("No active projects found. Create one to get started!")
         
-        # Display deleted projects
+        # Display deleted projects in a collapsible section
         deleted_projects = get_deleted_projects()
         if deleted_projects:
-            st.write("### Deleted Projects")
-            for project in deleted_projects:
-                with st.container():
-                    col1, col2 = st.columns([6, 1])
-                    
-                    with col1:
-                        try:
-                            deleted_date = datetime.fromisoformat(project['deleted_at']).strftime('%d/%m/%Y') if project['deleted_at'] else 'Unknown'
-                            st.write(f"{project['name']} (Deleted on: {deleted_date})")
-                        except Exception as e:
-                            logger.error(f"Error formatting deleted date for project {project.get('id')}: {str(e)}")
-                            st.write(f"{project['name']} (Deleted on: Unknown)")
+            deleted_count = len(deleted_projects)
+            with st.expander(f"Deleted Projects ({deleted_count})", expanded=st.session_state.show_deleted_projects):
+                for project in deleted_projects:
+                    with st.container():
+                        col1, col2 = st.columns([6, 1])
                         
-                    with col2:
-                        if st.button("🔄", key=f"restore_project_{project['id']}", help="Restore project"):
-                            if restore_project(project['id']):
-                                st.success(f"Project '{project['name']}' restored")
-                                time.sleep(0.5)
-                                st.rerun()
-                            else:
-                                st.error("Failed to restore project")
-                                
+                        with col1:
+                            try:
+                                deleted_date = datetime.fromisoformat(project['deleted_at']).strftime('%d/%m/%Y') if project['deleted_at'] else 'Unknown'
+                                st.write(f"{project['name']} (Deleted on: {deleted_date})")
+                            except Exception as e:
+                                logger.error(f"Error formatting deleted date for project {project.get('id')}: {str(e)}")
+                                st.write(f"{project['name']} (Deleted on: Unknown)")
+                            
+                        with col2:
+                            if st.button("🔄", key=f"restore_project_{project['id']}", help="Restore project"):
+                                if restore_project(project['id']):
+                                    st.success(f"Project '{project['name']}' restored")
+                                    time.sleep(0.5)
+                                    st.rerun()
+                                else:
+                                    st.error("Failed to restore project")
+                                    
         return selected_project
         
     except Exception as e:

@@ -4,13 +4,14 @@ import './ProjectList.css';
 
 const ProjectList = ({ onSelectProject }) => {
   const [projects, setProjects] = useState([]);
-  const [deletedProjects, setDeletedProjects] = useState([]);  // Initialize as empty array
+  const [deletedProjects, setDeletedProjects] = useState([]);
   const [editingProject, setEditingProject] = useState(null);
   const [newProject, setNewProject] = useState({
     name: '',
     description: '',
     deadline: new Date().toISOString().split('T')[0]
   });
+  const [showDeletedProjects, setShowDeletedProjects] = useState(false);
 
   useEffect(() => {
     loadProjects();
@@ -26,7 +27,7 @@ const ProjectList = ({ onSelectProject }) => {
       setDeletedProjects(Array.isArray(deletedResponse.data) ? deletedResponse.data : []);
     } catch (error) {
       console.error('Error loading projects:', error);
-      setDeletedProjects([]);  // Initialize as empty array on error
+      setDeletedProjects([]);
     }
   };
 
@@ -172,29 +173,44 @@ const ProjectList = ({ onSelectProject }) => {
         ))}
       </div>
 
-      {deletedProjects && deletedProjects.length > 0 && (
+      {deletedProjects.length > 0 && (
         <div className="deleted-projects">
-          <h3>Deleted Projects</h3>
-          {deletedProjects.map(project => (
-            <div key={project.id} className="project-card deleted">
-              <div className="project-content">
-                <h4>{project.name}</h4>
-                <p>{project.description}</p>
-                <span className="deadline">
-                  Deleted: {new Date(project.deleted_at).toLocaleDateString()}
-                </span>
+          <div 
+            className="deleted-projects-header"
+            onClick={() => setShowDeletedProjects(!showDeletedProjects)}
+          >
+            <h3>
+              Deleted Projects ({deletedProjects.length})
+              <span className={`toggle-icon ${showDeletedProjects ? 'expanded' : ''}`}>
+                ▼
+              </span>
+            </h3>
+          </div>
+          <div className={`deleted-projects-content ${showDeletedProjects ? 'expanded' : ''}`}>
+            {deletedProjects.map(project => (
+              <div key={project.id} className="project-card deleted">
+                <div className="project-content">
+                  <h4>{project.name}</h4>
+                  <p>{project.description}</p>
+                  <span className="deadline">
+                    Deleted: {new Date(project.deleted_at).toLocaleDateString('fr-FR')}
+                  </span>
+                </div>
+                <div className="project-actions">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRestoreProject(project.id);
+                    }}
+                    className="restore-button"
+                    title="Restore project"
+                  >
+                    🔄
+                  </button>
+                </div>
               </div>
-              <div className="project-actions">
-                <button
-                  onClick={(e) => handleRestoreProject(project.id, e)}
-                  className="restore-button"
-                  title="Restore project"
-                >
-                  🔄
-                </button>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
     </div>

@@ -207,3 +207,58 @@ div[data-testid="stHorizontalBlock"] .stButton > button {
   justify-content: center !important;
   min-height: 38px !important;
 }
+
+/* Add new styles for deleted projects section */
+.deleted-projects-section {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.deleted-projects-header {
+  cursor: pointer;
+  padding: 8px 0;
+  user-select: none;
+}
+
+.deleted-projects-header h3 {
+  color: var(--text-secondary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+}
+
+.toggle-icon {
+  transition: transform 0.3s ease;
+  display: inline-block;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.toggle-icon.expanded {
+  transform: rotate(180deg);
+}
+
+.deleted-projects-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
+}
+
+.deleted-projects-content.expanded {
+  max-height: 2000px;
+  transition: max-height 0.5s ease-in;
+}
+
+/* Streamlit specific styles for deleted projects */
+[data-testid="stExpander"] {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+[data-testid="stExpander"] > div:first-child {
+  border-radius: 4px !important;
+  background-color: transparent !important;
+}

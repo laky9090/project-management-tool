@@ -168,3 +168,72 @@
   min-width: unset !important;
   width: auto !important;
 }
+
+/* Deleted projects section */
+.deleted-projects {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.deleted-projects-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 8px 0;
+  user-select: none;
+}
+
+.deleted-projects-header h3 {
+  margin: 0;
+  color: #4b5563;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toggle-icon {
+  transition: transform 0.3s ease;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.toggle-icon.expanded {
+  transform: rotate(180deg);
+}
+
+.deleted-projects-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
+}
+
+.deleted-projects-content.expanded {
+  max-height: 2000px;
+  transition: max-height 0.5s ease-in;
+}
+
+/* Project management buttons */
+button[title="Edit project"],
+button[title="Delete project"],
+button[title="Restore project"] {
+  padding: 0.5rem !important;
+  background: none !important;
+  border: none !important;
+  cursor: pointer !important;
+  display: inline-block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  font-size: 1.2rem !important;
+  width: auto !important;
+  min-width: unset !important;
+}
+
+button[title="Edit project"]:hover,
+button[title="Delete project"]:hover,
+button[title="Restore project"]:hover {
+  background: #f8fafc !important;
+  border-radius: 4px !important;
+}
