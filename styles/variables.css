@@ -20,8 +20,8 @@
   --priority-high-text: #991b1b;
   --priority-medium-bg: #fef3c7;
   --priority-medium-text: #92400e;
-  --priority-low-bg: #dcfce7;
-  --priority-low-text: #166534;
+  --priority-low-bg: #f1f5f9;
+  --priority-low-text: #475569;
   
   /* Typography */
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
