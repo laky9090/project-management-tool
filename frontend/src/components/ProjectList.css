@@ -4,11 +4,40 @@
   gap: 20px;
 }
 
+.create-project-button {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  align-self: flex-start;
+}
+
+.create-project-button:hover {
+  background-color: #2563eb;
+  transform: translateY(-1px);
+}
+
 .project-form {
   background-color: white;
   padding: 16px;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .project-form h3 {
@@ -23,6 +52,20 @@
   padding: 8px;
   border: 1px solid #e5e7eb;
   border-radius: 4px;
+}
+
+.project-form button[type="submit"] {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.project-form button[type="submit"]:hover {
+  background-color: #2563eb;
 }
 
 .projects {

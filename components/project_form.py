@@ -26,6 +26,71 @@ def convert_project_dates(project):
         logger.error(f"Error converting project dates: {str(e)}")
         return project
 
+def create_project_form():
+    """Create new project form"""
+    # Initialize show_form in session state if not exists
+    if 'show_project_form' not in st.session_state:
+        st.session_state.show_project_form = False
+    
+    # Add button to toggle form visibility
+    if not st.session_state.show_project_form:
+        if st.button("➕ Create New Project"):
+            st.session_state.show_project_form = True
+            st.rerun()
+        return False
+
+    # Show form with cancel button when visible
+    with st.form("project_form"):
+        st.write("### Create Project")
+        
+        name = st.text_input("Project Name")
+        description = st.text_area("Description")
+        deadline = st.date_input("Deadline")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            submitted = st.form_submit_button("Create Project")
+        with col2:
+            cancelled = st.form_submit_button("Cancel")
+        
+        if cancelled:
+            st.session_state.show_project_form = False
+            st.rerun()
+            return False
+            
+        if submitted:
+            if not name:
+                st.error("Project name is required!")
+                return False
+                
+            try:
+                execute_query("BEGIN")
+                result = execute_query('''
+                    INSERT INTO projects (name, description, deadline, created_at, updated_at)
+                    VALUES (%s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    RETURNING id, name
+                    ''',
+                    (name, description, deadline)
+                )
+                
+                if result:
+                    execute_query("COMMIT")
+                    st.success(f"Project '{name}' created successfully!")
+                    st.session_state.show_project_form = False
+                    time.sleep(0.5)
+                    return True
+                    
+                execute_query("ROLLBACK")
+                st.error("Failed to create project - database error")
+                return False
+                    
+            except Exception as e:
+                execute_query("ROLLBACK")
+                logger.error(f"Error creating project: {str(e)}")
+                st.error(f"Error creating project: {str(e)}")
+                return False
+    return False
+
 def delete_project(project_id):
     """Delete project (soft delete) and all its tasks"""
     try:
@@ -119,49 +184,6 @@ def get_deleted_projects():
     except Exception as e:
         logger.error(f"Error getting deleted projects: {str(e)}")
         return []
-
-def create_project_form():
-    """Create new project form"""
-    with st.form("project_form"):
-        st.write("### Create Project")
-        
-        name = st.text_input("Project Name")
-        description = st.text_area("Description")
-        deadline = st.date_input("Deadline")
-        
-        submitted = st.form_submit_button("Create Project")
-        
-        if submitted:
-            if not name:
-                st.error("Project name is required!")
-                return False
-                
-            try:
-                execute_query("BEGIN")
-                result = execute_query('''
-                    INSERT INTO projects (name, description, deadline, created_at, updated_at)
-                    VALUES (%s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                    RETURNING id, name
-                    ''',
-                    (name, description, deadline)
-                )
-                
-                if result:
-                    execute_query("COMMIT")
-                    st.success(f"Project '{name}' created successfully!")
-                    time.sleep(0.5)
-                    return True
-                    
-                execute_query("ROLLBACK")
-                st.error("Failed to create project - database error")
-                return False
-                    
-            except Exception as e:
-                execute_query("ROLLBACK")
-                logger.error(f"Error creating project: {str(e)}")
-                st.error(f"Error creating project: {str(e)}")
-                return False
-    return False
 
 def edit_project_form(project_id):
     """Edit project form"""
@@ -340,3 +362,8 @@ def list_projects():
         logger.error(f"Error in list_projects: {str(e)}")
         st.error(f"An error occurred: {str(e)}")
         return None
+
+if __name__ == "__main__":
+    selected_project = list_projects()
+    if selected_project:
+        create_project_form()

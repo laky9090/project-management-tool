@@ -6,6 +6,7 @@ const ProjectList = ({ onSelectProject }) => {
   const [projects, setProjects] = useState([]);
   const [deletedProjects, setDeletedProjects] = useState([]);
   const [editingProject, setEditingProject] = useState(null);
+  const [showProjectForm, setShowProjectForm] = useState(false);
   const [newProject, setNewProject] = useState({
     name: '',
     description: '',
@@ -41,6 +42,7 @@ const ProjectList = ({ onSelectProject }) => {
         description: '',
         deadline: new Date().toISOString().split('T')[0]
       });
+      setShowProjectForm(false);
     } catch (error) {
       console.error('Error creating project:', error);
     }
@@ -83,27 +85,36 @@ const ProjectList = ({ onSelectProject }) => {
 
   return (
     <div className="project-list">
-      <form onSubmit={handleCreateProject} className="project-form">
-        <h3>Create New Project</h3>
-        <input
-          type="text"
-          value={newProject.name}
-          onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
-          placeholder="Project Name"
-          required
-        />
-        <textarea
-          value={newProject.description}
-          onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
-          placeholder="Description"
-        />
-        <input
-          type="date"
-          value={newProject.deadline}
-          onChange={(e) => setNewProject({ ...newProject, deadline: e.target.value })}
-        />
-        <button type="submit">Create Project</button>
-      </form>
+      <button 
+        className="create-project-button"
+        onClick={() => setShowProjectForm(!showProjectForm)}
+      >
+        {showProjectForm ? '❌ Cancel' : '➕ Create New Project'}
+      </button>
+
+      {showProjectForm && (
+        <form onSubmit={handleCreateProject} className="project-form">
+          <h3>Create New Project</h3>
+          <input
+            type="text"
+            value={newProject.name}
+            onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
+            placeholder="Project Name"
+            required
+          />
+          <textarea
+            value={newProject.description}
+            onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+            placeholder="Description"
+          />
+          <input
+            type="date"
+            value={newProject.deadline}
+            onChange={(e) => setNewProject({ ...newProject, deadline: e.target.value })}
+          />
+          <button type="submit">Create Project</button>
+        </form>
+      )}
 
       <div className="projects">
         <h3>Your Projects</h3>
