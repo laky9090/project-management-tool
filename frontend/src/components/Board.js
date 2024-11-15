@@ -211,7 +211,7 @@ const Board = ({ projectId }) => {
                     <option value="Canceled">Canceled</option>
                   </select>
                 </td>
-                <td>
+                <td data-priority={task.priority}>
                   <select
                     value={task.priority}
                     onChange={(e) => handleUpdateTask(task.id, { priority: e.target.value })}

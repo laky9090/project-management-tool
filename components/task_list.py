@@ -17,9 +17,9 @@ def format_status(status):
 def format_priority(priority):
     priority_class = priority.lower()
     return f"""
-        <span class="priority-indicator {priority_class}">
+        <div class="priority-indicator {priority_class}" data-priority="{priority}">
             {priority}
-        </span>
+        </div>
     """
 
 def format_date(date):
@@ -31,7 +31,6 @@ def update_task(task_id, field, value):
     try:
         if field == "due_date":
             try:
-                # Convert date from DD/MM/YYYY to YYYY-MM-DD
                 value = datetime.strptime(value, "%d/%m/%Y").strftime("%Y-%m-%d")
             except ValueError:
                 return False
@@ -48,7 +47,6 @@ def update_task(task_id, field, value):
 def render_task_list(project_id):
     st.write("## Task List")
     
-    # Get tasks from database
     tasks = execute_query("""
         SELECT * FROM tasks 
         WHERE project_id = %s 
@@ -58,103 +56,32 @@ def render_task_list(project_id):
     if tasks:
         df = pd.DataFrame(tasks)
         
-        # Filters
-        col1, col2 = st.columns(2)
-        with col1:
-            status_filter = st.multiselect(
-                "Filter by Status",
-                options=df['status'].unique()
-            )
-        with col2:
-            priority_filter = st.multiselect(
-                "Filter by Priority",
-                options=df['priority'].unique()
-            )
-        
-        # Apply filters
-        if status_filter:
-            df = df[df['status'].isin(status_filter)]
-        if priority_filter:
-            df = df[df['priority'].isin(priority_filter)]
-        
-        # Format the data
-        df['status'] = df['status'].apply(format_status)
-        df['priority'] = df['priority'].apply(format_priority)
-        df['due_date'] = df['due_date'].apply(format_date)
-        
-        # Create the Excel-like table container with centered date column
-        st.markdown("""
-            <style>
-                .task-list-table {
-                    width: 100%;
-                    border-collapse: collapse;
-                }
-                .task-list-table th, .task-list-table td {
-                    padding: 8px;
-                    border: 1px solid #e5e7eb;
-                }
-                .task-list-table td[contenteditable="true"] {
-                    cursor: text;
-                    background-color: #f8fafc;
-                }
-                .task-list-table td[contenteditable="true"]:hover {
-                    background-color: #f1f5f9;
-                }
-                .task-list-table td[contenteditable="true"]:focus {
-                    outline: 2px solid #3b82f6;
-                    background-color: white;
-                }
-                .task-list-table td:nth-child(5) {
-                    text-align: center !important;
-                }
-                .task-list-table th:nth-child(5) {
-                    text-align: center !important;
-                }
-                /* New styles for row coloring */
-                .task-list-table tr[data-status='todo'] {
-                    background-color: #f5f5f5; /* Light gray for TODO */
-                }
-                .task-list-table tr[data-status='inprogress'] {
-                    background-color: #f0f8ff; /* Light blue for In Progress */
-                }
-                .task-list-table tr[data-status='done'] {
-                    background-color: #e0ffe0; /* Light green for Done */
-                }
-            </style>
-            <div class="task-list-container">
-                <div style="overflow-x: auto;">
-        """, unsafe_allow_html=True)
-        
-        # Generate table HTML with editable cells and status-based row coloring
         table_html = "<table class='task-list-table'><thead><tr>"
         columns = ['Title', 'Comment', 'Status', 'Priority', 'Due Date']
         for col in columns:
-            align_class = "center-align" if col == "Due Date" else ""
+            align_class = "center-align" if col in ["Due Date", "Priority"] else ""
             table_html += f"<th class='{align_class}'>{col}</th>"
         table_html += "</tr></thead><tbody>"
         
         for _, row in df.iterrows():
-            # Add data-status attribute for row coloring
-            table_html += f"<tr data-status='{row['status']}'>"
+            table_html += f"<tr data-status='{row['status'].lower()}'>"
             # Title cell
             table_html += f"""<td class='editable' data-task-id='{row["id"]}' 
-                             data-field='title' contenteditable='true'>{row["title"]}</td>"""
+                          data-field='title' contenteditable='true'>{row["title"]}</td>"""
             # Comment cell
             table_html += f"""<td class='editable' data-task-id='{row["id"]}' 
-                             data-field='comment' contenteditable='true'>{row["comment"] or ""}</td>"""
+                          data-field='comment' contenteditable='true'>{row["comment"] or ""}</td>"""
             # Status cell
-            table_html += f"<td>{row['status']}</td>"
-            # Priority cell
-            table_html += f"<td>{row['priority']}</td>"
+            table_html += f"<td>{format_status(row['status'])}</td>"
+            # Priority cell with data attribute
+            table_html += f"""<td class='editable' data-task-id='{row["id"]}' 
+                          data-field='priority' data-priority='{row["priority"]}'>{format_priority(row["priority"])}</td>"""
             # Due Date cell
             table_html += f"""<td class='editable date-cell' data-task-id='{row["id"]}' 
-                             data-field='due_date' contenteditable='true'>{row['due_date']}</td>"""
+                          data-field='due_date' contenteditable='true'>{format_date(row['due_date'])}</td>"""
             table_html += "</tr>"
         
         table_html += "</tbody></table>"
         st.markdown(table_html, unsafe_allow_html=True)
-        
-        st.markdown("</div></div>", unsafe_allow_html=True)
-        
     else:
         st.info("No tasks found. Create some tasks to see them listed here.")
