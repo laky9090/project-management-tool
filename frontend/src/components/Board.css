@@ -17,6 +17,14 @@
   --status-done-text: #166534;
   --status-canceled-bg: #fee2e2;
   --status-canceled-text: #991b1b;
+  
+  /* Priority Colors */
+  --priority-high-bg: #fee2e2;
+  --priority-high-text: #991b1b;
+  --priority-medium-bg: #fef3c7;
+  --priority-medium-text: #92400e;
+  --priority-low-bg: #f1f5f9;
+  --priority-low-text: #475569;
 }
 
 .board {
@@ -59,43 +67,32 @@
   padding: 12px 16px;
   border-bottom: 1px solid var(--border-color);
   vertical-align: middle;
-  cursor: pointer;
   transition: background-color 0.2s ease;
-  position: relative;
 }
 
-/* Priority column styling */
-.task-table td:nth-child(4) select {
-  width: 100%;
-  padding: 8px;
-  border-radius: 4px;
-  background-color: inherit;
-  color: inherit;
+/* Priority column styling - Only apply to priority column */
+.task-table td:nth-child(4) {
+  text-align: center;
 }
 
-.task-table tr td:nth-child(4) {
-  background-color: #f3f4f6; /* Default gray background */
-  color: #4b5563; /* Default text color */
+.task-table td:nth-child(4)[data-priority="High"] {
+  background-color: var(--priority-high-bg);
+  color: var(--priority-high-text);
 }
 
-/* Priority-specific colors only in priority column */
-.task-table tr td:nth-child(4)[data-priority="High"] {
-  background-color: #fee2e2 !important; /* Light red */
-  color: #991b1b !important;
+.task-table td:nth-child(4)[data-priority="Medium"] {
+  background-color: var(--priority-medium-bg);
+  color: var(--priority-medium-text);
 }
 
-.task-table tr td:nth-child(4)[data-priority="Medium"] {
-  background-color: #fef3c7 !important; /* Light yellow */
-  color: #92400e !important;
-}
-
-.task-table tr td:nth-child(4)[data-priority="Low"] {
-  background-color: #f1f5f9 !important; /* Light gray */
-  color: #475569 !important;
+.task-table td:nth-child(4)[data-priority="Low"] {
+  background-color: var(--priority-low-bg);
+  color: var(--priority-low-text);
 }
 
 /* Status column styling */
-.task-table td:nth-child(3) select {
+.task-table td:nth-child(3) select,
+.task-table td:nth-child(4) select {
   width: 100%;
   padding: 8px;
   border-radius: 4px;
@@ -132,17 +129,16 @@
   border-radius: 4px;
   font-size: var(--base-font-size);
   font-family: var(--font-family);
-  background-color: white;
-  position: relative;
-  z-index: 2;
+  background-color: inherit;
+  color: inherit;
 }
 
 .task-table td input:focus,
 .task-table td select:focus {
   outline: 2px solid var(--primary-color);
   background-color: white;
-  z-index: 3;
   position: relative;
+  z-index: 3;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 
