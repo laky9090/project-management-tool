@@ -1,0 +1,69 @@
+/* Base styles */
+:root {
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --base-font-size: 14px;
+  --primary-color: #3b82f6;
+  --border-color: #e5e7eb;
+  --background-light: #f8fafc;
+  --text-primary: #1f2937;
+  --text-secondary: #4b5563;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --spacing-base: 1rem;
+  
+  /* Status Colors */
+  --status-todo-bg: #f1f5f9;
+  --status-todo-text: #475569;
+  --status-inprogress-bg: #fef3c7;
+  --status-inprogress-text: #92400e;
+  --status-done-bg: #dcfce7;
+  --status-done-text: #166534;
+  
+  /* Priority Colors */
+  --priority-high-bg: #fee2e2;
+  --priority-high-text: #991b1b;
+  --priority-medium-bg: #fef3c7;
+  --priority-medium-text: #92400e;
+  --priority-low-bg: #f1f5f9;
+  --priority-low-text: #475569;
+}
+
+/* Priority column styling - for both active and deleted tasks */
+.task-table td[data-priority],
+.deleted-tasks td[data-priority] {
+  transition: background-color 0.2s ease;
+  text-align: center;
+  padding: 8px 12px;
+}
+
+/* Priority styles for both active and deleted tasks */
+.task-table td[data-priority="High"],
+.deleted-tasks td[data-priority="High"],
+.priority-indicator.high {
+  background-color: var(--priority-high-bg) !important;
+  color: var(--priority-high-text) !important;
+}
+
+.task-table td[data-priority="Medium"],
+.deleted-tasks td[data-priority="Medium"],
+.priority-indicator.medium {
+  background-color: var(--priority-medium-bg) !important;
+  color: var(--priority-medium-text) !important;
+}
+
+.task-table td[data-priority="Low"],
+.deleted-tasks td[data-priority="Low"],
+.priority-indicator.low {
+  background-color: var(--priority-low-bg) !important;
+  color: var(--priority-low-text) !important;
+}
+
+/* Priority indicators for deleted tasks */
+.deleted-tasks .priority-indicator {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  width: 100%;
+  justify-content: center;
+}

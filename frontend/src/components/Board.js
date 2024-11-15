@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import TaskForm from './TaskForm';
 import api from '../api/api';
 import './Board.css';
+import './task.css';  // Updated import path to the correct location
 
 const Board = ({ projectId }) => {
   const [tasks, setTasks] = useState([]);
@@ -59,7 +60,7 @@ const Board = ({ projectId }) => {
       await api.deleteTask(taskId);
       const deletedTask = tasks.find(task => task.id === taskId);
       setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
-      setDeletedTasks(prevDeleted => [...prevDeleted, { ...deletedTask, deleted_at: new Date() }]);
+      setDeletedTasks(prevDeleted => [...prevDeleted, { ...deletedTask, deleted_at: new Date(), priority: deletedTask.priority }]);
     } catch (error) {
       console.error('Error deleting task:', error);
       setError('Failed to delete task. Please try again.');
@@ -280,6 +281,7 @@ const Board = ({ projectId }) => {
               <thead>
                 <tr>
                   <th>Title</th>
+                  <th>Comment</th>
                   <th>Status</th>
                   <th>Priority</th>
                   <th className="date-column">Deleted Date</th>
@@ -290,12 +292,13 @@ const Board = ({ projectId }) => {
                 {deletedTasks.map(task => (
                   <tr key={task.id} className="deleted-task-row" data-status={task.status}>
                     <td>{task.title}</td>
+                    <td>{task.comment || ''}</td>
                     <td>
                       <span className={`status-badge ${task.status.toLowerCase().replace(' ', '-')}`}>
                         {task.status}
                       </span>
                     </td>
-                    <td>
+                    <td data-priority={task.priority}>
                       <span className={`priority-indicator ${task.priority.toLowerCase()}`}>
                         {task.priority}
                       </span>

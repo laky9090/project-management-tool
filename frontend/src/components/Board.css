@@ -27,35 +27,89 @@
   --priority-low-text: #475569;
 }
 
-/* Priority column styling */
-.task-table td:nth-child(4) {
+/* Priority column styling - for both active and deleted tasks */
+.task-table td[data-priority],
+.deleted-tasks td[data-priority] {
   transition: background-color 0.2s ease;
+  text-align: center;
+  padding: 8px 12px;
 }
 
-.task-table td[data-priority="High"] {
+/* Priority styles for both active and deleted tasks */
+.task-table td[data-priority="High"],
+.deleted-tasks td[data-priority="High"],
+.priority-indicator.high {
   background-color: var(--priority-high-bg) !important;
   color: var(--priority-high-text) !important;
 }
 
-.task-table td[data-priority="Medium"] {
+.task-table td[data-priority="Medium"],
+.deleted-tasks td[data-priority="Medium"],
+.priority-indicator.medium {
   background-color: var(--priority-medium-bg) !important;
   color: var(--priority-medium-text) !important;
 }
 
-.task-table td[data-priority="Low"] {
+.task-table td[data-priority="Low"],
+.deleted-tasks td[data-priority="Low"],
+.priority-indicator.low {
   background-color: var(--priority-low-bg) !important;
   color: var(--priority-low-text) !important;
 }
 
-/* Priority select styling */
-.task-table td select {
-  width: 100%;
-  padding: 8px;
+/* Priority indicators for deleted tasks */
+.deleted-tasks .priority-indicator {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
   border-radius: 4px;
-  border: 1px solid var(--border-color);
-  background-color: transparent;
-  color: inherit;
   font-weight: 500;
+  width: 100%;
+  justify-content: center;
+}
+
+/* Status styles for deleted tasks */
+.deleted-tasks td .status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  width: 100%;
+  justify-content: center;
+}
+
+/* Deleted tasks section styling */
+.deleted-tasks-section {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.deleted-tasks-section h3 {
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
+/* Table styles for deleted tasks */
+.deleted-tasks {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--base-font-size);
+}
+
+.deleted-tasks th,
+.deleted-tasks td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
+.deleted-tasks th {
+  background: var(--background-light);
+  font-weight: 600;
+  color: var(--text-secondary);
 }
 
 /* Rest of the existing styles */

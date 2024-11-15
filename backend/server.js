@@ -11,19 +11,15 @@ const { authMiddleware } = require('./middleware/auth');
 const app = express();
 const port = 3001;
 
-// Configure CORS
+// Configure CORS with more permissive settings for development
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests from any subdomain of replit.dev
-    if (!origin || origin.match(/\.replit\.dev$/) || origin.includes('localhost')) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
+  origin: function(origin, callback) {
+    callback(null, true); // Allow all origins in development
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range']
 }));
 
 app.use(express.json());
