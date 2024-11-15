@@ -102,23 +102,38 @@
 }
 
 .toggle-icon {
+  display: inline-block;
+  transition: transform 0.3s ease;
   font-size: 0.8em;
   color: var(--text-secondary);
 }
 
-.deleted-tasks-section h3 {
-  color: var(--text-secondary);
-  margin-bottom: 1rem;
+.deleted-tasks-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
 }
 
-/* Table styles for deleted tasks */
+.deleted-tasks-content.visible {
+  max-height: 2000px;
+  transition: max-height 0.5s ease-in;
+}
+
 .deleted-tasks {
   width: 100%;
   border-collapse: collapse;
   font-size: var(--base-font-size);
-  display: none; /* Initially hidden */
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
+.deleted-tasks.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Table styles for deleted tasks */
 .deleted-tasks th,
 .deleted-tasks td {
   padding: 12px 16px;

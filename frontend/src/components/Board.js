@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import TaskForm from './TaskForm';
 import api from '../api/api';
 import './Board.css';
-import './task.css';  // Fixed import path
+import './task.css';
 
 const Board = ({ projectId }) => {
   const [tasks, setTasks] = useState([]);
@@ -276,15 +276,23 @@ const Board = ({ projectId }) => {
 
       {deletedTasks.length > 0 && (
         <div className="deleted-tasks-section">
-          <div className="deleted-tasks-header" onClick={() => setShowDeletedTasks(!showDeletedTasks)}>
+          <div 
+            className="deleted-tasks-header" 
+            onClick={() => setShowDeletedTasks(!showDeletedTasks)}
+          >
             <h3>
               Deleted Tasks ({deletedTasks.length})
-              <span className="toggle-icon">{showDeletedTasks ? '▼' : '▶'}</span>
+              <span 
+                className="toggle-icon"
+                style={{ transform: showDeletedTasks ? 'rotate(0deg)' : 'rotate(-90deg)' }}
+              >
+                ▼
+              </span>
             </h3>
           </div>
-          {showDeletedTasks && (
+          <div className={`deleted-tasks-content ${showDeletedTasks ? 'visible' : ''}`}>
             <div className="table-container">
-              <table className="task-table deleted-tasks">
+              <table className={`task-table deleted-tasks ${showDeletedTasks ? 'visible' : ''}`}>
                 <thead>
                   <tr>
                     <th>Title</th>
@@ -331,7 +339,7 @@ const Board = ({ projectId }) => {
                 </tbody>
               </table>
             </div>
-          )}
+          </div>
         </div>
       )}
     </div>
