@@ -849,17 +849,17 @@ tr[data-status]:hover {
 }
 
 /* Priority-specific colors only in priority column */
-.task-list-table td[data-priority="High"] {
+.task-list-table tr td:nth-child(4)[data-priority="High"] {
   background-color: var(--priority-high-bg) !important;
   color: var(--priority-high-text) !important;
 }
 
-.task-list-table td[data-priority="Medium"] {
+.task-list-table tr td:nth-child(4)[data-priority="Medium"] {
   background-color: var(--priority-medium-bg) !important;
   color: var(--priority-medium-text) !important;
 }
 
-.task-list-table td[data-priority="Low"] {
+.task-list-table tr td:nth-child(4)[data-priority="Low"] {
   background-color: var(--priority-low-bg) !important;
   color: var(--priority-low-text) !important;
 }
