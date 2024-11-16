@@ -13,6 +13,12 @@ const Board = ({ projectId }) => {
   const [showDeletedTasks, setShowDeletedTasks] = useState(false);
   const [sortConfig, setSortConfig] = useState({ key: 'created_at', direction: 'desc' });
 
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('fr-FR'); // This will format as DD/MM/YYYY
+  };
+
   const loadTasks = useCallback(async () => {
     try {
       setError(null);
@@ -42,12 +48,7 @@ const Board = ({ projectId }) => {
         updatedData.due_date = new Date(updatedData.due_date).toISOString().split('T')[0];
       }
       await api.updateTask(taskId, updatedData);
-      setTasks(prevTasks =>
-        prevTasks.map(task =>
-          task.id === taskId ? { ...task, ...updatedData } : task
-        )
-      );
-      setEditingTask(null);
+      loadTasks(); // Reload to get the updated timestamp
     } catch (error) {
       console.error('Error updating task:', error);
       setError('Failed to update task. Please try again.');
@@ -59,9 +60,7 @@ const Board = ({ projectId }) => {
     try {
       setError(null);
       await api.deleteTask(taskId);
-      const deletedTask = tasks.find(task => task.id === taskId);
-      setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
-      setDeletedTasks(prevDeleted => [...prevDeleted, { ...deletedTask, deleted_at: new Date(), priority: deletedTask.priority }]);
+      loadTasks();
     } catch (error) {
       console.error('Error deleting task:', error);
       setError('Failed to delete task. Please try again.');
@@ -73,9 +72,7 @@ const Board = ({ projectId }) => {
     try {
       setError(null);
       await api.restoreTask(taskId);
-      const restoredTask = deletedTasks.find(task => task.id === taskId);
-      setDeletedTasks(prevDeleted => prevDeleted.filter(task => task.id !== taskId));
-      setTasks(prevTasks => [...prevTasks, { ...restoredTask, deleted_at: null }]);
+      loadTasks();
     } catch (error) {
       console.error('Error restoring task:', error);
       setError('Failed to restore task. Please try again.');
@@ -142,27 +139,26 @@ const Board = ({ projectId }) => {
               <th onClick={() => handleSort('due_date')} className="date-column">
                 Due Date {getSortIcon('due_date')}
               </th>
+              <th onClick={() => handleSort('updated_at')} className="date-column">
+                Last Update {getSortIcon('updated_at')}
+              </th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {sortedTasks.map(task => (
               <tr key={task.id} data-status={task.status}>
-                <td onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setEditingTask(task.id);
-                }}>
+                <td onClick={() => setEditingTask(task.id)}>
                   {editingTask === task.id ? (
                     <input
                       type="text"
                       defaultValue={task.title}
-                      onClick={(e) => e.stopPropagation()}
                       onBlur={(e) => {
                         const newValue = e.target.value.trim();
                         if (newValue !== task.title) {
                           handleUpdateTask(task.id, { title: newValue });
                         }
+                        setEditingTask(null);
                       }}
                       onKeyPress={(e) => {
                         if (e.key === 'Enter') {
@@ -175,21 +171,17 @@ const Board = ({ projectId }) => {
                     task.title
                   )}
                 </td>
-                <td onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setEditingTask(task.id);
-                }}>
+                <td onClick={() => setEditingTask(task.id)}>
                   {editingTask === task.id ? (
                     <input
                       type="text"
                       defaultValue={task.comment || ''}
-                      onClick={(e) => e.stopPropagation()}
                       onBlur={(e) => {
                         const newValue = e.target.value.trim();
                         if (newValue !== task.comment) {
                           handleUpdateTask(task.id, { comment: newValue });
                         }
+                        setEditingTask(null);
                       }}
                       onKeyPress={(e) => {
                         if (e.key === 'Enter') {
@@ -222,46 +214,36 @@ const Board = ({ projectId }) => {
                     <option value="High">High</option>
                   </select>
                 </td>
-                <td className="date-column" onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setEditingTask(task.id);
-                }}>
+                <td className="date-column">
                   {editingTask === task.id ? (
                     <input
                       type="date"
                       defaultValue={task.due_date}
-                      onClick={(e) => e.stopPropagation()}
                       onBlur={(e) => {
                         const newValue = e.target.value;
                         if (newValue !== task.due_date) {
                           handleUpdateTask(task.id, { due_date: newValue || null });
                         }
+                        setEditingTask(null);
                       }}
-                      autoFocus
                     />
                   ) : (
-                    task.due_date && new Date(task.due_date).toLocaleDateString('fr-FR')
+                    formatDate(task.due_date)
                   )}
+                </td>
+                <td className="date-column">
+                  {formatDate(task.updated_at)}
                 </td>
                 <td className="actions-column">
                   <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setEditingTask(editingTask === task.id ? null : task.id);
-                    }}
+                    onClick={() => setEditingTask(editingTask === task.id ? null : task.id)}
                     className="edit-button"
                     title="Edit"
                   >
                     ✏️
                   </button>
                   <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleDeleteTask(task.id);
-                    }}
+                    onClick={() => handleDeleteTask(task.id)}
                     className="delete-button"
                     title="Delete"
                   >
@@ -299,6 +281,8 @@ const Board = ({ projectId }) => {
                     <th>Comment</th>
                     <th>Status</th>
                     <th>Priority</th>
+                    <th className="date-column">Due Date</th>
+                    <th className="date-column">Last Update</th>
                     <th className="date-column">Deleted Date</th>
                     <th>Actions</th>
                   </tr>
@@ -319,15 +303,17 @@ const Board = ({ projectId }) => {
                         </span>
                       </td>
                       <td className="date-column">
-                        {new Date(task.deleted_at).toLocaleDateString('fr-FR')}
+                        {formatDate(task.due_date)}
+                      </td>
+                      <td className="date-column">
+                        {formatDate(task.updated_at)}
+                      </td>
+                      <td className="date-column">
+                        {formatDate(task.deleted_at)}
                       </td>
                       <td className="actions-column">
                         <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleRestoreTask(task.id);
-                          }}
+                          onClick={() => handleRestoreTask(task.id)}
                           className="restore-button"
                           title="Restore"
                         >

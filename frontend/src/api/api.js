@@ -2,7 +2,9 @@ import axios from 'axios';
 
 // Configure base URL for API requests
 const API_URL = process.env.NODE_ENV === 'development' 
-  ? `${window.location.protocol}//${window.location.hostname}:3001/api`
+  ? window.location.hostname === 'localhost'
+    ? 'http://localhost:3001/api'
+    : `${window.location.protocol}//${window.location.hostname}:3001/api`
   : '/api';
 
 // Configure axios with CORS settings

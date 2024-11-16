@@ -300,3 +300,20 @@
     padding: 8px 12px;
   }
 }
+
+/* Adding to existing CSS file */
+.task-table td:nth-child(6),
+.task-table th:nth-child(6) {
+  text-align: center !important;
+  white-space: nowrap;
+  min-width: 120px;
+}
+
+.deleted-tasks td:nth-child(6),
+.deleted-tasks td:nth-child(7),
+.deleted-tasks th:nth-child(6),
+.deleted-tasks th:nth-child(7) {
+  text-align: center !important;
+  white-space: nowrap;
+  min-width: 120px;
+}

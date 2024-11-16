@@ -37,7 +37,7 @@ def update_task(task_id, field, value):
                 return False
 
         result = execute_query(
-            f"UPDATE tasks SET {field} = %s WHERE id = %s RETURNING id",
+            f"UPDATE tasks SET {field} = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s RETURNING id",
             (value, task_id)
         )
         return bool(result)
@@ -50,9 +50,12 @@ def render_task_list(project_id):
     
     # Get tasks from database
     tasks = execute_query("""
-        SELECT * FROM tasks 
-        WHERE project_id = %s 
-        ORDER BY due_date
+        SELECT 
+            t.*,
+            COALESCE(t.updated_at, t.created_at) as last_update 
+        FROM tasks t
+        WHERE t.project_id = %s AND t.deleted_at IS NULL
+        ORDER BY t.due_date
     """, (project_id,))
     
     if tasks:
@@ -81,8 +84,9 @@ def render_task_list(project_id):
         df['status'] = df['status'].apply(format_status)
         df['priority'] = df['priority'].apply(format_priority)
         df['due_date'] = df['due_date'].apply(format_date)
+        df['last_update'] = df['last_update'].apply(format_date)
         
-        # Create the Excel-like table container with centered date column
+        # Create the Excel-like table container with centered date columns
         st.markdown("""
             <style>
                 .task-list-table {
@@ -104,51 +108,42 @@ def render_task_list(project_id):
                     outline: 2px solid #3b82f6;
                     background-color: white;
                 }
-                .task-list-table td:nth-child(5) {
+                .task-list-table td:nth-child(5), 
+                .task-list-table td:nth-child(6),
+                .task-list-table th:nth-child(5),
+                .task-list-table th:nth-child(6) {
                     text-align: center !important;
-                }
-                .task-list-table th:nth-child(5) {
-                    text-align: center !important;
-                }
-                /* New styles for row coloring */
-                .task-list-table tr[data-status='todo'] {
-                    background-color: #f5f5f5; /* Light gray for TODO */
-                }
-                .task-list-table tr[data-status='inprogress'] {
-                    background-color: #f0f8ff; /* Light blue for In Progress */
-                }
-                .task-list-table tr[data-status='done'] {
-                    background-color: #e0ffe0; /* Light green for Done */
                 }
             </style>
             <div class="task-list-container">
                 <div style="overflow-x: auto;">
         """, unsafe_allow_html=True)
         
-        # Generate table HTML with editable cells and status-based row coloring
+        # Generate table HTML with editable cells
         table_html = "<table class='task-list-table'><thead><tr>"
-        columns = ['Title', 'Comment', 'Status', 'Priority', 'Due Date']
+        columns = ['Title', 'Comment', 'Status', 'Priority', 'Due Date', 'Last Update']
         for col in columns:
-            align_class = "center-align" if col == "Due Date" else ""
+            align_class = "center-align" if col in ["Due Date", "Last Update"] else ""
             table_html += f"<th class='{align_class}'>{col}</th>"
         table_html += "</tr></thead><tbody>"
         
         for _, row in df.iterrows():
-            # Add data-status attribute for row coloring
             table_html += f"<tr data-status='{row['status']}'>"
             # Title cell
             table_html += f"""<td class='editable' data-task-id='{row["id"]}' 
-                             data-field='title' contenteditable='true'>{row["title"]}</td>"""
+                          data-field='title' contenteditable='true'>{row["title"]}</td>"""
             # Comment cell
             table_html += f"""<td class='editable' data-task-id='{row["id"]}' 
-                             data-field='comment' contenteditable='true'>{row["comment"] or ""}</td>"""
+                          data-field='comment' contenteditable='true'>{row["comment"] or ""}</td>"""
             # Status cell
             table_html += f"<td>{row['status']}</td>"
             # Priority cell
             table_html += f"<td>{row['priority']}</td>"
             # Due Date cell
             table_html += f"""<td class='editable date-cell' data-task-id='{row["id"]}' 
-                             data-field='due_date' contenteditable='true'>{row['due_date']}</td>"""
+                          data-field='due_date' contenteditable='true'>{row['due_date']}</td>"""
+            # Last Update cell
+            table_html += f"<td>{row['last_update']}</td>"
             table_html += "</tr>"
         
         table_html += "</tbody></table>"
