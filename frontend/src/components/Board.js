@@ -12,28 +12,42 @@ const Board = ({ projectId }) => {
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [showDeletedTasks, setShowDeletedTasks] = useState(false);
   const [sortConfig, setSortConfig] = useState({ key: 'created_at', direction: 'desc' });
+  const [loading, setLoading] = useState(true);
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
     const date = new Date(dateStr);
-    return date.toLocaleDateString('fr-FR'); // This will format as DD/MM/YYYY
+    return date.toLocaleDateString('fr-FR');
   };
 
   const loadTasks = useCallback(async () => {
     try {
       setError(null);
+      setLoading(true);
       const response = await api.getProjectTasks(projectId);
       setTasks(response.data.filter(task => !task.deleted_at));
       setDeletedTasks(response.data.filter(task => task.deleted_at));
     } catch (error) {
       console.error('Error loading tasks:', error);
       setError('Failed to load tasks');
+    } finally {
+      setLoading(false);
     }
   }, [projectId]);
 
   useEffect(() => {
     loadTasks();
   }, [loadTasks]);
+
+  const handleExportTasks = async () => {
+    try {
+      setError(null);
+      await api.exportProjectTasks(projectId);
+    } catch (error) {
+      console.error('Error exporting tasks:', error);
+      setError('Failed to export tasks. Please try again.');
+    }
+  };
 
   const handleTaskCreated = useCallback((newTask) => {
     setTasks(prevTasks => [newTask, ...prevTasks]);
@@ -117,13 +131,22 @@ const Board = ({ projectId }) => {
     return ' ↕';
   };
 
+  if (loading) {
+    return <div className="loading">Loading tasks...</div>;
+  }
+
   return (
     <div className="board">
       {error && <div className="error-message">{error}</div>}
 
-      <button className="add-task-button" onClick={() => setShowTaskForm(true)}>
-        ➕ Add New Task
-      </button>
+      <div className="board-actions">
+        <button className="add-task-button" onClick={() => setShowTaskForm(true)}>
+          ➕ Add New Task
+        </button>
+        <button className="export-button" onClick={handleExportTasks}>
+          📥 Export to Excel
+        </button>
+      </div>
 
       {showTaskForm && (
         <TaskForm

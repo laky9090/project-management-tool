@@ -10,7 +10,6 @@ const API_URL = process.env.NODE_ENV === 'development'
 // Configure axios with CORS settings
 const api = axios.create({
   baseURL: API_URL,
-  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   }
@@ -28,36 +27,46 @@ export default {
   
   // Tasks
   getProjectTasks: (projectId) => api.get(`/tasks/project/${projectId}`),
-  createTask: async (task) => {
+  exportProjectTasks: async (projectId) => {
     try {
-      const response = await api.post('/tasks', task);
-      if (!response.data) {
-        throw new Error('No data received from server');
+      const response = await api.get(`/tasks/project/${projectId}/export`, {
+        responseType: 'blob'
+      });
+      
+      // Create blob URL and trigger download
+      const blob = new Blob([response.data], { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Get filename from response headers
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = 'tasks.xlsx';
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename=(.+)/);
+        if (filenameMatch && filenameMatch.length === 2) {
+          filename = filenameMatch[1];
+        }
       }
-      return response;
+      
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      return true;
     } catch (error) {
-      console.error('Error creating task:', error);
+      console.error('Error exporting tasks:', error);
       throw error;
     }
   },
+  createTask: (task) => api.post('/tasks', task),
   updateTask: (taskId, data) => api.patch(`/tasks/${taskId}`, data),
   deleteTask: (taskId) => api.delete(`/tasks/${taskId}`),
   permanentlyDeleteTask: (taskId) => api.delete(`/tasks/${taskId}/permanent`),
   restoreTask: (taskId) => api.patch(`/tasks/${taskId}/restore`),
   updateTaskStatus: (taskId, status) => api.patch(`/tasks/${taskId}/status`, { status }),
   updateTaskAssignment: (taskId, assignee) => api.patch(`/tasks/${taskId}/assign`, { assignee }),
-  
-  // File attachments
-  uploadTaskAttachment: async (taskId, formData) => {
-    try {
-      const response = await api.post(`/tasks/${taskId}/attachments`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      return response;
-    } catch (error) {
-      console.error('Error uploading attachment:', error);
-      throw error;
-    }
-  },
-  getTaskAttachments: (taskId) => api.get(`/tasks/${taskId}/attachments`)
 };

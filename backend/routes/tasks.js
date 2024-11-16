@@ -4,6 +4,7 @@ const db = require('../db/connection');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
+const ExcelJS = require('exceljs');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -16,6 +17,94 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage: storage });
+
+// Export tasks to Excel
+router.get('/project/:projectId/export', async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    
+    // Get project name
+    const projectResult = await db.query(
+      'SELECT name FROM projects WHERE id = $1',
+      [projectId]
+    );
+    
+    if (projectResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    
+    const projectName = projectResult.rows[0].name;
+    
+    // Get tasks
+    const { rows: tasks } = await db.query(
+      `SELECT t.*, 
+          COALESCE(t.updated_at, t.created_at) as last_update
+       FROM tasks t
+       WHERE t.project_id = $1 AND t.deleted_at IS NULL
+       ORDER BY t.created_at DESC`,
+      [projectId]
+    );
+
+    // Create workbook and worksheet
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Tasks');
+
+    // Add headers
+    worksheet.columns = [
+      { header: 'Title', key: 'title', width: 30 },
+      { header: 'Comment', key: 'comment', width: 40 },
+      { header: 'Status', key: 'status', width: 15 },
+      { header: 'Priority', key: 'priority', width: 15 },
+      { header: 'Due Date', key: 'due_date', width: 15 },
+      { header: 'Last Update', key: 'last_update', width: 15 },
+      { header: 'Assignee', key: 'assignee', width: 20 }
+    ];
+
+    // Style headers
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE5E7EB' }
+    };
+
+    // Add data
+    tasks.forEach(task => {
+      worksheet.addRow({
+        title: task.title,
+        comment: task.comment || '',
+        status: task.status,
+        priority: task.priority,
+        due_date: task.due_date ? new Date(task.due_date).toLocaleDateString() : '',
+        last_update: new Date(task.last_update).toLocaleDateString(),
+        assignee: task.assignee || ''
+      });
+    });
+
+    // Auto filter
+    worksheet.autoFilter = {
+      from: 'A1',
+      to: 'G1'
+    };
+
+    // Set filename
+    const filename = `${projectName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_tasks.xlsx`;
+    
+    // Set response headers
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+
+    // Write to response
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (err) {
+    console.error('Error exporting tasks:', err);
+    res.status(500).json({ error: 'Failed to export tasks' });
+  }
+});
 
 // Get tasks by project with dependencies and subtasks
 router.get('/project/:projectId', async (req, res) => {

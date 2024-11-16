@@ -7,6 +7,7 @@ dependencies = [
     "aiofiles>=24.1.0",
     "bcrypt>=4.2.0",
     "jwt",
+    "openpyxl>=3.1.5",
     "pandas>=2.2.3",
     "pillow>=10.4.0",
     "plotly>=5.24.1",
