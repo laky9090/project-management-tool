@@ -129,6 +129,39 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// Permanently delete project
+router.delete('/:id/permanent', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    await db.query('BEGIN');
+    
+    // First delete all associated tasks
+    await db.query('DELETE FROM tasks WHERE project_id = $1', [id]);
+    
+    // Then delete the project
+    const { rows } = await db.query(
+      'DELETE FROM projects WHERE id = $1 AND deleted_at IS NOT NULL RETURNING id',
+      [id]
+    );
+
+    if (rows.length === 0) {
+      await db.query('ROLLBACK');
+      return res.status(404).json({ error: 'Project not found or not in deleted state' });
+    }
+
+    await db.query('COMMIT');
+    res.json({ message: 'Project permanently deleted' });
+  } catch (err) {
+    await db.query('ROLLBACK');
+    console.error('Error permanently deleting project:', err);
+    res.status(500).json({ 
+      error: 'Failed to permanently delete project',
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+  }
+});
+
 // Restore project
 router.patch('/:id/restore', async (req, res) => {
   const { id } = req.params;

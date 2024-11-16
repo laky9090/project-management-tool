@@ -77,9 +77,22 @@ const ProjectList = ({ onSelectProject }) => {
     try {
       await api.restoreProject(projectId);
       setDeletedProjects(deletedProjects.filter(p => p.id !== projectId));
-      loadProjects(); // Reload active projects
+      loadProjects();
     } catch (error) {
       console.error('Error restoring project:', error);
+    }
+  };
+
+  const handlePermanentDeleteProject = async (projectId, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (window.confirm('This action cannot be undone. Are you sure you want to permanently delete this project and all its tasks?')) {
+      try {
+        await api.permanentlyDeleteProject(projectId);
+        setDeletedProjects(deletedProjects.filter(p => p.id !== projectId));
+      } catch (error) {
+        console.error('Error permanently deleting project:', error);
+      }
     }
   };
 
@@ -209,14 +222,18 @@ const ProjectList = ({ onSelectProject }) => {
                 </div>
                 <div className="project-actions">
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRestoreProject(project.id);
-                    }}
+                    onClick={(e) => handleRestoreProject(project.id, e)}
                     className="restore-button"
                     title="Restore project"
                   >
                     🔄
+                  </button>
+                  <button
+                    onClick={(e) => handlePermanentDeleteProject(project.id, e)}
+                    className="permanent-delete-button"
+                    title="Permanently delete project"
+                  >
+                    ⛔
                   </button>
                 </div>
               </div>

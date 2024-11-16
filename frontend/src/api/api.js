@@ -24,6 +24,7 @@ export default {
   updateProject: (projectId, data) => api.patch(`/projects/${projectId}`, data),
   deleteProject: (projectId) => api.delete(`/projects/${projectId}`),
   restoreProject: (projectId) => api.patch(`/projects/${projectId}/restore`),
+  permanentlyDeleteProject: (projectId) => api.delete(`/projects/${projectId}/permanent`),
   
   // Tasks
   getProjectTasks: (projectId) => api.get(`/tasks/project/${projectId}`),

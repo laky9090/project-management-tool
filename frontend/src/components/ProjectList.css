@@ -113,6 +113,7 @@
 .project-actions {
   display: flex;
   gap: 8px;
+  margin-left: auto;
   opacity: 0;
   transition: opacity 0.2s;
 }
@@ -279,4 +280,62 @@ button[title="Delete project"]:hover,
 button[title="Restore project"]:hover {
   background: #f8fafc !important;
   border-radius: 4px !important;
+}
+
+/* Existing styles... */
+
+.permanent-delete-button {
+  padding: 4px 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s, background-color 0.2s;
+  font-size: 1.2rem;
+}
+
+.permanent-delete-button:hover {
+  opacity: 1;
+  background-color: #fee2e2;
+  border-radius: 4px;
+}
+
+/* Update project actions spacing */
+.project-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.project-card.deleted .project-actions {
+  opacity: 1;
+}
+
+/* Confirmation dialog styling */
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.dialog-content {
+  background-color: white;
+  padding: 24px;
+  border-radius: 8px;
+  max-width: 400px;
+  width: 90%;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
 }
