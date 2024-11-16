@@ -32,7 +32,8 @@ def update_task(task_id, field, value):
         if field == "due_date":
             try:
                 # Convert date from DD/MM/YYYY to YYYY-MM-DD
-                value = datetime.strptime(value, "%d/%m/%Y").strftime("%Y-%m-%d")
+                if value:
+                    value = datetime.strptime(value, "%d/%m/%Y").strftime("%Y-%m-%d")
             except ValueError:
                 return False
 
@@ -114,6 +115,9 @@ def render_task_list(project_id):
                 .task-list-table th:nth-child(6) {
                     text-align: center !important;
                 }
+                .task-list-table td[data-field="due_date"] {
+                    text-align: center !important;
+                }
             </style>
             <div class="task-list-container">
                 <div style="overflow-x: auto;">
@@ -133,21 +137,76 @@ def render_task_list(project_id):
             table_html += f"""<td class='editable' data-task-id='{row["id"]}' 
                           data-field='title' contenteditable='true'>{row["title"]}</td>"""
             # Comment cell
+            comment_value = row["comment"] if pd.notna(row["comment"]) else ""
             table_html += f"""<td class='editable' data-task-id='{row["id"]}' 
-                          data-field='comment' contenteditable='true'>{row["comment"] or ""}</td>"""
+                          data-field='comment' contenteditable='true'>{comment_value}</td>"""
             # Status cell
             table_html += f"<td>{row['status']}</td>"
             # Priority cell
             table_html += f"<td>{row['priority']}</td>"
             # Due Date cell
+            due_date_value = row['due_date'] if pd.notna(row['due_date']) else ""
             table_html += f"""<td class='editable date-cell' data-task-id='{row["id"]}' 
-                          data-field='due_date' contenteditable='true'>{row['due_date']}</td>"""
+                          data-field='due_date' contenteditable='true' 
+                          data-date='{due_date_value}'>{due_date_value}</td>"""
             # Last Update cell
             table_html += f"<td>{row['last_update']}</td>"
             table_html += "</tr>"
         
         table_html += "</tbody></table>"
         st.markdown(table_html, unsafe_allow_html=True)
+        
+        # Add JavaScript for handling editable cells
+        st.markdown("""
+            <script>
+                const editableCells = document.querySelectorAll('.editable');
+                editableCells.forEach(cell => {
+                    cell.addEventListener('blur', async () => {
+                        const taskId = cell.getAttribute('data-task-id');
+                        const field = cell.getAttribute('data-field');
+                        let value = cell.textContent.trim();
+                        
+                        // Validate date format for due_date field
+                        if (field === 'due_date') {
+                            if (value) {
+                                // Check if the date matches DD/MM/YYYY format
+                                const dateRegex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+                                if (!dateRegex.test(value)) {
+                                    alert('Please enter date in DD/MM/YYYY format');
+                                    cell.textContent = cell.getAttribute('data-date');
+                                    return;
+                                }
+                            }
+                        }
+                        
+                        try {
+                            const response = await fetch(`/api/tasks/${taskId}`, {
+                                method: 'PATCH',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({ [field]: value })
+                            });
+                            
+                            if (!response.ok) {
+                                throw new Error('Failed to update task');
+                            }
+                            
+                            // Update data-date attribute for due_date cells
+                            if (field === 'due_date') {
+                                cell.setAttribute('data-date', value);
+                            }
+                        } catch (error) {
+                            console.error('Error updating task:', error);
+                            // Revert to original value
+                            if (field === 'due_date') {
+                                cell.textContent = cell.getAttribute('data-date');
+                            }
+                        }
+                    });
+                });
+            </script>
+        """, unsafe_allow_html=True)
         
         st.markdown("</div></div>", unsafe_allow_html=True)
         

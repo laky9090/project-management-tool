@@ -1,21 +1,31 @@
 import axios from 'axios';
 
-// Configure base URL for API requests
-const API_URL = process.env.NODE_ENV === 'development' 
-  ? window.location.hostname === 'localhost'
-    ? 'http://localhost:3001/api'
-    : `${window.location.protocol}//${window.location.hostname}:3001/api`
-  : '/api';
+// Configure base URL for API requests based on environment
+const API_URL = window.location.hostname.includes('replit') 
+  ? `${window.location.protocol}//${window.location.hostname.replace('-3000', '-3001')}/api`
+  : 'http://localhost:3001/api';
 
-// Configure axios with CORS settings
+// Configure axios instance with proper CORS settings
 const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
-  }
+  },
+  withCredentials: true,
+  timeout: 0 // Disable timeout for development
 });
 
-export default {
+// Add response interceptor for better error handling
+api.interceptors.response.use(
+  response => response,
+  error => {
+    console.error('API Error:', error);
+    return Promise.reject(error);
+  }
+);
+
+// Export the configured API object
+const apiService = {
   // Projects
   getProjects: () => api.get('/projects'),
   getDeletedProjects: () => api.get('/projects/deleted'),
@@ -33,7 +43,6 @@ export default {
         responseType: 'blob'
       });
       
-      // Create blob URL and trigger download
       const blob = new Blob([response.data], { 
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
       });
@@ -41,7 +50,6 @@ export default {
       const link = document.createElement('a');
       link.href = url;
       
-      // Get filename from response headers
       const contentDisposition = response.headers['content-disposition'];
       let filename = 'tasks.xlsx';
       if (contentDisposition) {
@@ -63,10 +71,44 @@ export default {
     }
   },
   createTask: (task) => api.post('/tasks', task),
-  updateTask: (taskId, data) => api.patch(`/tasks/${taskId}`, data),
+  updateTask: async (taskId, data) => {
+    try {
+      const processedData = { ...data };
+      
+      // Handle empty values
+      if (processedData.comment === '') {
+        processedData.comment = null;
+      }
+      if (processedData.due_date === '') {
+        processedData.due_date = null;
+      }
+      
+      // Handle date format conversion for due_date
+      if (processedData.due_date && typeof processedData.due_date === 'string') {
+        // Check if date is in DD/MM/YYYY format
+        const dateRegex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+        const match = processedData.due_date.match(dateRegex);
+        if (match) {
+          const [_, day, month, year] = match;
+          processedData.due_date = `${year}-${month}-${day}`;
+        }
+      }
+      
+      const response = await api.patch(`/tasks/${taskId}`, processedData);
+      if (!response.data) {
+        throw new Error('No data received from server');
+      }
+      return response;
+    } catch (error) {
+      console.error('Error updating task:', error);
+      throw error;
+    }
+  },
   deleteTask: (taskId) => api.delete(`/tasks/${taskId}`),
   permanentlyDeleteTask: (taskId) => api.delete(`/tasks/${taskId}/permanent`),
   restoreTask: (taskId) => api.patch(`/tasks/${taskId}/restore`),
   updateTaskStatus: (taskId, status) => api.patch(`/tasks/${taskId}/status`, { status }),
   updateTaskAssignment: (taskId, assignee) => api.patch(`/tasks/${taskId}/assign`, { assignee }),
 };
+
+export default apiService;

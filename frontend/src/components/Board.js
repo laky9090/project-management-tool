@@ -13,11 +13,31 @@ const Board = ({ projectId }) => {
   const [showDeletedTasks, setShowDeletedTasks] = useState(false);
   const [sortConfig, setSortConfig] = useState({ key: 'created_at', direction: 'desc' });
   const [loading, setLoading] = useState(true);
+  const [updatingTask, setUpdatingTask] = useState(null);
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
     const date = new Date(dateStr);
     return date.toLocaleDateString('fr-FR');
+  };
+
+  const validateDate = (dateStr) => {
+    if (!dateStr) return true;
+    const regex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+    if (!regex.test(dateStr)) return false;
+    
+    const [day, month, year] = dateStr.split('/').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.getDate() === day &&
+           date.getMonth() === month - 1 &&
+           date.getFullYear() === year &&
+           year >= 1900 && year <= 2100;
+  };
+
+  const parseDateInput = (dateStr) => {
+    if (!dateStr) return null;
+    const [day, month, year] = dateStr.split('/');
+    return `${year}-${month}-${day}`;
   };
 
   const loadTasks = useCallback(async () => {
@@ -58,15 +78,28 @@ const Board = ({ projectId }) => {
   const handleUpdateTask = async (taskId, updatedData) => {
     try {
       setError(null);
-      if (updatedData.due_date) {
-        updatedData.due_date = new Date(updatedData.due_date).toISOString().split('T')[0];
+      setUpdatingTask(taskId);
+      let processedData = { ...updatedData };
+
+      // Handle date validation
+      if ('due_date' in processedData) {
+        if (processedData.due_date && !validateDate(processedData.due_date)) {
+          setError('Please enter a valid date in DD/MM/YYYY format');
+          return false;
+        }
+        processedData.due_date = processedData.due_date ? parseDateInput(processedData.due_date) : null;
       }
-      await api.updateTask(taskId, updatedData);
-      loadTasks(); // Reload to get the updated timestamp
+
+      await api.updateTask(taskId, processedData);
+      await loadTasks();
+      setError(null);
+      return true;
     } catch (error) {
       console.error('Error updating task:', error);
       setError('Failed to update task. Please try again.');
-      loadTasks();
+      return false;
+    } finally {
+      setUpdatingTask(null);
     }
   };
 
@@ -137,7 +170,12 @@ const Board = ({ projectId }) => {
 
   return (
     <div className="board">
-      {error && <div className="error-message">{error}</div>}
+      {error && (
+        <div className="error-message" onClick={() => setError(null)}>
+          {error}
+          <span className="close-error">×</span>
+        </div>
+      )}
 
       <div className="board-actions">
         <button className="add-task-button" onClick={() => setShowTaskForm(true)}>
@@ -184,7 +222,7 @@ const Board = ({ projectId }) => {
           <tbody>
             {sortedTasks.map(task => (
               <tr key={task.id} data-status={task.status}>
-                <td onClick={() => setEditingTask(task.id)}>
+                <td className={editingTask === task.id ? 'editing' : ''}>
                   {editingTask === task.id ? (
                     <input
                       type="text"
@@ -204,35 +242,46 @@ const Board = ({ projectId }) => {
                       autoFocus
                     />
                   ) : (
-                    task.title
+                    <div onClick={() => setEditingTask(task.id)} className="editable">
+                      {task.title}
+                    </div>
                   )}
                 </td>
-                <td onClick={() => setEditingTask(task.id)}>
+                <td className={`comment-cell ${editingTask === task.id ? 'editing' : ''}`}>
                   {editingTask === task.id ? (
-                    <input
-                      type="text"
+                    <textarea
                       defaultValue={task.comment || ''}
-                      onBlur={(e) => {
+                      onBlur={async (e) => {
                         const newValue = e.target.value.trim();
                         if (newValue !== task.comment) {
-                          handleUpdateTask(task.id, { comment: newValue });
+                          await handleUpdateTask(task.id, { comment: newValue });
                         }
                         setEditingTask(null);
                       }}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
                           e.target.blur();
                         }
                       }}
+                      autoFocus
+                      className="comment-textarea"
+                      placeholder="Enter comment..."
                     />
                   ) : (
-                    task.comment || ''
+                    <div 
+                      onClick={() => setEditingTask(task.id)} 
+                      className="editable comment-content"
+                    >
+                      {task.comment || ''}
+                    </div>
                   )}
                 </td>
                 <td>
                   <select
                     value={task.status}
                     onChange={(e) => handleUpdateTask(task.id, { status: e.target.value })}
+                    className={updatingTask === task.id ? 'updating' : ''}
                   >
                     <option value="To Do">To Do</option>
                     <option value="In Progress">In Progress</option>
@@ -244,27 +293,53 @@ const Board = ({ projectId }) => {
                   <select
                     value={task.priority}
                     onChange={(e) => handleUpdateTask(task.id, { priority: e.target.value })}
+                    className={updatingTask === task.id ? 'updating' : ''}
                   >
                     <option value="Low">Low</option>
                     <option value="Medium">Medium</option>
                     <option value="High">High</option>
                   </select>
                 </td>
-                <td className="date-column">
+                <td className={`date-column ${editingTask === task.id ? 'editing' : ''}`}>
                   {editingTask === task.id ? (
                     <input
-                      type="date"
-                      defaultValue={task.due_date}
-                      onBlur={(e) => {
-                        const newValue = e.target.value;
-                        if (newValue !== task.due_date) {
-                          handleUpdateTask(task.id, { due_date: newValue || null });
+                      type="text"
+                      placeholder="DD/MM/YYYY"
+                      defaultValue={formatDate(task.due_date)}
+                      onBlur={async (e) => {
+                        const newValue = e.target.value.trim();
+                        if (newValue && !validateDate(newValue)) {
+                          setError('Please enter a valid date in DD/MM/YYYY format');
+                          e.target.value = formatDate(task.due_date);
+                          return;
+                        }
+                        if (newValue !== formatDate(task.due_date)) {
+                          const success = await handleUpdateTask(task.id, { due_date: newValue || null });
+                          if (!success) {
+                            e.target.value = formatDate(task.due_date);
+                          }
                         }
                         setEditingTask(null);
                       }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.target.blur();
+                        }
+                        if (e.key === 'Escape') {
+                          e.target.value = formatDate(task.due_date);
+                          setEditingTask(null);
+                        }
+                      }}
+                      className={`date-input ${updatingTask === task.id ? 'updating' : ''}`}
+                      autoFocus
                     />
                   ) : (
-                    formatDate(task.due_date)
+                    <div 
+                      onClick={() => setEditingTask(task.id)} 
+                      className="editable date-display"
+                    >
+                      {formatDate(task.due_date)}
+                    </div>
                   )}
                 </td>
                 <td className="date-column">
