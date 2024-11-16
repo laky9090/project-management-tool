@@ -234,7 +234,8 @@
 /* Action buttons */
 .edit-button,
 .delete-button,
-.restore-button {
+.restore-button,
+.permanent-delete-button {
   padding: 4px 8px;
   margin: 0 4px;
   background: none;
@@ -246,8 +247,18 @@
 
 .edit-button:hover,
 .delete-button:hover,
-.restore-button:hover {
+.restore-button:hover,
+.permanent-delete-button:hover {
   opacity: 1;
+}
+
+.permanent-delete-button {
+  color: #dc2626;
+}
+
+.permanent-delete-button:hover {
+  background-color: #fee2e2;
+  border-radius: 4px;
 }
 
 /* Add task button */

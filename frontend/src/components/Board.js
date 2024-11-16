@@ -80,6 +80,19 @@ const Board = ({ projectId }) => {
     }
   };
 
+  const handlePermanentDelete = async (taskId) => {
+    if (window.confirm('This action cannot be undone. Are you sure you want to permanently delete this task?')) {
+      try {
+        setError(null);
+        await api.permanentlyDeleteTask(taskId);
+        setDeletedTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+      } catch (error) {
+        console.error('Error permanently deleting task:', error);
+        setError('Failed to permanently delete task. Please try again.');
+      }
+    }
+  };
+
   const handleSort = (key) => {
     setSortConfig(prevConfig => ({
       key,
@@ -318,6 +331,13 @@ const Board = ({ projectId }) => {
                           title="Restore"
                         >
                           🔄
+                        </button>
+                        <button
+                          onClick={() => handlePermanentDelete(task.id)}
+                          className="permanent-delete-button"
+                          title="Permanently Delete"
+                        >
+                          ⛔
                         </button>
                       </td>
                     </tr>

@@ -41,6 +41,7 @@ export default {
   },
   updateTask: (taskId, data) => api.patch(`/tasks/${taskId}`, data),
   deleteTask: (taskId) => api.delete(`/tasks/${taskId}`),
+  permanentlyDeleteTask: (taskId) => api.delete(`/tasks/${taskId}/permanent`),
   restoreTask: (taskId) => api.patch(`/tasks/${taskId}/restore`),
   updateTaskStatus: (taskId, status) => api.patch(`/tasks/${taskId}/status`, { status }),
   updateTaskAssignment: (taskId, assignee) => api.patch(`/tasks/${taskId}/assign`, { assignee }),

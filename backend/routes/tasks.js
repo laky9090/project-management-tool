@@ -142,6 +142,37 @@ router.delete('/:taskId', async (req, res) => {
   }
 });
 
+// Permanently delete task
+router.delete('/:taskId/permanent', async (req, res) => {
+  const { taskId } = req.params;
+
+  try {
+    await db.query('BEGIN');
+    
+    // First delete related records
+    await db.query('DELETE FROM task_dependencies WHERE task_id = $1 OR depends_on_id = $1', [taskId]);
+    await db.query('DELETE FROM subtasks WHERE parent_task_id = $1', [taskId]);
+    
+    // Then delete the task
+    const { rows } = await db.query(
+      'DELETE FROM tasks WHERE id = $1 AND deleted_at IS NOT NULL RETURNING id',
+      [taskId]
+    );
+
+    if (rows.length === 0) {
+      await db.query('ROLLBACK');
+      return res.status(404).json({ error: 'Deleted task not found' });
+    }
+
+    await db.query('COMMIT');
+    res.json({ message: 'Task permanently deleted' });
+  } catch (err) {
+    await db.query('ROLLBACK');
+    console.error('Error permanently deleting task:', err);
+    res.status(500).json({ error: 'Failed to permanently delete task' });
+  }
+});
+
 // Restore task
 router.patch('/:taskId/restore', async (req, res) => {
   const { taskId } = req.params;
