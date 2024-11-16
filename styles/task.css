@@ -890,4 +890,26 @@ tr[data-status]:hover {
   text-align: center !important;
 }
 
+/* Last Update column styling */
+.task-list-table td:nth-child(6),
+.task-list-table th:nth-child(6) {
+  text-align: center !important;
+  white-space: nowrap;
+  min-width: 120px;
+}
+
+.task-list-table td.date-column,
+.task-list-table th.date-column {
+  text-align: center !important;
+  min-width: 120px;
+}
+
+/* Maintain consistency with Due Date column */
+.task-list-table td:nth-child(5),
+.task-list-table td:nth-child(6),
+.task-list-table th:nth-child(5),
+.task-list-table th:nth-child(6) {
+  text-align: center !important;
+}
+
 /* Rest of the existing styles... */

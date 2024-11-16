@@ -22,6 +22,7 @@ router.get('/project/:projectId', async (req, res) => {
   try {
     const { rows: tasks } = await db.query(
       `SELECT t.*, 
+          COALESCE(t.updated_at, t.created_at) as last_update,
           array_agg(DISTINCT jsonb_build_object(
               'id', d.id,
               'title', dt.title,
@@ -59,9 +60,9 @@ router.post('/', async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      `INSERT INTO tasks (project_id, title, comment, status, priority, due_date, assignee)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING *`,
+      `INSERT INTO tasks (project_id, title, comment, status, priority, due_date, assignee, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+       RETURNING *, COALESCE(updated_at, created_at) as last_update`,
       [project_id, title, comment, status || 'To Do', priority || 'Medium', due_date, assignee]
     );
     res.status(201).json(rows[0]);
@@ -98,11 +99,13 @@ router.patch('/:taskId', async (req, res) => {
       return res.status(400).json({ error: 'No valid fields to update' });
     }
 
+    updateFields.push('updated_at = CURRENT_TIMESTAMP');
+
     const query = `
       UPDATE tasks 
       SET ${updateFields.join(', ')}
       WHERE id = $${values.length + 1} AND deleted_at IS NULL
-      RETURNING *
+      RETURNING *, COALESCE(updated_at, created_at) as last_update
     `;
 
     const { rows } = await db.query(query, [...values, taskId]);
@@ -124,7 +127,7 @@ router.delete('/:taskId', async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      'UPDATE tasks SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1 AND deleted_at IS NULL RETURNING *',
+      'UPDATE tasks SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND deleted_at IS NULL RETURNING *',
       [taskId]
     );
 
@@ -145,7 +148,7 @@ router.patch('/:taskId/restore', async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      'UPDATE tasks SET deleted_at = NULL WHERE id = $1 AND deleted_at IS NOT NULL RETURNING *',
+      'UPDATE tasks SET deleted_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND deleted_at IS NOT NULL RETURNING *',
       [taskId]
     );
 
@@ -167,7 +170,7 @@ router.patch('/:taskId/status', async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      'UPDATE tasks SET status = $1 WHERE id = $2 AND deleted_at IS NULL RETURNING *',
+      'UPDATE tasks SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND deleted_at IS NULL RETURNING *',
       [status, taskId]
     );
 
@@ -189,7 +192,7 @@ router.patch('/:taskId/assign', async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      'UPDATE tasks SET assignee = $1 WHERE id = $2 AND deleted_at IS NULL RETURNING *',
+      'UPDATE tasks SET assignee = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND deleted_at IS NULL RETURNING *',
       [assignee, taskId]
     );
 
