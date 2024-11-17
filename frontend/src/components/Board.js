@@ -13,11 +13,25 @@ const Board = ({ projectId }) => {
   const [showDeletedTasks, setShowDeletedTasks] = useState(false);
   const [sortConfig, setSortConfig] = useState({ key: 'created_at', direction: 'desc' });
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
     const date = new Date(dateStr);
     return date.toLocaleDateString('fr-FR');
+  };
+
+  const parseDate = (dateStr) => {
+    if (!dateStr) return null;
+    if (!dateStr.includes('/')) return dateStr;
+    const [day, month, year] = dateStr.split('/');
+    return `${year}-${month}-${day}`;
+  };
+
+  const validateDate = (dateStr) => {
+    if (!dateStr) return true;
+    const date = new Date(dateStr);
+    return date instanceof Date && !isNaN(date);
   };
 
   const loadTasks = useCallback(async () => {
@@ -39,6 +53,121 @@ const Board = ({ projectId }) => {
     loadTasks();
   }, [loadTasks]);
 
+  const handleUpdateTask = async (taskId, updatedData) => {
+    try {
+      if (updating) return;
+      setUpdating(true);
+      setError(null);
+
+      if (updatedData.due_date) {
+        if (!validateDate(updatedData.due_date)) {
+          throw new Error('Invalid date format');
+        }
+        updatedData.due_date = parseDate(updatedData.due_date);
+      }
+
+      const response = await api.updateTask(taskId, updatedData);
+      if (response.data) {
+        await loadTasks();
+      }
+      return true;
+    } catch (error) {
+      console.error('Error updating task:', error);
+      setError('Failed to update task. Please try again.');
+      return false;
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleCommentEdit = async (taskId, currentValue) => {
+    const cell = document.querySelector(`td[data-task-id="${taskId}"][data-field="comment"]`);
+    if (!cell) return;
+
+    const textarea = document.createElement('textarea');
+    textarea.value = currentValue || '';
+    textarea.style.width = '100%';
+    textarea.style.minHeight = '100px';
+    textarea.style.resize = 'vertical';
+
+    const originalContent = cell.innerHTML;
+    cell.innerHTML = '';
+    cell.appendChild(textarea);
+    textarea.focus();
+
+    const handleBlur = async () => {
+      try {
+        const newValue = textarea.value.trim();
+        if (newValue !== currentValue) {
+          const success = await handleUpdateTask(taskId, { comment: newValue });
+          if (!success) {
+            cell.innerHTML = originalContent;
+          }
+        } else {
+          cell.innerHTML = originalContent;
+        }
+      } catch (error) {
+        cell.innerHTML = originalContent;
+        setError('Failed to update comment. Please try again.');
+      }
+      textarea.removeEventListener('blur', handleBlur);
+    };
+
+    textarea.addEventListener('blur', handleBlur);
+  };
+
+  const handleDueDateEdit = async (taskId, currentValue) => {
+    const cell = document.querySelector(`td[data-task-id="${taskId}"][data-field="due_date"]`);
+    if (!cell) return;
+
+    const input = document.createElement('input');
+    input.type = 'date';
+    
+    if (currentValue) {
+      try {
+        const [day, month, year] = currentValue.split('/');
+        input.value = `${year}-${month}-${day}`;
+      } catch (error) {
+        console.error('Error parsing date:', error);
+        input.value = '';
+      }
+    }
+
+    const originalContent = cell.innerHTML;
+    cell.innerHTML = '';
+    cell.appendChild(input);
+    input.focus();
+
+    const handleBlur = async () => {
+      try {
+        if (input.value) {
+          if (!validateDate(input.value)) {
+            throw new Error('Invalid date format');
+          }
+          const newDate = new Date(input.value);
+          const formattedDate = newDate.toLocaleDateString('fr-FR');
+          if (formattedDate !== currentValue) {
+            const success = await handleUpdateTask(taskId, { due_date: input.value });
+            if (!success) {
+              cell.innerHTML = originalContent;
+            }
+          }
+        } else {
+          const success = await handleUpdateTask(taskId, { due_date: null });
+          if (!success) {
+            cell.innerHTML = originalContent;
+          }
+        }
+      } catch (error) {
+        cell.innerHTML = originalContent;
+        setError('Failed to update due date. Please try again.');
+      }
+      input.removeEventListener('blur', handleBlur);
+    };
+
+    input.addEventListener('blur', handleBlur);
+  };
+
   const handleExportTasks = async () => {
     try {
       setError(null);
@@ -54,21 +183,6 @@ const Board = ({ projectId }) => {
     setShowTaskForm(false);
     loadTasks();
   }, [loadTasks]);
-
-  const handleUpdateTask = async (taskId, updatedData) => {
-    try {
-      setError(null);
-      if (updatedData.due_date) {
-        updatedData.due_date = new Date(updatedData.due_date).toISOString().split('T')[0];
-      }
-      await api.updateTask(taskId, updatedData);
-      loadTasks(); // Reload to get the updated timestamp
-    } catch (error) {
-      console.error('Error updating task:', error);
-      setError('Failed to update task. Please try again.');
-      loadTasks();
-    }
-  };
 
   const handleDeleteTask = async (taskId) => {
     try {
@@ -138,6 +252,7 @@ const Board = ({ projectId }) => {
   return (
     <div className="board">
       {error && <div className="error-message">{error}</div>}
+      {updating && <div className="loading">Updating task...</div>}
 
       <div className="board-actions">
         <button className="add-task-button" onClick={() => setShowTaskForm(true)}>
@@ -184,7 +299,11 @@ const Board = ({ projectId }) => {
           <tbody>
             {sortedTasks.map(task => (
               <tr key={task.id} data-status={task.status}>
-                <td onClick={() => setEditingTask(task.id)}>
+                <td 
+                  onClick={() => setEditingTask(task.id)}
+                  data-task-id={task.id}
+                  data-field="title"
+                >
                   {editingTask === task.id ? (
                     <input
                       type="text"
@@ -207,27 +326,13 @@ const Board = ({ projectId }) => {
                     task.title
                   )}
                 </td>
-                <td onClick={() => setEditingTask(task.id)}>
-                  {editingTask === task.id ? (
-                    <input
-                      type="text"
-                      defaultValue={task.comment || ''}
-                      onBlur={(e) => {
-                        const newValue = e.target.value.trim();
-                        if (newValue !== task.comment) {
-                          handleUpdateTask(task.id, { comment: newValue });
-                        }
-                        setEditingTask(null);
-                      }}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          e.target.blur();
-                        }
-                      }}
-                    />
-                  ) : (
-                    task.comment || ''
-                  )}
+                <td 
+                  onClick={() => handleCommentEdit(task.id, task.comment)}
+                  data-task-id={task.id}
+                  data-field="comment"
+                  style={{ whiteSpace: 'pre-wrap' }}
+                >
+                  {task.comment || ''}
                 </td>
                 <td>
                   <select
@@ -250,22 +355,13 @@ const Board = ({ projectId }) => {
                     <option value="High">High</option>
                   </select>
                 </td>
-                <td className="date-column">
-                  {editingTask === task.id ? (
-                    <input
-                      type="date"
-                      defaultValue={task.due_date}
-                      onBlur={(e) => {
-                        const newValue = e.target.value;
-                        if (newValue !== task.due_date) {
-                          handleUpdateTask(task.id, { due_date: newValue || null });
-                        }
-                        setEditingTask(null);
-                      }}
-                    />
-                  ) : (
-                    formatDate(task.due_date)
-                  )}
+                <td 
+                  className="date-column"
+                  onClick={() => handleDueDateEdit(task.id, formatDate(task.due_date))}
+                  data-task-id={task.id}
+                  data-field="due_date"
+                >
+                  {formatDate(task.due_date)}
                 </td>
                 <td className="date-column">
                   {formatDate(task.updated_at)}
@@ -327,7 +423,7 @@ const Board = ({ projectId }) => {
                   {deletedTasks.map(task => (
                     <tr key={task.id} className="deleted-task-row" data-status={task.status}>
                       <td>{task.title}</td>
-                      <td>{task.comment || ''}</td>
+                      <td style={{ whiteSpace: 'pre-wrap' }}>{task.comment || ''}</td>
                       <td>
                         <span className={`status-badge ${task.status.toLowerCase().replace(' ', '-')}`}>
                           {task.status}

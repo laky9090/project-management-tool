@@ -1,18 +1,17 @@
 import axios from 'axios';
 
-// Configure base URL for API requests
 const API_URL = process.env.NODE_ENV === 'development' 
   ? window.location.hostname === 'localhost'
     ? 'http://localhost:3001/api'
     : `${window.location.protocol}//${window.location.hostname}:3001/api`
   : '/api';
 
-// Configure axios with CORS settings
 const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
-  }
+  },
+  timeout: 10000,
 });
 
 export default {
@@ -33,7 +32,6 @@ export default {
         responseType: 'blob'
       });
       
-      // Create blob URL and trigger download
       const blob = new Blob([response.data], { 
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
       });
@@ -41,7 +39,6 @@ export default {
       const link = document.createElement('a');
       link.href = url;
       
-      // Get filename from response headers
       const contentDisposition = response.headers['content-disposition'];
       let filename = 'tasks.xlsx';
       if (contentDisposition) {

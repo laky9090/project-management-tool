@@ -25,21 +25,31 @@ def format_priority(priority):
 def format_date(date):
     if pd.isna(date):
         return ""
+    if isinstance(date, str):
+        try:
+            date = datetime.strptime(date, "%Y-%m-%d")
+        except ValueError:
+            return date
     return date.strftime("%d/%m/%Y")
 
 def update_task(task_id, field, value):
     try:
-        if field == "due_date":
+        if field == "due_date" and value:
             try:
-                # Convert date from DD/MM/YYYY to YYYY-MM-DD
+                # Convert date from DD/MM/YYYY to YYYY-MM-DD for database
                 value = datetime.strptime(value, "%d/%m/%Y").strftime("%Y-%m-%d")
-            except ValueError:
+            except ValueError as e:
+                logger.error(f"Date conversion error: {str(e)}")
                 return False
 
-        result = execute_query(
-            f"UPDATE tasks SET {field} = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s RETURNING id",
-            (value, task_id)
-        )
+        # Use parameterized query for safety
+        query = f"""
+            UPDATE tasks 
+            SET {field} = %s, updated_at = CURRENT_TIMESTAMP 
+            WHERE id = %s AND deleted_at IS NULL 
+            RETURNING id
+        """
+        result = execute_query(query, (value, task_id))
         return bool(result)
     except Exception as e:
         logger.error(f"Error updating task {field}: {str(e)}")
@@ -100,6 +110,7 @@ def render_task_list(project_id):
                 .task-list-table td[contenteditable="true"] {
                     cursor: text;
                     background-color: #f8fafc;
+                    min-height: 24px;
                 }
                 .task-list-table td[contenteditable="true"]:hover {
                     background-color: #f1f5f9;
@@ -107,12 +118,18 @@ def render_task_list(project_id):
                 .task-list-table td[contenteditable="true"]:focus {
                     outline: 2px solid #3b82f6;
                     background-color: white;
+                    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
                 }
                 .task-list-table td:nth-child(5), 
                 .task-list-table td:nth-child(6),
                 .task-list-table th:nth-child(5),
                 .task-list-table th:nth-child(6) {
                     text-align: center !important;
+                }
+                .date-picker {
+                    display: none;
+                    position: absolute;
+                    z-index: 1000;
                 }
             </style>
             <div class="task-list-container">
@@ -148,6 +165,72 @@ def render_task_list(project_id):
         
         table_html += "</tbody></table>"
         st.markdown(table_html, unsafe_allow_html=True)
+        
+        # Add JavaScript for handling inline editing
+        st.markdown("""
+            <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                document.querySelectorAll('.editable').forEach(cell => {
+                    // Store original content on focus
+                    cell.addEventListener('focus', function() {
+                        this.dataset.originalContent = this.textContent;
+                    });
+                    
+                    // Handle blur event for saving changes
+                    cell.addEventListener('blur', function() {
+                        const newValue = this.textContent.trim();
+                        if (newValue !== this.dataset.originalContent) {
+                            const taskId = this.dataset.taskId;
+                            const field = this.dataset.field;
+                            
+                            // Send update to server
+                            fetch(`/update_task/${taskId}`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    field: field,
+                                    value: newValue
+                                })
+                            }).then(response => {
+                                if (!response.ok) {
+                                    this.textContent = this.dataset.originalContent;
+                                    throw new Error('Failed to update task');
+                                }
+                            }).catch(error => {
+                                console.error('Error:', error);
+                                this.textContent = this.dataset.originalContent;
+                            });
+                        }
+                    });
+                    
+                    // Handle date cells
+                    if (cell.classList.contains('date-cell')) {
+                        cell.addEventListener('click', function(e) {
+                            const dateInput = document.createElement('input');
+                            dateInput.type = 'date';
+                            dateInput.style.position = 'absolute';
+                            dateInput.style.left = e.pageX + 'px';
+                            dateInput.style.top = e.pageY + 'px';
+                            dateInput.style.zIndex = '1000';
+                            
+                            dateInput.addEventListener('change', () => {
+                                const date = new Date(dateInput.value);
+                                const formattedDate = date.toLocaleDateString('fr-FR');
+                                this.textContent = formattedDate;
+                                dateInput.remove();
+                                this.dispatchEvent(new Event('blur'));
+                            });
+                            
+                            document.body.appendChild(dateInput);
+                            dateInput.click();
+                        });
+                    }
+                });
+            });
+            </script>
+        """, unsafe_allow_html=True)
         
         st.markdown("</div></div>", unsafe_allow_html=True)
         

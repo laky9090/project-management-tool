@@ -175,20 +175,26 @@ router.patch('/:taskId', async (req, res) => {
       .filter(key => allowedUpdates.includes(key))
       .map((key, index) => `${key} = $${index + 1}`);
     
-    const values = Object.keys(updates)
-      .filter(key => allowedUpdates.includes(key))
-      .map(key => {
-        if (key === 'due_date') {
-          return updates[key] === '' || updates[key] === null ? null : updates[key];
-        }
-        return updates[key];
-      });
-
     if (updateFields.length === 0) {
       return res.status(400).json({ error: 'No valid fields to update' });
     }
 
     updateFields.push('updated_at = CURRENT_TIMESTAMP');
+
+    const values = Object.keys(updates)
+      .filter(key => allowedUpdates.includes(key))
+      .map(key => {
+        if (key === 'due_date') {
+          if (!updates[key]) return null;
+          if (updates[key].includes('/')) {
+            // Convert from DD/MM/YYYY to YYYY-MM-DD
+            const [day, month, year] = updates[key].split('/');
+            return `${year}-${month}-${day}`;
+          }
+          return updates[key];
+        }
+        return updates[key];
+      });
 
     const query = `
       UPDATE tasks 
@@ -206,7 +212,7 @@ router.patch('/:taskId', async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     console.error('Error updating task:', err);
-    res.status(500).json({ error: 'Failed to update task' });
+    res.status(500).json({ error: 'Failed to update task', details: err.message });
   }
 });
 
