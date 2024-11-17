@@ -2,8 +2,8 @@ import axios from 'axios';
 
 // Configure base URL for API requests based on environment
 const API_URL = window.location.hostname.includes('replit') 
-  ? `${window.location.protocol}//${window.location.hostname.replace('-3000', '-3001')}/api`
-  : 'http://localhost:3001/api';
+  ? `${window.location.protocol}//${window.location.hostname.replace('-3000', '-3001')}`
+  : 'http://localhost:3001';
 
 // Configure axios instance with proper CORS settings
 const api = axios.create({
@@ -12,7 +12,7 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
   withCredentials: true,
-  timeout: 0 // Disable timeout for development
+  timeout: 30000  // Increased timeout for slower connections
 });
 
 // Add response interceptor for better error handling
@@ -27,19 +27,19 @@ api.interceptors.response.use(
 // Export the configured API object
 const apiService = {
   // Projects
-  getProjects: () => api.get('/projects'),
-  getDeletedProjects: () => api.get('/projects/deleted'),
-  createProject: (project) => api.post('/projects', project),
-  updateProject: (projectId, data) => api.patch(`/projects/${projectId}`, data),
-  deleteProject: (projectId) => api.delete(`/projects/${projectId}`),
-  restoreProject: (projectId) => api.patch(`/projects/${projectId}/restore`),
-  permanentlyDeleteProject: (projectId) => api.delete(`/projects/${projectId}/permanent`),
+  getProjects: () => api.get('/api/projects'),
+  getDeletedProjects: () => api.get('/api/projects/deleted'),
+  createProject: (project) => api.post('/api/projects', project),
+  updateProject: (projectId, data) => api.patch(`/api/projects/${projectId}`, data),
+  deleteProject: (projectId) => api.delete(`/api/projects/${projectId}`),
+  restoreProject: (projectId) => api.patch(`/api/projects/${projectId}/restore`),
+  permanentlyDeleteProject: (projectId) => api.delete(`/api/projects/${projectId}/permanent`),
   
   // Tasks
-  getProjectTasks: (projectId) => api.get(`/tasks/project/${projectId}`),
+  getProjectTasks: (projectId) => api.get(`/api/tasks/project/${projectId}`),
   exportProjectTasks: async (projectId) => {
     try {
-      const response = await api.get(`/tasks/project/${projectId}/export`, {
+      const response = await api.get(`/api/tasks/project/${projectId}/export`, {
         responseType: 'blob'
       });
       
@@ -70,7 +70,7 @@ const apiService = {
       throw error;
     }
   },
-  createTask: (task) => api.post('/tasks', task),
+  createTask: (task) => api.post('/api/tasks', task),
   updateTask: async (taskId, data) => {
     try {
       const processedData = { ...data };
@@ -89,12 +89,12 @@ const apiService = {
         const dateRegex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
         const match = processedData.due_date.match(dateRegex);
         if (match) {
-          const [_, day, month, year] = match;
+          const [, day, month, year] = match;
           processedData.due_date = `${year}-${month}-${day}`;
         }
       }
       
-      const response = await api.patch(`/tasks/${taskId}`, processedData);
+      const response = await api.patch(`/api/tasks/${taskId}`, processedData);
       if (!response.data) {
         throw new Error('No data received from server');
       }
@@ -104,11 +104,11 @@ const apiService = {
       throw error;
     }
   },
-  deleteTask: (taskId) => api.delete(`/tasks/${taskId}`),
-  permanentlyDeleteTask: (taskId) => api.delete(`/tasks/${taskId}/permanent`),
-  restoreTask: (taskId) => api.patch(`/tasks/${taskId}/restore`),
-  updateTaskStatus: (taskId, status) => api.patch(`/tasks/${taskId}/status`, { status }),
-  updateTaskAssignment: (taskId, assignee) => api.patch(`/tasks/${taskId}/assign`, { assignee }),
+  deleteTask: (taskId) => api.delete(`/api/tasks/${taskId}`),
+  permanentlyDeleteTask: (taskId) => api.delete(`/api/tasks/${taskId}/permanent`),
+  restoreTask: (taskId) => api.patch(`/api/tasks/${taskId}/restore`),
+  updateTaskStatus: (taskId, status) => api.patch(`/api/tasks/${taskId}/status`, { status }),
+  updateTaskAssignment: (taskId, assignee) => api.patch(`/api/tasks/${taskId}/assign`, { assignee }),
 };
 
 export default apiService;

@@ -20,7 +20,8 @@ app.use(cors({
     const allowedDomains = [
       /^https?:\/\/localhost(:\d+)?$/,
       /^https?:\/\/.*\.repl\.co$/,
-      /^https?:\/\/.*\.replit\.dev$/
+      /^https?:\/\/.*\.replit\.dev$/,
+      /^https?:\/\/.*\.spock\.replit\.dev$/
     ];
     
     // Check if the origin matches any allowed pattern
