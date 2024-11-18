@@ -66,4 +66,5 @@ export default {
   restoreTask: (taskId) => api.patch(`/tasks/${taskId}/restore`),
   updateTaskStatus: (taskId, status) => api.patch(`/tasks/${taskId}/status`, { status }),
   updateTaskAssignment: (taskId, assignee) => api.patch(`/tasks/${taskId}/assign`, { assignee }),
+  duplicateTask: (taskId) => api.post(`/tasks/${taskId}/duplicate`),
 };

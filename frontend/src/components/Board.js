@@ -221,6 +221,19 @@ const Board = ({ projectId }) => {
     }
   };
 
+  const handleDuplicateTask = async (taskId) => {
+    try {
+      setError(null);
+      const response = await api.duplicateTask(taskId);
+      if (response.data) {
+        await loadTasks();
+      }
+    } catch (error) {
+      console.error('Error duplicating task:', error);
+      setError('Failed to duplicate task. Please try again.');
+    }
+  };
+
   const handleSort = (key) => {
     setSortConfig(prevConfig => ({
       key,
@@ -373,6 +386,13 @@ const Board = ({ projectId }) => {
                     title="Edit"
                   >
                     ✏️
+                  </button>
+                  <button
+                    onClick={() => handleDuplicateTask(task.id)}
+                    className="duplicate-button"
+                    title="Duplicate"
+                  >
+                    📋
                   </button>
                   <button
                     onClick={() => handleDeleteTask(task.id)}

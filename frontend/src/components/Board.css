@@ -377,3 +377,20 @@
   background: #22c55e;
   transform: translateY(-1px);
 }
+
+/* Add duplicate button styles */
+.duplicate-button {
+  padding: 4px 8px;
+  margin: 0 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.duplicate-button:hover {
+  opacity: 1;
+  background-color: #dbeafe;
+  border-radius: 4px;
+}

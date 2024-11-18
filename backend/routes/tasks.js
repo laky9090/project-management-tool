@@ -106,6 +106,52 @@ router.get('/project/:projectId/export', async (req, res) => {
   }
 });
 
+// Duplicate task
+router.post('/:taskId/duplicate', async (req, res) => {
+  const { taskId } = req.params;
+
+  try {
+    await db.query('BEGIN');
+    
+    // Get the task to duplicate
+    const { rows: [task] } = await db.query(
+      `SELECT title, comment, status, priority, project_id, assignee, due_date
+       FROM tasks
+       WHERE id = $1 AND deleted_at IS NULL`,
+      [taskId]
+    );
+
+    if (!task) {
+      await db.query('ROLLBACK');
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    // Create the duplicated task with "(Copy)" suffix
+    const { rows: [newTask] } = await db.query(
+      `INSERT INTO tasks 
+       (project_id, title, comment, status, priority, assignee, due_date, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+       RETURNING *, COALESCE(updated_at, created_at) as last_update`,
+      [
+        task.project_id,
+        `${task.title} (Copy)`,
+        task.comment,
+        task.status,
+        task.priority,
+        task.assignee,
+        task.due_date
+      ]
+    );
+
+    await db.query('COMMIT');
+    res.status(201).json(newTask);
+  } catch (err) {
+    await db.query('ROLLBACK');
+    console.error('Error duplicating task:', err);
+    res.status(500).json({ error: 'Failed to duplicate task' });
+  }
+});
+
 // Get tasks by project with dependencies and subtasks
 router.get('/project/:projectId', async (req, res) => {
   try {
