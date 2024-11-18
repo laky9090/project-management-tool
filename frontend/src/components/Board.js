@@ -241,6 +241,22 @@ const Board = ({ projectId }) => {
     }));
   };
 
+  const handleUndoTask = async (taskId) => {
+    try {
+      setError(null);
+      setUpdating(true);
+      const response = await api.undoTaskChange(taskId);
+      if (response.data) {
+        await loadTasks();
+      }
+    } catch (error) {
+      console.error('Error undoing task change:', error);
+      setError('Failed to undo task change. Please try again.');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   const sortedTasks = [...tasks].sort((a, b) => {
     if (a[sortConfig.key] < b[sortConfig.key]) {
       return sortConfig.direction === 'asc' ? -1 : 1;
@@ -393,6 +409,13 @@ const Board = ({ projectId }) => {
                     title="Duplicate"
                   >
                     📋
+                  </button>
+                  <button
+                    onClick={() => handleUndoTask(task.id)}
+                    className="undo-button"
+                    title="Undo last change"
+                  >
+                    ↩️
                   </button>
                   <button
                     onClick={() => handleDeleteTask(task.id)}

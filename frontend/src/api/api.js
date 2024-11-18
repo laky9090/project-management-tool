@@ -1,9 +1,7 @@
 import axios from 'axios';
 
 const API_URL = process.env.NODE_ENV === 'development' 
-  ? window.location.hostname === 'localhost'
-    ? 'http://localhost:3001/api'
-    : `${window.location.protocol}//${window.location.hostname}:3001/api`
+  ? `${window.location.protocol}//${window.location.hostname}:3001/api`
   : '/api';
 
 const api = axios.create({
@@ -12,7 +10,17 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 10000,
+  withCredentials: true,
 });
+
+// Add response interceptor for error handling
+api.interceptors.response.use(
+  response => response,
+  error => {
+    console.error('API Error:', error);
+    return Promise.reject(error);
+  }
+);
 
 export default {
   // Projects
@@ -67,4 +75,5 @@ export default {
   updateTaskStatus: (taskId, status) => api.patch(`/tasks/${taskId}/status`, { status }),
   updateTaskAssignment: (taskId, assignee) => api.patch(`/tasks/${taskId}/assign`, { assignee }),
   duplicateTask: (taskId) => api.post(`/tasks/${taskId}/duplicate`),
+  undoTaskChange: (taskId) => api.post(`/tasks/${taskId}/undo`),
 };

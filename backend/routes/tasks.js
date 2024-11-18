@@ -379,4 +379,66 @@ router.patch('/:taskId/assign', async (req, res) => {
   }
 });
 
+// Undo last task change
+router.post('/:taskId/undo', async (req, res) => {
+  const { taskId } = req.params;
+
+  try {
+    // Start transaction
+    await db.query('BEGIN');
+
+    // Get the most recent history entry for this task
+    const { rows: historyRows } = await db.query(
+      `SELECT * FROM task_history 
+       WHERE task_id = $1 
+       ORDER BY changed_at DESC 
+       LIMIT 1`,
+      [taskId]
+    );
+
+    if (historyRows.length === 0) {
+      await db.query('ROLLBACK');
+      return res.status(404).json({ error: 'No history found for this task' });
+    }
+
+    const previousState = historyRows[0];
+
+    // Update task with previous state
+    const { rows } = await db.query(
+      `UPDATE tasks 
+       SET title = $1, comment = $2, status = $3, priority = $4, due_date = $5, assignee = $6,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $7 AND deleted_at IS NULL 
+       RETURNING *, COALESCE(updated_at, created_at) as last_update`,
+      [
+        previousState.title,
+        previousState.comment,
+        previousState.status,
+        previousState.priority,
+        previousState.due_date,
+        previousState.assignee,
+        taskId
+      ]
+    );
+
+    if (rows.length === 0) {
+      await db.query('ROLLBACK');
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    // Delete the used history entry
+    await db.query(
+      'DELETE FROM task_history WHERE id = $1',
+      [previousState.id]
+    );
+
+    await db.query('COMMIT');
+    res.json(rows[0]);
+  } catch (err) {
+    await db.query('ROLLBACK');
+    console.error('Error undoing task change:', err);
+    res.status(500).json({ error: 'Failed to undo task change' });
+  }
+});
+
 module.exports = router;
