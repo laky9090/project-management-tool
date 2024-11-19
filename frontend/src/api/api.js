@@ -22,7 +22,7 @@ api.interceptors.response.use(
   }
 );
 
-export default {
+const apiClient = {
   // Projects
   getProjects: () => api.get('/projects'),
   getDeletedProjects: () => api.get('/projects/deleted'),
@@ -77,3 +77,5 @@ export default {
   duplicateTask: (taskId) => api.post(`/tasks/${taskId}/duplicate`),
   undoTaskChange: (taskId) => api.post(`/tasks/${taskId}/undo`),
 };
+
+export default apiClient;
