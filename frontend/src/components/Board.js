@@ -120,52 +120,75 @@ const Board = ({ projectId }) => {
     const cell = document.querySelector(`td[data-task-id="${taskId}"][data-field="due_date"]`);
     if (!cell) return;
 
-    const input = document.createElement('input');
-    input.type = 'date';
-    
-    if (currentValue) {
-      try {
-        const [day, month, year] = currentValue.split('/');
-        input.value = `${year}-${month}-${day}`;
-      } catch (error) {
-        console.error('Error parsing date:', error);
-        input.value = '';
-      }
+    // Remove any existing calendar popup
+    const existingPopup = document.querySelector('.calendar-popup');
+    if (existingPopup) {
+      existingPopup.remove();
     }
 
-    const originalContent = cell.innerHTML;
-    cell.innerHTML = '';
-    cell.appendChild(input);
-    input.focus();
+    // Create calendar popup container
+    const popup = document.createElement('div');
+    popup.className = 'calendar-popup';
 
-    const handleBlur = async () => {
+    // Create calendar input
+    const calendar = document.createElement('input');
+    calendar.type = 'date';
+    
+    // Set current value if exists
+    if (currentValue) {
+      const [day, month, year] = currentValue.split('/');
+      calendar.value = `${year}-${month}-${day}`;
+    }
+
+    popup.appendChild(calendar);
+
+    // Position popup below the cell
+    const cellRect = cell.getBoundingClientRect();
+    popup.style.position = 'absolute';
+    popup.style.top = `${cellRect.bottom + window.scrollY}px`;
+    popup.style.left = `${cellRect.left + window.scrollX}px`;
+    
+    document.body.appendChild(popup);
+    calendar.focus();
+
+    const handleChange = async () => {
       try {
-        if (input.value) {
-          if (!validateDate(input.value)) {
-            throw new Error('Invalid date format');
-          }
-          const newDate = new Date(input.value);
+        if (calendar.value) {
+          const newDate = new Date(calendar.value);
           const formattedDate = newDate.toLocaleDateString('fr-FR');
           if (formattedDate !== currentValue) {
-            const success = await handleUpdateTask(taskId, { due_date: input.value });
+            const success = await handleUpdateTask(taskId, { due_date: calendar.value });
             if (!success) {
-              cell.innerHTML = originalContent;
+              cell.textContent = currentValue || '';
             }
           }
         } else {
           const success = await handleUpdateTask(taskId, { due_date: null });
           if (!success) {
-            cell.innerHTML = originalContent;
+            cell.textContent = currentValue || '';
           }
         }
       } catch (error) {
-        cell.innerHTML = originalContent;
-        setError('Failed to update due date. Please try again.');
+        console.error('Error updating due date:', error);
+        cell.textContent = currentValue || '';
+      } finally {
+        popup.remove();
       }
-      input.removeEventListener('blur', handleBlur);
     };
 
-    input.addEventListener('blur', handleBlur);
+    const handleClickOutside = (event) => {
+      if (!popup.contains(event.target) && event.target !== cell) {
+        handleChange();
+        document.removeEventListener('click', handleClickOutside);
+      }
+    };
+
+    // Wait for next tick to add click outside listener
+    setTimeout(() => {
+      document.addEventListener('click', handleClickOutside);
+    }, 0);
+
+    calendar.addEventListener('change', handleChange);
   };
 
   const handleExportTasks = async () => {

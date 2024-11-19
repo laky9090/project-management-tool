@@ -912,4 +912,57 @@ tr[data-status]:hover {
   text-align: center !important;
 }
 
+/* Calendar popup styles */
+.calendar-popup {
+  position: absolute;
+  z-index: 1000;
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 8px;
+  display: none;
+}
+
+.calendar-popup.visible {
+  display: block;
+}
+
+.calendar-popup input[type="date"] {
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: var(--base-font-size);
+  width: 100%;
+}
+
+.calendar-popup input[type="date"]:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+/* Date cell hover state */
+td.date-cell:hover {
+  background-color: var(--background-light);
+  cursor: pointer;
+}
+
+/* Calendar trigger icon */
+.calendar-trigger {
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.calendar-trigger:hover {
+  opacity: 1;
+}
+
+/* Make sure the date input is properly styled */
+input[type="date"] {
+  font-family: var(--font-family);
+  color: var(--text-primary);
+}
+
 /* Rest of the existing styles... */

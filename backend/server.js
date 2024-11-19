@@ -11,11 +11,9 @@ const { authMiddleware } = require('./middleware/auth');
 const app = express();
 const port = 3001;
 
-// Configure CORS with more permissive settings for development
+// Configure CORS with specific origin for development
 app.use(cors({
-  origin: function(origin, callback) {
-    callback(null, true); // Allow all origins in development
-  },
+  origin: 'http://localhost:3000',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -24,28 +22,23 @@ app.use(cors({
 
 app.use(express.json());
 
+// Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // API Routes
-app.use('/api/auth', authRouter);
-app.use('/api/tasks', tasksRouter);
 app.use('/api/projects', projectsRouter);
+app.use('/api/tasks', tasksRouter);
+app.use('/api/auth', authRouter);
 
-// Serve static files
-app.use(express.static(path.join(__dirname, '../frontend/build')));
-
-// Serve React app for any other routes
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok' });
 });
 
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Something went wrong!' });
-});
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok' });
 });
 
 app.listen(port, '0.0.0.0', () => {

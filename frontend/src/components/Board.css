@@ -411,3 +411,47 @@
   background-color: #dbeafe;
   border-radius: 4px;
 }
+
+/* Calendar popup styles */
+.calendar-popup {
+  position: absolute;
+  z-index: 1000;
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  padding: 12px;
+}
+
+.calendar-popup input[type="date"] {
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: var(--base-font-size);
+  color: var(--text-primary);
+  width: 200px;
+}
+
+.calendar-popup input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  padding: 4px;
+  margin-right: -4px;
+}
+
+.calendar-popup input[type="date"]:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+/* Date column styles */
+.date-column {
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+  text-align: center !important;
+}
+
+.date-column:hover {
+  background-color: var(--background-light);
+}
