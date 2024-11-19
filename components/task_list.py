@@ -30,7 +30,15 @@ def format_date(date):
             date = datetime.strptime(date, "%Y-%m-%d")
         except ValueError:
             return date
-    return date.strftime("%d/%m/%Y")
+    
+    # Check if date is past due
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    is_past_due = date < today
+    
+    formatted_date = date.strftime("%d/%m/%Y")
+    if is_past_due:
+        return f"""<span class="past-due">{formatted_date}</span>"""
+    return formatted_date
 
 def update_task(task_id, field, value):
     try:
@@ -130,6 +138,10 @@ def render_task_list(project_id):
                     display: none;
                     position: absolute;
                     z-index: 1000;
+                }
+                .past-due {
+                    color: red;
+                    font-weight: bold;
                 }
             </style>
             <div class="task-list-container">

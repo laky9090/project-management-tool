@@ -18,7 +18,11 @@ const Board = ({ projectId }) => {
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
     const date = new Date(dateStr);
-    return date.toLocaleDateString('fr-FR');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const isPastDue = date < today;
+    const formattedDate = date.toLocaleDateString('fr-FR');
+    return { formattedDate, isPastDue };
   };
 
   const parseDate = (dateStr) => {
@@ -408,15 +412,15 @@ const Board = ({ projectId }) => {
                   </select>
                 </td>
                 <td 
-                  className="date-column"
-                  onClick={() => handleDueDateEdit(task.id, formatDate(task.due_date))}
+                  className={`date-column ${formatDate(task.due_date).isPastDue ? 'past-due' : ''}`}
+                  onClick={() => handleDueDateEdit(task.id, formatDate(task.due_date).formattedDate)}
                   data-task-id={task.id}
                   data-field="due_date"
                 >
-                  {formatDate(task.due_date)}
+                  {formatDate(task.due_date).formattedDate}
                 </td>
                 <td className="date-column">
-                  {formatDate(task.updated_at)}
+                  {formatDate(task.updated_at).formattedDate}
                 </td>
                 <td className="actions-column">
                   <button
@@ -501,13 +505,13 @@ const Board = ({ projectId }) => {
                         </span>
                       </td>
                       <td className="date-column">
-                        {formatDate(task.due_date)}
+                        {formatDate(task.due_date).formattedDate}
                       </td>
                       <td className="date-column">
-                        {formatDate(task.updated_at)}
+                        {formatDate(task.updated_at).formattedDate}
                       </td>
                       <td className="date-column">
-                        {formatDate(task.deleted_at)}
+                        {formatDate(task.deleted_at).formattedDate}
                       </td>
                       <td className="actions-column">
                         <button

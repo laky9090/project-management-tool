@@ -965,4 +965,10 @@ input[type="date"] {
   color: var(--text-primary);
 }
 
+/* Past due date styling */
+.past-due {
+  color: #dc2626 !important;
+  font-weight: 600 !important;
+}
+
 /* Rest of the existing styles... */
