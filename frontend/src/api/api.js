@@ -7,7 +7,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000,
+  timeout: 30000, // Increased timeout to 30 seconds
   withCredentials: true
 });
 
@@ -16,7 +16,9 @@ api.interceptors.response.use(
   response => response,
   error => {
     console.error('API Error:', error);
-    if (error.response?.status === 404) {
+    if (error.response?.status === 504) {
+      console.error('Gateway timeout error. The request took too long to complete.');
+    } else if (error.response?.status === 404) {
       console.error('Endpoint not found:', error.config.url);
     }
     return Promise.reject(error);

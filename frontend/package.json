@@ -16,7 +16,7 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "DANGEROUSLY_DISABLE_HOST_CHECK=true WDS_SOCKET_HOST=0.0.0.0 WDS_SOCKET_PORT=0 react-scripts start",
+    "start": "WATCHPACK_POLLING=true DANGEROUSLY_DISABLE_HOST_CHECK=true WDS_SOCKET_HOST=0.0.0.0 WDS_SOCKET_PORT=0 react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
