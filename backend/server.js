@@ -13,9 +13,9 @@ const port = 3001;
 
 // Increase timeout for all routes
 app.use((req, res, next) => {
-  // Set timeout to 25 seconds
-  req.setTimeout(25000);
-  res.setTimeout(25000);
+  // Set timeout to 10 minutes
+  req.setTimeout(600000);
+  res.setTimeout(600000);
   next();
 });
 
@@ -30,8 +30,8 @@ app.use(cors({
 }));
 
 // Increase payload size limit
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
 // Serve static files from uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

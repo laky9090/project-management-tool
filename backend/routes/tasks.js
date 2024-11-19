@@ -20,22 +20,33 @@ const upload = multer({ storage: storage });
 
 // Export tasks to Excel
 router.get('/project/:projectId/export', async (req, res) => {
+  const { projectId } = req.params;
+  let workbook;
+
   try {
-    const { projectId } = req.params;
-    
+    // Set headers early for better client feedback
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Pragma', 'no-cache');
+
     // Get project name
     const projectResult = await db.query(
       'SELECT name FROM projects WHERE id = $1',
       [projectId]
     );
-    
+
     if (projectResult.rows.length === 0) {
       return res.status(404).json({ error: 'Project not found' });
     }
-    
+
     const projectName = projectResult.rows[0].name;
-    
-    // Get tasks
+    const sanitizedProjectName = projectName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    const filename = `${sanitizedProjectName}_tasks_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+    // Set content disposition with the sanitized filename
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+    // Get tasks with progress tracking
     const { rows: tasks } = await db.query(
       `SELECT t.*, 
           COALESCE(t.updated_at, t.created_at) as last_update
@@ -46,10 +57,10 @@ router.get('/project/:projectId/export', async (req, res) => {
     );
 
     // Create workbook and worksheet
-    const workbook = new ExcelJS.Workbook();
+    workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Tasks');
 
-    // Add headers
+    // Add headers with styling
     worksheet.columns = [
       { header: 'Title', key: 'title', width: 30 },
       { header: 'Comment', key: 'comment', width: 40 },
@@ -68,18 +79,33 @@ router.get('/project/:projectId/export', async (req, res) => {
       fgColor: { argb: 'FFE5E7EB' }
     };
 
-    // Add data
+    // Format dates to English format (MM/DD/YYYY)
+    const formatDate = (date) => {
+      if (!date) return '';
+      const d = new Date(date);
+      return d.toLocaleDateString('en-US', {
+        month: '2-digit',
+        day: '2-digit',
+        year: 'numeric'
+      });
+    };
+
+    // Add data and format dates
     tasks.forEach(task => {
       worksheet.addRow({
         title: task.title,
         comment: task.comment || '',
         status: task.status,
         priority: task.priority,
-        due_date: task.due_date ? new Date(task.due_date).toLocaleDateString() : '',
-        last_update: new Date(task.last_update).toLocaleDateString(),
+        due_date: task.due_date ? formatDate(task.due_date) : '',
+        last_update: formatDate(task.last_update),
         assignee: task.assignee || ''
       });
     });
+
+    // Set date columns format
+    worksheet.getColumn('due_date').numFmt = 'mm/dd/yyyy';
+    worksheet.getColumn('last_update').numFmt = 'mm/dd/yyyy';
 
     // Auto filter
     worksheet.autoFilter = {
@@ -87,22 +113,36 @@ router.get('/project/:projectId/export', async (req, res) => {
       to: 'G1'
     };
 
-    // Set filename
-    const filename = `${projectName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_tasks.xlsx`;
-    
-    // Set response headers
-    res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    );
-    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
-
-    // Write to response
+    // Write to response with error handling
     await workbook.xlsx.write(res);
     res.end();
+
   } catch (err) {
     console.error('Error exporting tasks:', err);
-    res.status(500).json({ error: 'Failed to export tasks' });
+
+    // Check if headers have already been sent
+    if (!res.headersSent) {
+      res.status(500).json({ 
+        error: 'Failed to export tasks',
+        details: process.env.NODE_ENV === 'development' ? err.message : undefined
+      });
+    } else {
+      // If headers were sent, try to end the response cleanly
+      try {
+        res.end();
+      } catch (endError) {
+        console.error('Error ending response:', endError);
+      }
+    }
+
+    // Cleanup if workbook was created
+    if (workbook) {
+      try {
+        workbook = null;
+      } catch (cleanupError) {
+        console.error('Error cleaning up workbook:', cleanupError);
+      }
+    }
   }
 });
 
