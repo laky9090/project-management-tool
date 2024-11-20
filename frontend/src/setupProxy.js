@@ -7,7 +7,7 @@ module.exports = function(app) {
       target: 'http://0.0.0.0:3001',
       changeOrigin: true,
       secure: false,
-      timeout: 600000, // Increase proxy timeout to 10 minutes
+      timeout: 600000, // 10 minutes timeout
       proxyTimeout: 600000, // Add proxy timeout
       onProxyReq: function(proxyReq, req, res) {
         // Log proxy requests
