@@ -8,16 +8,17 @@ module.exports = function(app) {
       changeOrigin: true,
       secure: false,
       timeout: 600000, // 10 minutes timeout
-      proxyTimeout: 600000, // Add proxy timeout
+      proxyTimeout: 600000,
       onProxyReq: function(proxyReq, req, res) {
-        // Log proxy requests
         console.log('Proxying:', req.method, req.url, 'to', proxyReq.path);
       },
       onError: function(err, req, res) {
         console.error('Proxy error:', err);
-        res.writeHead(504, {
-          'Content-Type': 'application/json',
-        });
+        if (!res.headersSent) {
+          res.writeHead(504, {
+            'Content-Type': 'application/json',
+          });
+        }
         res.end(JSON.stringify({
           error: 'The request timed out',
           details: err.message
@@ -25,6 +26,9 @@ module.exports = function(app) {
       },
       headers: {
         Connection: 'keep-alive'
+      },
+      pathRewrite: {
+        '^/api': '/api'
       }
     })
   );

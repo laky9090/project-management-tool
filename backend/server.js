@@ -21,12 +21,13 @@ app.use((req, res, next) => {
 
 // Configure CORS with specific origin for development
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://0.0.0.0:3000'],
+  origin: true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   exposedHeaders: ['Content-Range', 'X-Content-Range'],
-  maxAge: 600 // Cache CORS preflight requests for 10 minutes
+  maxAge: 600, // Cache CORS preflight requests for 10 minutes
+  optionsSuccessStatus: 200
 }));
 
 // Increase payload size limit
