@@ -19,14 +19,14 @@
   --text-secondary: #4b5563;
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
   --spacing-base: 1rem;
+  
+  /* Status Colors */
   --status-todo-bg: #f1f5f9;
   --status-todo-text: #475569;
   --status-inprogress-bg: #fef3c7;
   --status-inprogress-text: #92400e;
   --status-done-bg: #dcfce7;
   --status-done-text: #166534;
-  --status-canceled-bg: #fee2e2;
-  --status-canceled-text: #991b1b;
   
   /* Priority Colors */
   --priority-high-bg: #fee2e2;
@@ -133,21 +133,12 @@
   width: 100%;
   border-collapse: collapse;
   font-size: var(--base-font-size);
-  opacity: 0;
-  transform: translateY(-10px);
-  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-.deleted-tasks.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* Table styles for deleted tasks */
 .deleted-tasks th,
 .deleted-tasks td {
   padding: 12px 16px;
-  border-bottom: 1px solid var(--border-color);
+  border: 1px solid var(--border-color);
   vertical-align: middle;
 }
 
@@ -176,126 +167,135 @@
   overflow-x: auto;
 }
 
-.task-table {
+/* Table styles - shared between main and deleted tasks */
+.task-table,
+.deleted-tasks {
   width: 100%;
   border-collapse: collapse;
   font-size: var(--base-font-size);
+  background: white;
 }
 
-.task-table th {
-  background: var(--background-light);
+.task-table th,
+.task-table td,
+.deleted-tasks th,
+.deleted-tasks td {
   padding: 12px 16px;
-  text-align: left;
-  font-weight: 600;
-  color: var(--text-secondary);
-  border-bottom: 2px solid var(--border-color);
-  cursor: pointer;
-  user-select: none;
-  white-space: nowrap;
-}
-
-.task-table td {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border-color);
+  border: 1px solid var(--border-color);
   vertical-align: middle;
 }
 
+.task-table th,
+.deleted-tasks th {
+  background: var(--background-light);
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: left;
+  white-space: nowrap;
+}
+
 /* Status column styling */
-.task-table td:nth-child(3) select {
-  width: 100%;
-  padding: 8px;
-  border-radius: 4px;
-  border: 1px solid var(--border-color);
+.task-table td:nth-child(3),
+.deleted-tasks td:nth-child(3) {
+  text-align: center;
 }
 
-/* Status colors */
-.task-table tr[data-status="To Do"] td:nth-child(3) {
-  background-color: var(--status-todo-bg);
-  color: var(--status-todo-text);
+/* Status colors - only apply to status column */
+.task-table tr[data-status="To Do"] td:nth-child(3),
+.deleted-tasks tr[data-status="To Do"] td:nth-child(3) {
+  background-color: var(--status-todo-bg) !important;
+  color: var(--status-todo-text) !important;
 }
 
-.task-table tr[data-status="In Progress"] td:nth-child(3) {
-  background-color: var(--status-inprogress-bg);
-  color: var(--status-inprogress-text);
+.task-table tr[data-status="In Progress"] td:nth-child(3),
+.deleted-tasks tr[data-status="In Progress"] td:nth-child(3) {
+  background-color: var(--status-inprogress-bg) !important;
+  color: var(--status-inprogress-text) !important;
 }
 
-.task-table tr[data-status="Done"] td:nth-child(3) {
-  background-color: var(--status-done-bg);
-  color: var(--status-done-text);
+.task-table tr[data-status="Done"] td:nth-child(3),
+.deleted-tasks tr[data-status="Done"] td:nth-child(3) {
+  background-color: var(--status-done-bg) !important;
+  color: var(--status-done-text) !important;
 }
 
-.task-table tr[data-status="Canceled"] td:nth-child(3) {
-  background-color: var(--status-canceled-bg);
-  color: var(--status-canceled-text);
+.task-table tr[data-status="Canceled"] td:nth-child(3),
+.deleted-tasks tr[data-status="Canceled"] td:nth-child(3) {
+  background-color: var(--status-canceled-bg) !important;
+  color: var(--status-canceled-text) !important;
 }
 
-/* Column specific styles */
-.date-column {
+/* Priority column styling */
+.task-table td:nth-child(4),
+.deleted-tasks td:nth-child(4) {
+  text-align: center;
+}
+
+.task-table tr td:nth-child(4)[data-priority="High"],
+.deleted-tasks tr td:nth-child(4)[data-priority="High"] {
+  background-color: var(--priority-high-bg) !important;
+  color: var(--priority-high-text) !important;
+}
+
+.task-table tr td:nth-child(4)[data-priority="Medium"],
+.deleted-tasks tr td:nth-child(4)[data-priority="Medium"] {
+  background-color: var(--priority-medium-bg) !important;
+  color: var(--priority-medium-text) !important;
+}
+
+.task-table tr td:nth-child(4)[data-priority="Low"],
+.deleted-tasks tr td:nth-child(4)[data-priority="Low"] {
+  background-color: var(--priority-low-bg) !important;
+  color: var(--priority-low-text) !important;
+}
+
+/* Date columns alignment */
+.task-table td:nth-child(5),
+.task-table td:nth-child(6),
+.deleted-tasks td:nth-child(5),
+.deleted-tasks td:nth-child(6),
+.deleted-tasks td:nth-child(7),
+.task-table th:nth-child(5),
+.task-table th:nth-child(6),
+.deleted-tasks th:nth-child(5),
+.deleted-tasks th:nth-child(6),
+.deleted-tasks th:nth-child(7) {
   text-align: center !important;
   white-space: nowrap;
   min-width: 120px;
 }
 
+/* Action buttons styling */
 .actions-column {
   white-space: nowrap;
-  width: 100px;
+  text-align: center;
+  min-width: 100px;
 }
 
-/* Action buttons */
 .edit-button,
 .delete-button,
 .restore-button,
-.permanent-delete-button {
+.permanent-delete-button,
+.duplicate-button,
+.undo-button {
   padding: 4px 8px;
   margin: 0 4px;
   background: none;
   border: none;
   cursor: pointer;
   opacity: 0.7;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s, background-color 0.2s;
+  border-radius: 4px;
 }
 
 .edit-button:hover,
 .delete-button:hover,
 .restore-button:hover,
-.permanent-delete-button:hover {
+.permanent-delete-button:hover,
+.duplicate-button:hover,
+.undo-button:hover {
   opacity: 1;
-}
-
-.permanent-delete-button {
-  color: #dc2626;
-}
-
-.permanent-delete-button:hover {
-  background-color: #fee2e2;
-  border-radius: 4px;
-}
-
-/* Add task button */
-.add-task-button {
-  background: var(--primary-color);
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.add-task-button:hover {
-  background: #2563eb;
-  transform: translateY(-1px);
-}
-
-/* Error message */
-.error-message {
-  background: #fee2e2;
-  color: #991b1b;
-  padding: 12px;
-  border-radius: 6px;
-  margin-bottom: 1rem;
-  border: 1px solid #fecaca;
+  background-color: #f3f4f6;
 }
 
 /* Deleted tasks section */
@@ -305,21 +305,46 @@
   border-top: 1px solid var(--border-color);
 }
 
-.deleted-tasks-section h3 {
-  color: var(--text-secondary);
-  margin-bottom: 1rem;
+.deleted-tasks-header {
+  cursor: pointer;
+  padding: 0.5rem 0;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-/* Responsive adjustments */
-@media (max-width: 1024px) {
-  .task-table {
-    font-size: 13px;
-  }
-  
-  .task-table th,
-  .task-table td {
-    padding: 8px 12px;
-  }
+.deleted-tasks-header h3 {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.toggle-icon {
+  display: inline-block;
+  transition: transform 0.3s ease;
+  font-size: 0.8em;
+}
+
+.deleted-tasks-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
+}
+
+.deleted-tasks-content.visible {
+  max-height: 2000px;
+  transition: max-height 0.5s ease-in;
+}
+
+/* Past due date styling */
+.past-due {
+  color: #dc2626 !important;
+  font-weight: 600 !important;
 }
 
 /* Adding to existing CSS file */
@@ -461,4 +486,180 @@
 .past-due {
   color: #dc2626 !important;
   font-weight: 600 !important;
+}
+
+/* Add these styles at the beginning of the file */
+/* Status Colors */
+:root {
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --base-font-size: 14px;
+  --primary-color: #3b82f6;
+  --border-color: #e5e7eb;
+  --background-light: #f8fafc;
+  --text-primary: #1f2937;
+  --text-secondary: #4b5563;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --spacing-base: 1rem;
+  
+  /* Status Colors */
+  --status-todo-bg: #f1f5f9;
+  --status-todo-text: #475569;
+  --status-inprogress-bg: #fef3c7;
+  --status-inprogress-text: #92400e;
+  --status-done-bg: #dcfce7;
+  --status-done-text: #166534;
+  
+  /* Priority Colors */
+  --priority-high-bg: #fee2e2;
+  --priority-high-text: #991b1b;
+  --priority-medium-bg: #fef3c7;
+  --priority-medium-text: #92400e;
+  --priority-low-bg: #f1f5f9;
+  --priority-low-text: #475569;
+}
+
+/* Deleted tasks section */
+.deleted-tasks-section {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.deleted-tasks-header {
+  cursor: pointer;
+  padding: 0.5rem 0;
+  user-select: none;
+}
+
+.deleted-tasks-header h3 {
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.deleted-tasks-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
+}
+
+.deleted-tasks-content.visible {
+  max-height: 2000px;
+  transition: max-height 0.5s ease-in;
+}
+
+/* Table styles - shared between main and deleted tasks */
+.task-table,
+.deleted-tasks {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--base-font-size);
+  background: white;
+}
+
+.task-table th,
+.task-table td,
+.deleted-tasks th,
+.deleted-tasks td {
+  padding: 12px 16px;
+  border: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
+.task-table th,
+.deleted-tasks th {
+  background: var(--background-light);
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: left;
+}
+
+/* Status column styling */
+.task-table td:nth-child(3),
+.deleted-tasks td:nth-child(3) {
+  text-align: center;
+}
+
+/* Status colors - only apply to status column */
+.task-table tr td:nth-child(3)[data-status="To Do"],
+.deleted-tasks tr td:nth-child(3)[data-status="To Do"] {
+  background-color: var(--status-todo-bg);
+  color: var(--status-todo-text);
+}
+
+.task-table tr td:nth-child(3)[data-status="In Progress"],
+.deleted-tasks tr td:nth-child(3)[data-status="In Progress"] {
+  background-color: var(--status-inprogress-bg);
+  color: var(--status-inprogress-text);
+}
+
+.task-table tr td:nth-child(3)[data-status="Done"],
+.deleted-tasks tr td:nth-child(3)[data-status="Done"] {
+  background-color: var(--status-done-bg);
+  color: var(--status-done-text);
+}
+
+/* Priority column styling */
+.task-table td:nth-child(4),
+.deleted-tasks td:nth-child(4) {
+  text-align: center;
+}
+
+td[data-priority="High"] {
+  background-color: var(--priority-high-bg) !important;
+  color: var(--priority-high-text) !important;
+}
+
+td[data-priority="Medium"] {
+  background-color: var(--priority-medium-bg) !important;
+  color: var(--priority-medium-text) !important;
+}
+
+td[data-priority="Low"] {
+  background-color: var(--priority-low-bg) !important;
+  color: var(--priority-low-text) !important;
+}
+
+/* Date columns alignment */
+.task-table td:nth-child(5),
+.task-table td:nth-child(6),
+.deleted-tasks td:nth-child(5),
+.deleted-tasks td:nth-child(6),
+.deleted-tasks td:nth-child(7),
+.task-table th:nth-child(5),
+.task-table th:nth-child(6),
+.deleted-tasks th:nth-child(5),
+.deleted-tasks th:nth-child(6),
+.deleted-tasks th:nth-child(7) {
+  text-align: center !important;
+  white-space: nowrap;
+  min-width: 120px;
+}
+
+/* Action buttons styling */
+.actions-column {
+  white-space: nowrap;
+  text-align: center;
+  min-width: 100px;
+}
+
+.restore-button,
+.permanent-delete-button {
+  padding: 4px 8px;
+  margin: 0 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  font-size: 1.1em;
+}
+
+.restore-button:hover,
+.permanent-delete-button:hover {
+  opacity: 1;
+  background-color: #f3f4f6;
+  border-radius: 4px;
 }

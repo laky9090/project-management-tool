@@ -476,7 +476,7 @@ const Board = ({ projectId }) => {
           </div>
           <div className={`deleted-tasks-content ${showDeletedTasks ? 'visible' : ''}`}>
             <div className="table-container">
-              <table className={`task-table deleted-tasks ${showDeletedTasks ? 'visible' : ''}`}>
+              <table className="task-table deleted-tasks">
                 <thead>
                   <tr>
                     <th>Title</th>
@@ -491,18 +491,14 @@ const Board = ({ projectId }) => {
                 </thead>
                 <tbody>
                   {deletedTasks.map(task => (
-                    <tr key={task.id} className="deleted-task-row" data-status={task.status}>
+                    <tr key={task.id}>
                       <td>{task.title}</td>
-                      <td style={{ whiteSpace: 'pre-wrap' }}>{task.comment || ''}</td>
+                      <td>{task.comment || ''}</td>
                       <td>
-                        <span className={`status-badge ${task.status.toLowerCase().replace(' ', '-')}`}>
-                          {task.status}
-                        </span>
+                        <span className="status-badge">{task.status}</span>
                       </td>
                       <td data-priority={task.priority}>
-                        <span className={`priority-indicator ${task.priority.toLowerCase()}`}>
-                          {task.priority}
-                        </span>
+                        <span className="priority-indicator">{task.priority}</span>
                       </td>
                       <td className="date-column">
                         {formatDate(task.due_date).formattedDate}
@@ -524,9 +520,9 @@ const Board = ({ projectId }) => {
                         <button
                           onClick={() => handlePermanentDelete(task.id)}
                           className="permanent-delete-button"
-                          title="Permanently Delete"
+                          title="Delete Permanently"
                         >
-                          ⛔
+                          🗑️
                         </button>
                       </td>
                     </tr>

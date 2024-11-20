@@ -22,6 +22,9 @@ module.exports = function(app) {
           error: 'The request timed out',
           details: err.message
         }));
+      },
+      headers: {
+        Connection: 'keep-alive'
       }
     })
   );
