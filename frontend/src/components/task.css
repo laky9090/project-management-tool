@@ -42,11 +42,14 @@
   color: var(--priority-medium-text) !important;
 }
 
+/* Priority specific styles */
+.priority-indicator.low,
+td[data-priority="Low"],
 .task-table td[data-priority="Low"],
 .deleted-tasks td[data-priority="Low"],
-.priority-indicator.low {
-  background-color: var(--priority-low-bg) !important;
-  color: var(--priority-low-text) !important;
+tr td[data-priority="Low"] {
+    background-color: #f1f5f9 !important;
+    color: #475569 !important;
 }
 
 /* Priority indicators for deleted tasks */

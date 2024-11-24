@@ -245,8 +245,17 @@
 
 .task-table tr td:nth-child(4)[data-priority="Low"],
 .deleted-tasks tr td:nth-child(4)[data-priority="Low"] {
-  background-color: var(--priority-low-bg) !important;
-  color: var(--priority-low-text) !important;
+  background-color: #f1f5f9 !important;
+  color: #475569 !important;
+}
+
+/* Additional priority low styles to ensure consistency */
+td[data-priority="Low"],
+.task-table td[data-priority="Low"],
+.deleted-tasks td[data-priority="Low"],
+.priority-indicator.low {
+  background-color: #f1f5f9 !important;
+  color: #475569 !important;
 }
 
 /* Date columns alignment */
@@ -617,9 +626,12 @@ td[data-priority="Medium"] {
   color: var(--priority-medium-text) !important;
 }
 
-td[data-priority="Low"] {
-  background-color: var(--priority-low-bg) !important;
-  color: var(--priority-low-text) !important;
+/* Priority specific styles */
+td[data-priority="Low"],
+.task-table td[data-priority="Low"],
+.deleted-tasks td[data-priority="Low"] {
+    background-color: #f1f5f9 !important;
+    color: #475569 !important;
 }
 
 /* Date columns alignment */
