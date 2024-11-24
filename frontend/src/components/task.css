@@ -23,8 +23,24 @@
 .task-table td[data-priority],
 .deleted-tasks td[data-priority] {
   transition: background-color 0.2s ease;
-  text-align: center;
+  text-align: center !important;
   padding: 8px 12px;
+}
+
+/* Base table cell alignment */
+.task-table td,
+.deleted-tasks td,
+.task-table th,
+.deleted-tasks th {
+  text-align: center !important;
+}
+
+/* Title column alignment */
+.task-table td:first-child,
+.deleted-tasks td:first-child,
+.task-table th:first-child,
+.deleted-tasks th:first-child {
+  text-align: left !important;
 }
 
 /* Priority styles for both active and deleted tasks */
