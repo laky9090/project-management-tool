@@ -71,3 +71,54 @@
   width: 100%;
   justify-content: center;
 }
+
+.status-badge.to-do {
+  background-color: var(--status-todo-bg);
+  color: var(--status-todo-text);
+}
+
+.status-badge.in-progress {
+  background-color: var(--status-inprogress-bg);
+  color: var(--status-inprogress-text);
+}
+
+.status-badge.done {
+  background-color: var(--status-done-bg);
+  color: var(--status-done-text);
+}
+
+.status-badge.canceled {
+  background-color: var(--status-canceled-bg);
+  color: var(--status-canceled-text);
+}
+
+/* Status badge styles for all tasks */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  width: 100%;
+  justify-content: center;
+}
+
+.status-badge.to-do {
+  background-color: var(--status-todo-bg);
+  color: var(--status-todo-text);
+}
+
+.status-badge.in-progress {
+  background-color: var(--status-inprogress-bg);
+  color: var(--status-inprogress-text);
+}
+
+.status-badge.done {
+  background-color: var(--status-done-bg);
+  color: var(--status-done-text);
+}
+
+.status-badge.canceled {
+  background-color: var(--status-canceled-bg);
+  color: var(--status-canceled-text);
+}

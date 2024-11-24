@@ -491,11 +491,13 @@ const Board = ({ projectId }) => {
                 </thead>
                 <tbody>
                   {deletedTasks.map(task => (
-                    <tr key={task.id}>
+                    <tr key={task.id} data-status={task.status}>
                       <td>{task.title}</td>
                       <td>{task.comment || ''}</td>
                       <td>
-                        <span className="status-badge">{task.status}</span>
+                        <span className={`status-badge ${task.status.toLowerCase().replace(' ', '-')}`}>
+                          {task.status}
+                        </span>
                       </td>
                       <td data-priority={task.priority}>
                         <span className="priority-indicator">{task.priority}</span>
