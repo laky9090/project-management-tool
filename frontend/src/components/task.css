@@ -10,6 +10,16 @@
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
   --spacing-base: 1rem;
   
+  /* Status Colors */
+  --status-todo-bg: #f1f5f9;
+  --status-todo-text: #475569;
+  --status-inprogress-bg: #fef3c7;
+  --status-inprogress-text: #92400e;
+  --status-done-bg: #dcfce7;
+  --status-done-text: #166534;
+  --status-canceled-bg: #fee2e2;
+  --status-canceled-text: #991b1b;
+  
   /* Priority Colors */
   --priority-high-bg: #fee2e2;
   --priority-high-text: #991b1b;
