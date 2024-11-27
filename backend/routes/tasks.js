@@ -257,30 +257,52 @@ router.patch('/:taskId', async (req, res) => {
 
   try {
     const allowedUpdates = ['title', 'comment', 'status', 'priority', 'due_date', 'assignee'];
-    const updateFields = Object.keys(updates)
-      .filter(key => allowedUpdates.includes(key))
-      .map((key, index) => `${key} = $${index + 1}`);
-    
-    if (updateFields.length === 0) {
+    const filteredUpdates = Object.entries(updates)
+      .filter(([key]) => allowedUpdates.includes(key))
+      .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
+
+    if (Object.keys(filteredUpdates).length === 0) {
       return res.status(400).json({ error: 'No valid fields to update' });
     }
 
+    // Handle empty assignee values
+    if ('assignee' in filteredUpdates) {
+      // Handle null, undefined, empty string, or whitespace-only string
+      if (filteredUpdates.assignee === null || 
+          filteredUpdates.assignee === undefined || 
+          (typeof filteredUpdates.assignee === 'string' && filteredUpdates.assignee.trim() === '')) {
+        filteredUpdates.assignee = null;
+      } else {
+        // Trim non-empty string values
+        filteredUpdates.assignee = String(filteredUpdates.assignee).trim();
+      }
+    }
+
+    // Validate updates object
+    if (Object.keys(filteredUpdates).length === 0) {
+      return res.status(400).json({ 
+        error: 'No valid fields to update',
+        details: 'The request must include at least one valid field to update'
+      });
+    }
+
+    const updateFields = Object.keys(filteredUpdates).map((key, index) => `${key} = $${index + 1}`);
     updateFields.push('updated_at = CURRENT_TIMESTAMP');
 
-    const values = Object.keys(updates)
-      .filter(key => allowedUpdates.includes(key))
-      .map(key => {
-        if (key === 'due_date') {
-          if (!updates[key]) return null;
-          if (updates[key].includes('/')) {
-            // Convert from DD/MM/YYYY to YYYY-MM-DD
-            const [day, month, year] = updates[key].split('/');
-            return `${year}-${month}-${day}`;
-          }
-          return updates[key];
+    const values = Object.entries(filteredUpdates).map(([key, value]) => {
+      if (key === 'due_date') {
+        if (!value) return null;
+        if (typeof value === 'string' && value.includes('/')) {
+          const [day, month, year] = value.split('/');
+          return `${year}-${month}-${day}`;
         }
-        return updates[key];
-      });
+        return value;
+      }
+      if (key === 'assignee') {
+        return value === '' ? null : value;
+      }
+      return value;
+    });
 
     const query = `
       UPDATE tasks 
@@ -298,7 +320,12 @@ router.patch('/:taskId', async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     console.error('Error updating task:', err);
-    res.status(500).json({ error: 'Failed to update task', details: err.message });
+    const errorMessage = err.message || 'Failed to update task';
+    console.error('Error updating task:', errorMessage);
+    res.status(500).json({ 
+      error: 'Failed to update task',
+      details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+    });
   }
 });
 

@@ -268,6 +268,69 @@ const Board = ({ projectId }) => {
     }));
   };
 
+  const handleAssigneeEdit = async (taskId, currentValue) => {
+    try {
+      setError(null);
+      const cell = document.querySelector(`td[data-task-id="${taskId}"][data-field="assignee"]`);
+      if (!cell) return;
+      
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.value = currentValue || '';
+      input.style.width = '100%';
+      input.style.textAlign = 'center';
+      input.placeholder = 'Enter assignee name';
+      
+      const originalContent = cell.innerHTML;
+      cell.innerHTML = '';
+      cell.appendChild(input);
+      input.focus();
+      
+      const handleUpdate = async () => {
+        try {
+          setUpdating(true);
+          const newValue = input.value;
+          const assigneeValue = !newValue || newValue.trim() === '' ? null : newValue.trim();
+          
+          const response = await api.updateTask(taskId, { assignee: assigneeValue });
+          
+          if (response.data) {
+            // Update local state
+            setTasks(prevTasks =>
+              prevTasks.map(task =>
+                task.id === taskId
+                  ? { ...task, assignee: response.data.assignee }
+                  : task
+              )
+            );
+            // Update cell content
+            cell.textContent = response.data.assignee || 'Unassigned';
+          } else {
+            cell.innerHTML = originalContent;
+            setError('Failed to update assignee');
+          }
+        } catch (error) {
+          console.error('Error updating assignee:', error);
+          cell.innerHTML = originalContent;
+          const errorMessage = error.response?.data?.error || 'Failed to update assignee. Please try again.';
+          setError(errorMessage);
+        } finally {
+          setUpdating(false);
+        }
+      };
+      
+      input.addEventListener('blur', handleUpdate);
+      input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          input.blur();
+        }
+      });
+    } catch (error) {
+      console.error('Error setting up assignee edit:', error);
+      setError('Failed to initialize assignee editing');
+    }
+  };
+
   const handleUndoTask = async (taskId) => {
     try {
       setError(null);
@@ -349,6 +412,9 @@ const Board = ({ projectId }) => {
               <th onClick={() => handleSort('updated_at')} className="date-column">
                 Last Update {getSortIcon('updated_at')}
               </th>
+              <th onClick={() => handleSort('assignee')}>
+                Assignee {getSortIcon('assignee')}
+              </th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -421,6 +487,13 @@ const Board = ({ projectId }) => {
                 </td>
                 <td className="date-column">
                   {formatDate(task.updated_at).formattedDate}
+                </td>
+                <td
+                  onClick={() => handleAssigneeEdit(task.id, task.assignee)}
+                  data-task-id={task.id}
+                  data-field="assignee"
+                >
+                  {task.assignee || 'Unassigned'}
                 </td>
                 <td className="actions-column">
                   <button
