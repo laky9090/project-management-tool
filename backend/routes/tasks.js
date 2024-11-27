@@ -24,12 +24,10 @@ router.get('/project/:projectId/export', async (req, res) => {
   let workbook;
 
   try {
-    // Set headers early for better client feedback
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Pragma', 'no-cache');
 
-    // Get project name
     const projectResult = await db.query(
       'SELECT name FROM projects WHERE id = $1',
       [projectId]
@@ -43,10 +41,8 @@ router.get('/project/:projectId/export', async (req, res) => {
     const sanitizedProjectName = projectName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
     const filename = `${sanitizedProjectName}_tasks_${new Date().toISOString().split('T')[0]}.xlsx`;
 
-    // Set content disposition with the sanitized filename
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 
-    // Get tasks with progress tracking
     const { rows: tasks } = await db.query(
       `SELECT t.*, 
           COALESCE(t.updated_at, t.created_at) as last_update
@@ -56,22 +52,20 @@ router.get('/project/:projectId/export', async (req, res) => {
       [projectId]
     );
 
-    // Create workbook and worksheet
     workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Tasks');
 
-    // Add headers with styling
     worksheet.columns = [
       { header: 'Title', key: 'title', width: 30 },
       { header: 'Comment', key: 'comment', width: 40 },
       { header: 'Status', key: 'status', width: 15 },
       { header: 'Priority', key: 'priority', width: 15 },
-      { header: 'Due Date', key: 'due_date', width: 15 },
+      { header: 'Start Date', key: 'start_date', width: 15 },
+      { header: 'End Date', key: 'end_date', width: 15 },
       { header: 'Last Update', key: 'last_update', width: 15 },
       { header: 'Assignee', key: 'assignee', width: 20 }
     ];
 
-    // Style headers
     worksheet.getRow(1).font = { bold: true };
     worksheet.getRow(1).fill = {
       type: 'pattern',
@@ -79,7 +73,6 @@ router.get('/project/:projectId/export', async (req, res) => {
       fgColor: { argb: 'FFE5E7EB' }
     };
 
-    // Format dates to English format (MM/DD/YYYY)
     const formatDate = (date) => {
       if (!date) return '';
       const d = new Date(date);
@@ -90,44 +83,40 @@ router.get('/project/:projectId/export', async (req, res) => {
       });
     };
 
-    // Add data and format dates
     tasks.forEach(task => {
       worksheet.addRow({
         title: task.title,
         comment: task.comment || '',
         status: task.status,
         priority: task.priority,
-        due_date: task.due_date ? formatDate(task.due_date) : '',
+        start_date: task.start_date ? formatDate(task.start_date) : '',
+        end_date: task.end_date ? formatDate(task.end_date) : '',
         last_update: formatDate(task.last_update),
         assignee: task.assignee || ''
       });
     });
 
-    // Set date columns format
-    worksheet.getColumn('due_date').numFmt = 'mm/dd/yyyy';
+    worksheet.getColumn('start_date').numFmt = 'mm/dd/yyyy';
+    worksheet.getColumn('end_date').numFmt = 'mm/dd/yyyy';
     worksheet.getColumn('last_update').numFmt = 'mm/dd/yyyy';
 
-    // Auto filter
     worksheet.autoFilter = {
       from: 'A1',
-      to: 'G1'
+      to: 'H1'
     };
 
-    // Write to response with error handling
     await workbook.xlsx.write(res);
     res.end();
 
   } catch (err) {
     console.error('Error exporting tasks:', err);
 
-    // Check if headers have already been sent
     if (!res.headersSent) {
       res.status(500).json({ 
         error: 'Failed to export tasks',
         details: process.env.NODE_ENV === 'development' ? err.message : undefined
       });
     } else {
-      // If headers were sent, try to end the response cleanly
       try {
         res.end();
       } catch (endError) {
@@ -135,7 +124,6 @@ router.get('/project/:projectId/export', async (req, res) => {
       }
     }
 
-    // Cleanup if workbook was created
     if (workbook) {
       try {
         workbook = null;
@@ -213,7 +201,7 @@ router.get('/project/:projectId', async (req, res) => {
        LEFT JOIN task_dependencies d ON t.id = d.task_id
        LEFT JOIN tasks dt ON d.depends_on_id = dt.id
        LEFT JOIN subtasks s ON t.id = s.parent_task_id
-       WHERE t.project_id = $1
+       WHERE t.project_id = $1 AND t.deleted_at IS NULL
        GROUP BY t.id
        ORDER BY t.created_at DESC`,
       [req.params.projectId]
@@ -227,7 +215,7 @@ router.get('/project/:projectId', async (req, res) => {
 
 // Create new task
 router.post('/', async (req, res) => {
-  const { project_id, title, comment, status, priority, due_date, assignee } = req.body;
+  const { project_id, title, comment, status, priority, start_date, end_date, assignee } = req.body;
 
   if (!project_id || !title) {
     return res.status(400).json({ error: 'Project ID and title are required' });
@@ -235,10 +223,10 @@ router.post('/', async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      `INSERT INTO tasks (project_id, title, comment, status, priority, due_date, assignee, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `INSERT INTO tasks (project_id, title, comment, status, priority, start_date, end_date, assignee, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
        RETURNING *, COALESCE(updated_at, created_at) as last_update`,
-      [project_id, title, comment, status || 'To Do', priority || 'Medium', due_date, assignee]
+      [project_id, title, comment, status || 'To Do', priority || 'Medium', start_date, end_date, assignee]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -256,7 +244,7 @@ router.patch('/:taskId', async (req, res) => {
   const updates = req.body;
 
   try {
-    const allowedUpdates = ['title', 'comment', 'status', 'priority', 'due_date', 'assignee'];
+    const allowedUpdates = ['title', 'comment', 'status', 'priority', 'start_date', 'end_date', 'assignee'];
     const filteredUpdates = Object.entries(updates)
       .filter(([key]) => allowedUpdates.includes(key))
       .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
@@ -267,30 +255,20 @@ router.patch('/:taskId', async (req, res) => {
 
     // Handle empty assignee values
     if ('assignee' in filteredUpdates) {
-      // Handle null, undefined, empty string, or whitespace-only string
       if (filteredUpdates.assignee === null || 
           filteredUpdates.assignee === undefined || 
           (typeof filteredUpdates.assignee === 'string' && filteredUpdates.assignee.trim() === '')) {
         filteredUpdates.assignee = null;
       } else {
-        // Trim non-empty string values
         filteredUpdates.assignee = String(filteredUpdates.assignee).trim();
       }
-    }
-
-    // Validate updates object
-    if (Object.keys(filteredUpdates).length === 0) {
-      return res.status(400).json({ 
-        error: 'No valid fields to update',
-        details: 'The request must include at least one valid field to update'
-      });
     }
 
     const updateFields = Object.keys(filteredUpdates).map((key, index) => `${key} = $${index + 1}`);
     updateFields.push('updated_at = CURRENT_TIMESTAMP');
 
     const values = Object.entries(filteredUpdates).map(([key, value]) => {
-      if (key === 'due_date') {
+      if (key === 'start_date' || key === 'end_date') {
         if (!value) return null;
         if (typeof value === 'string' && value.includes('/')) {
           const [day, month, year] = value.split('/');
@@ -321,7 +299,6 @@ router.patch('/:taskId', async (req, res) => {
   } catch (err) {
     console.error('Error updating task:', err);
     const errorMessage = err.message || 'Failed to update task';
-    console.error('Error updating task:', errorMessage);
     res.status(500).json({ 
       error: 'Failed to update task',
       details: process.env.NODE_ENV === 'development' ? errorMessage : undefined

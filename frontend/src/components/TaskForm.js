@@ -9,7 +9,8 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
     status: 'To Do',
     priority: 'Medium',
     assignee: '',
-    due_date: new Date().toISOString().split('T')[0]
+    start_date: new Date().toISOString().split('T')[0],
+    end_date: new Date().toISOString().split('T')[0]
   });
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -129,12 +130,22 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
           </div>
           
           <div className="form-group">
-            <label htmlFor="due_date">Due Date</label>
+            <label htmlFor="start_date">Start Date</label>
             <input
-              id="due_date"
+              id="start_date"
               type="date"
-              name="due_date"
-              value={formData.due_date}
+              name="start_date"
+              value={formData.start_date}
+              onChange={handleChange}
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="end_date">End Date</label>
+            <input
+              id="end_date"
+              type="date"
+              name="end_date"
+              value={formData.end_date}
               onChange={handleChange}
             />
           </div>

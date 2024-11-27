@@ -120,8 +120,8 @@ const Board = ({ projectId }) => {
     textarea.addEventListener('blur', handleBlur);
   };
 
-  const handleDueDateEdit = async (taskId, currentValue) => {
-    const cell = document.querySelector(`td[data-task-id="${taskId}"][data-field="due_date"]`);
+  const handleDateEdit = async (taskId, currentValue, field) => {
+    const cell = document.querySelector(`td[data-task-id="${taskId}"][data-field="${field}"]`);
     if (!cell) return;
 
     // Remove any existing calendar popup
@@ -161,7 +161,7 @@ const Board = ({ projectId }) => {
           const newDate = new Date(calendar.value);
           const formattedDate = newDate.toLocaleDateString('fr-FR');
           if (formattedDate !== currentValue) {
-            const success = await handleUpdateTask(taskId, { due_date: calendar.value });
+            const success = await handleUpdateTask(taskId, { [field]: calendar.value });
             if (!success) {
               cell.textContent = currentValue || '';
             }
@@ -406,8 +406,11 @@ const Board = ({ projectId }) => {
               <th onClick={() => handleSort('priority')}>
                 Priority {getSortIcon('priority')}
               </th>
-              <th onClick={() => handleSort('due_date')} className="date-column">
-                Due Date {getSortIcon('due_date')}
+              <th onClick={() => handleSort('start_date')} className="date-column">
+                Start Date {getSortIcon('start_date')}
+              </th>
+              <th onClick={() => handleSort('end_date')} className="date-column">
+                End Date {getSortIcon('end_date')}
               </th>
               <th onClick={() => handleSort('updated_at')} className="date-column">
                 Last Update {getSortIcon('updated_at')}
@@ -478,12 +481,20 @@ const Board = ({ projectId }) => {
                   </select>
                 </td>
                 <td 
-                  className={`date-column ${formatDate(task.due_date).isPastDue ? 'past-due' : ''}`}
-                  onClick={() => handleDueDateEdit(task.id, formatDate(task.due_date).formattedDate)}
+                  className="date-column"
+                  onClick={() => handleDateEdit(task.id, formatDate(task.start_date).formattedDate, 'start_date')}
                   data-task-id={task.id}
-                  data-field="due_date"
+                  data-field="start_date"
                 >
-                  {formatDate(task.due_date).formattedDate}
+                  {formatDate(task.start_date).formattedDate}
+                </td>
+                <td 
+                  className={`date-column ${formatDate(task.end_date).isPastDue ? 'past-due' : ''}`}
+                  onClick={() => handleDateEdit(task.id, formatDate(task.end_date).formattedDate, 'end_date')}
+                  data-task-id={task.id}
+                  data-field="end_date"
+                >
+                  {formatDate(task.end_date).formattedDate}
                 </td>
                 <td className="date-column">
                   {formatDate(task.updated_at).formattedDate}

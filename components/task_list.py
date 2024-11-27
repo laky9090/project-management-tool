@@ -73,7 +73,7 @@ def render_task_list(project_id):
             COALESCE(t.updated_at, t.created_at) as last_update 
         FROM tasks t
         WHERE t.project_id = %s AND t.deleted_at IS NULL
-        ORDER BY t.due_date
+        ORDER BY t.end_date
     """, (project_id,))
     
     if tasks:
