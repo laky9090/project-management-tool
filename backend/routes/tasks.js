@@ -221,6 +221,21 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'Project ID and title are required' });
   }
 
+  // Validate dates if both are provided
+  if (start_date && end_date) {
+    const startDate = new Date(start_date);
+    const endDate = new Date(end_date);
+    
+    // Ensure both dates are valid
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      return res.status(400).json({ error: 'Invalid date format' });
+    }
+    
+    if (startDate > endDate) {
+      return res.status(400).json({ error: 'Start date cannot be later than end date' });
+    }
+  }
+
   try {
     const { rows } = await db.query(
       `INSERT INTO tasks (project_id, title, comment, status, priority, start_date, end_date, assignee, created_at, updated_at)
@@ -244,6 +259,30 @@ router.patch('/:taskId', async (req, res) => {
   const updates = req.body;
 
   try {
+    // Get current task data for date validation
+    if (updates.start_date || updates.end_date) {
+      const { rows: [currentTask] } = await db.query(
+        'SELECT start_date, end_date FROM tasks WHERE id = $1',
+        [taskId]
+      );
+
+      if (currentTask) {
+        const startDate = updates.start_date ? new Date(updates.start_date) : 
+                         currentTask.start_date ? new Date(currentTask.start_date) : null;
+        const endDate = updates.end_date ? new Date(updates.end_date) : 
+                       currentTask.end_date ? new Date(currentTask.end_date) : null;
+
+        // Ensure dates are valid if provided
+        if ((startDate && isNaN(startDate.getTime())) || (endDate && isNaN(endDate.getTime()))) {
+          return res.status(400).json({ error: 'Invalid date format' });
+        }
+
+        if (startDate && endDate && startDate > endDate) {
+          return res.status(400).json({ error: 'Start date cannot be later than end date' });
+        }
+      }
+    }
+
     const allowedUpdates = ['title', 'comment', 'status', 'priority', 'start_date', 'end_date', 'assignee'];
     const filteredUpdates = Object.entries(updates)
       .filter(([key]) => allowedUpdates.includes(key))

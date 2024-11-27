@@ -27,6 +27,14 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
         throw new Error('Task title is required');
       }
 
+      // Validate dates
+      const startDate = formData.start_date ? new Date(formData.start_date) : null;
+      const endDate = formData.end_date ? new Date(formData.end_date) : null;
+      
+      if (startDate && endDate && startDate > endDate) {
+        throw new Error('Start date cannot be later than end date');
+      }
+
       const taskData = {
         ...formData,
         project_id: projectId

@@ -63,11 +63,19 @@ const Board = ({ projectId }) => {
       setUpdating(true);
       setError(null);
 
-      if (updatedData.due_date) {
-        if (!validateDate(updatedData.due_date)) {
-          throw new Error('Invalid date format');
+      // Handle date validation for both start and end dates
+      if (updatedData.start_date) {
+        if (!validateDate(updatedData.start_date)) {
+          throw new Error('Invalid start date format');
         }
-        updatedData.due_date = parseDate(updatedData.due_date);
+        updatedData.start_date = parseDate(updatedData.start_date);
+      }
+      
+      if (updatedData.end_date) {
+        if (!validateDate(updatedData.end_date)) {
+          throw new Error('Invalid end date format');
+        }
+        updatedData.end_date = parseDate(updatedData.end_date);
       }
 
       const response = await api.updateTask(taskId, updatedData);
@@ -130,6 +138,10 @@ const Board = ({ projectId }) => {
       existingPopup.remove();
     }
 
+    // Get current task data
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
     // Create calendar popup container
     const popup = document.createElement('div');
     popup.className = 'calendar-popup';
@@ -161,10 +173,21 @@ const Board = ({ projectId }) => {
           const newDate = new Date(calendar.value);
           const formattedDate = newDate.toLocaleDateString('fr-FR');
           if (formattedDate !== currentValue) {
-            const success = await handleUpdateTask(taskId, { [field]: calendar.value });
-            if (!success) {
-              cell.textContent = currentValue || '';
-            }
+            // Validate dates before update
+          const newDate = new Date(calendar.value);
+          const startDate = field === 'start_date' ? newDate : task.start_date ? new Date(task.start_date) : null;
+          const endDate = field === 'end_date' ? newDate : task.end_date ? new Date(task.end_date) : null;
+          
+          if (startDate && endDate && startDate > endDate) {
+            setError('Start date cannot be later than end date');
+            cell.textContent = currentValue || '';
+            return;
+          }
+          
+          const success = await handleUpdateTask(taskId, { [field]: calendar.value });
+          if (!success) {
+            cell.textContent = currentValue || '';
+          }
           }
         } else {
           const success = await handleUpdateTask(taskId, { due_date: null });
