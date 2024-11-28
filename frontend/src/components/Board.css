@@ -39,118 +39,7 @@
   --priority-low-text: #475569;
 }
 
-/* Priority column styling - for both active and deleted tasks */
-.task-table td[data-priority],
-.deleted-tasks td[data-priority] {
-  transition: background-color 0.2s ease;
-  text-align: center;
-  padding: 8px 12px;
-}
-
-/* Priority styles for both active and deleted tasks */
-.task-table td[data-priority="High"],
-.deleted-tasks td[data-priority="High"],
-.priority-indicator.high {
-  background-color: var(--priority-high-bg) !important;
-  color: var(--priority-high-text) !important;
-}
-
-.task-table td[data-priority="Medium"],
-.deleted-tasks td[data-priority="Medium"],
-.priority-indicator.medium {
-  background-color: var(--priority-medium-bg) !important;
-  color: var(--priority-medium-text) !important;
-}
-
-.task-table td[data-priority="Low"],
-.deleted-tasks td[data-priority="Low"],
-.priority-indicator.low {
-  background-color: var(--priority-low-bg) !important;
-  color: var(--priority-low-text) !important;
-}
-
-/* Priority indicators for deleted tasks */
-.deleted-tasks .priority-indicator {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-weight: 500;
-  width: 100%;
-  justify-content: center;
-}
-
-/* Status styles for deleted tasks */
-.deleted-tasks td .status-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  width: 100%;
-  justify-content: center;
-}
-
-/* Deleted tasks section styling */
-.deleted-tasks-section {
-  margin-top: 2rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-color);
-}
-
-.deleted-tasks-header {
-  cursor: pointer;
-  padding: 0.5rem 0;
-  user-select: none;
-}
-
-.deleted-tasks-header h3 {
-  color: var(--text-secondary);
-  margin-bottom: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.toggle-icon {
-  display: inline-block;
-  transition: transform 0.3s ease;
-  font-size: 0.8em;
-  color: var(--text-secondary);
-}
-
-.deleted-tasks-content {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.3s ease-out;
-}
-
-.deleted-tasks-content.visible {
-  max-height: 2000px;
-  transition: max-height 0.5s ease-in;
-}
-
-.deleted-tasks {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--base-font-size);
-}
-
-.deleted-tasks th,
-.deleted-tasks td {
-  padding: 12px 16px;
-  border: 1px solid var(--border-color);
-  vertical-align: middle;
-}
-
-.deleted-tasks th {
-  background: var(--background-light);
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-/* Rest of the existing styles */
+/* Board layout */
 .board {
   font-family: var(--font-family);
   font-size: var(--base-font-size);
@@ -160,7 +49,7 @@
   padding: var(--spacing-base);
 }
 
-/* Table styles */
+/* Table container */
 .table-container {
   margin-top: 1rem;
   background: white;
@@ -169,9 +58,8 @@
   overflow-x: auto;
 }
 
-/* Table styles - shared between main and deleted tasks */
-.task-table,
-.deleted-tasks {
+/* Table styles */
+.task-table {
   width: 100%;
   border-collapse: collapse;
   font-size: var(--base-font-size);
@@ -179,21 +67,45 @@
 }
 
 .task-table th,
-.task-table td,
-.deleted-tasks th,
-.deleted-tasks td {
+.task-table td {
   padding: 12px 16px;
   border: 1px solid var(--border-color);
   vertical-align: middle;
 }
 
-.task-table th,
-.deleted-tasks th {
+.task-table th {
   background: var(--background-light);
   font-weight: 600;
   color: var(--text-secondary);
   text-align: left;
   white-space: nowrap;
+}
+
+/* Priority column styling */
+.task-table td[data-priority],
+.deleted-tasks td[data-priority] {
+  transition: background-color 0.2s ease;
+  text-align: center;
+  padding: 8px 12px;
+}
+
+/* Priority styles */
+.task-table td[data-priority="High"],
+.deleted-tasks td[data-priority="High"] {
+  background-color: var(--priority-high-bg) !important;
+  color: var(--priority-high-text) !important;
+}
+
+.task-table td[data-priority="Medium"],
+.deleted-tasks td[data-priority="Medium"] {
+  background-color: var(--priority-medium-bg) !important;
+  color: var(--priority-medium-text) !important;
+}
+
+.task-table td[data-priority="Low"],
+.deleted-tasks td[data-priority="Low"] {
+  background-color: var(--priority-low-bg) !important;
+  color: var(--priority-low-text) !important;
 }
 
 /* Status column styling */
@@ -225,88 +137,6 @@
 .deleted-tasks tr[data-status="Canceled"] td:nth-child(3) {
   background-color: var(--status-canceled-bg) !important;
   color: var(--status-canceled-text) !important;
-}
-
-/* Priority column styling */
-.task-table td:nth-child(4),
-.deleted-tasks td:nth-child(4) {
-  text-align: center;
-}
-
-.task-table tr td:nth-child(4)[data-priority="High"],
-.deleted-tasks tr td:nth-child(4)[data-priority="High"] {
-  background-color: var(--priority-high-bg) !important;
-  color: var(--priority-high-text) !important;
-}
-
-.task-table tr td:nth-child(4)[data-priority="Medium"],
-.deleted-tasks tr td:nth-child(4)[data-priority="Medium"] {
-  background-color: var(--priority-medium-bg) !important;
-  color: var(--priority-medium-text) !important;
-}
-
-.task-table tr td:nth-child(4)[data-priority="Low"],
-.deleted-tasks tr td:nth-child(4)[data-priority="Low"] {
-  background-color: #f1f5f9 !important;
-  color: #475569 !important;
-}
-
-/* Additional priority low styles to ensure consistency */
-td[data-priority="Low"],
-.task-table td[data-priority="Low"],
-.deleted-tasks td[data-priority="Low"],
-.priority-indicator.low {
-  background-color: #f1f5f9 !important;
-  color: #475569 !important;
-}
-
-/* Date columns alignment */
-.task-table td:nth-child(5),
-.task-table td:nth-child(6),
-.deleted-tasks td:nth-child(5),
-.deleted-tasks td:nth-child(6),
-.deleted-tasks td:nth-child(7),
-.task-table th:nth-child(5),
-.task-table th:nth-child(6),
-.deleted-tasks th:nth-child(5),
-.deleted-tasks th:nth-child(6),
-.deleted-tasks th:nth-child(7) {
-  text-align: center !important;
-  white-space: nowrap;
-  min-width: 120px;
-}
-
-/* Action buttons styling */
-.actions-column {
-  white-space: nowrap;
-  text-align: center;
-  min-width: 100px;
-}
-
-.edit-button,
-.delete-button,
-.restore-button,
-.permanent-delete-button,
-.duplicate-button,
-.undo-button {
-  padding: 4px 8px;
-  margin: 0 4px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  opacity: 0.7;
-  transition: opacity 0.2s, background-color 0.2s;
-  border-radius: 4px;
-}
-
-.edit-button:hover,
-.delete-button:hover,
-.restore-button:hover,
-.permanent-delete-button:hover,
-.duplicate-button:hover,
-.undo-button:hover {
-  opacity: 1;
-  background-color: #f3f4f6;
 }
 
 /* Deleted tasks section */
@@ -341,97 +171,35 @@ td[data-priority="Low"],
   font-size: 0.8em;
 }
 
+/* Deleted tasks content */
 .deleted-tasks-content {
   max-height: 0;
   overflow: hidden;
-  transition: max-height 0.3s ease-out;
+  opacity: 0;
+  width: 100%;
+  transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
 }
 
 .deleted-tasks-content.visible {
   max-height: 2000px;
-  transition: max-height 0.5s ease-in;
-}
-
-/* Past due date styling */
-.past-due {
-  color: #dc2626 !important;
-  font-weight: 600 !important;
-}
-
-/* Adding to existing CSS file */
-.task-table td:nth-child(6),
-.task-table th:nth-child(6) {
-  text-align: center !important;
-  white-space: nowrap;
-  min-width: 120px;
-}
-
-.deleted-tasks td:nth-child(6),
-.deleted-tasks td:nth-child(7),
-.deleted-tasks th:nth-child(6),
-.deleted-tasks th:nth-child(7) {
-  text-align: center !important;
-  white-space: nowrap;
-  min-width: 120px;
-}
-
-/* Last Update column styling */
-.task-table td:nth-child(6),
-.task-table th:nth-child(6) {
-  text-align: center !important;
-  white-space: nowrap;
-  min-width: 120px;
-}
-
-.deleted-tasks td:nth-child(6),
-.deleted-tasks td:nth-child(7),
-.deleted-tasks th:nth-child(6),
-.deleted-tasks th:nth-child(7) {
-  text-align: center !important;
-  white-space: nowrap;
-  min-width: 120px;
-}
-
-.board-actions {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.export-button {
-  background: #4ade80;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.export-button:hover {
-  background: #22c55e;
-  transform: translateY(-1px);
-}
-
-/* Add duplicate button styles */
-.duplicate-button {
-  padding: 4px 8px;
-  margin: 0 4px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  opacity: 0.7;
-  transition: opacity 0.2s;
-}
-
-.duplicate-button:hover {
   opacity: 1;
-  background-color: #dbeafe;
-  border-radius: 4px;
+  margin-top: 1rem;
+  overflow: visible;
+  transition: max-height 0.5s ease-in, opacity 0.3s ease-in;
 }
 
-/* Add undo button styles */
+/* Action buttons */
+.actions-column {
+  white-space: nowrap;
+  text-align: center;
+  min-width: 100px;
+}
+
+.edit-button,
+.delete-button,
+.restore-button,
+.permanent-delete-button,
+.duplicate-button,
 .undo-button {
   padding: 4px 8px;
   margin: 0 4px;
@@ -440,13 +208,128 @@ td[data-priority="Low"],
   cursor: pointer;
   opacity: 0.7;
   transition: opacity 0.2s, background-color 0.2s;
-}
-
-.undo-button:hover {
-  opacity: 1;
-  background-color: #dbeafe;
   border-radius: 4px;
 }
+
+.edit-button:hover,
+.delete-button:hover,
+.restore-button:hover,
+.permanent-delete-button:hover,
+.duplicate-button:hover,
+.undo-button:hover {
+  opacity: 1;
+  background-color: #f3f4f6;
+}
+
+/* Board actions */
+.board-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.add-task-button,
+.export-button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.add-task-button {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.export-button {
+  background-color: #4ade80;
+  color: white;
+}
+
+.export-button:hover {
+  background-color: #22c55e;
+  transform: translateY(-1px);
+}
+
+/* Date columns */
+.date-column {
+  text-align: center !important;
+  white-space: nowrap;
+  min-width: 120px;
+}
+
+/* Past due date styling */
+.past-due {
+  color: #dc2626 !important;
+  font-weight: 600 !important;
+}
+
+/* Deleted Tasks Table Styles */
+.deleted-tasks {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--base-font-size);
+  background: white;
+}
+
+.deleted-tasks th,
+.deleted-tasks td {
+  padding: 12px 16px;
+  border: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
+.deleted-tasks th {
+  background: var(--background-light);
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.deleted-tasks td:nth-child(6),
+.deleted-tasks td:nth-child(7),
+.deleted-tasks th:nth-child(6),
+.deleted-tasks th:nth-child(7) {
+  text-align: center !important;
+  white-space: nowrap;
+  min-width: 120px;
+}
+
+/* Priority indicators for deleted tasks (moved here for better organization) */
+.deleted-tasks .priority-indicator {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  width: 100%;
+  justify-content: center;
+}
+
+/* Status styles for deleted tasks (moved here for better organization) */
+.deleted-tasks td .status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  width: 100%;
+  justify-content: center;
+}
+
+/* Additional priority low styles to ensure consistency */
+td[data-priority="Low"],
+.task-table td[data-priority="Low"],
+.deleted-tasks td[data-priority="Low"],
+.priority-indicator.low {
+  background-color: #f1f5f9 !important;
+  color: #475569 !important;
+}
+
 
 /* Calendar popup styles */
 .calendar-popup {
@@ -490,18 +373,4 @@ td[data-priority="Low"],
 
 .date-column:hover {
   background-color: var(--background-light);
-}
-
-/* Add to existing CSS */
-/* Past due date styling */
-.past-due {
-  color: #dc2626 !important;
-  font-weight: 600 !important;
-}
-
-/* Status styles for both interfaces */
-.task-table tr[data-status="Canceled"] td:nth-child(3),
-.deleted-tasks tr[data-status="Canceled"] td:nth-child(3) {
-  background-color: var(--status-canceled-bg) !important;
-  color: var(--status-canceled-text) !important;
 }

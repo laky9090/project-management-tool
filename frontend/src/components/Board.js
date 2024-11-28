@@ -398,7 +398,7 @@ const Board = ({ projectId }) => {
                 Title {getSortIcon('title')}
               </th>
               <th onClick={() => handleSort('comment')}>
-                Comment {getSortIcon('comment')}
+                Notes {getSortIcon('comment')}
               </th>
               <th onClick={() => handleSort('status')}>
                 Status {getSortIcon('status')}
@@ -416,7 +416,7 @@ const Board = ({ projectId }) => {
                 Last Update {getSortIcon('updated_at')}
               </th>
               <th onClick={() => handleSort('assignee')}>
-                Assignee {getSortIcon('assignee')}
+                Assigned To {getSortIcon('assignee')}
               </th>
               <th>Actions</th>
             </tr>
