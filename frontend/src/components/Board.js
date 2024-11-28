@@ -124,6 +124,10 @@ const Board = ({ projectId }) => {
     const cell = document.querySelector(`td[data-task-id="${taskId}"][data-field="${field}"]`);
     if (!cell) return;
 
+    // Get the current task
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
     // Remove any existing calendar popup
     const existingPopup = document.querySelector('.calendar-popup');
     if (existingPopup) {
@@ -160,6 +164,26 @@ const Board = ({ projectId }) => {
         if (calendar.value) {
           const newDate = new Date(calendar.value);
           const formattedDate = newDate.toLocaleDateString('fr-FR');
+          
+          // Date validation
+          if (field === 'start_date') {
+            const endDate = task.end_date ? new Date(task.end_date) : null;
+            if (endDate && newDate > endDate) {
+              setError('Start date cannot be later than end date');
+              cell.textContent = currentValue || '';
+              popup.remove();
+              return;
+            }
+          } else if (field === 'end_date') {
+            const startDate = task.start_date ? new Date(task.start_date) : null;
+            if (startDate && newDate < startDate) {
+              setError('End date cannot be earlier than start date');
+              cell.textContent = currentValue || '';
+              popup.remove();
+              return;
+            }
+          }
+
           if (formattedDate !== currentValue) {
             const success = await handleUpdateTask(taskId, { [field]: calendar.value });
             if (!success) {
@@ -167,13 +191,13 @@ const Board = ({ projectId }) => {
             }
           }
         } else {
-          const success = await handleUpdateTask(taskId, { due_date: null });
+          const success = await handleUpdateTask(taskId, { [field]: null });
           if (!success) {
             cell.textContent = currentValue || '';
           }
         }
       } catch (error) {
-        console.error('Error updating due date:', error);
+        console.error('Error updating date:', error);
         cell.textContent = currentValue || '';
       } finally {
         popup.remove();
