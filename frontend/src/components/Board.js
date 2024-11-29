@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import TaskForm from './TaskForm';
-import api from '../api/api';
-import './Board.css';
-import './task.css';
+import React, { useEffect, useState, useCallback } from "react";
+import TaskForm from "./TaskForm";
+import api from "../api/api";
+import "./Board.css";
+import "./task.css";
 
 const Board = ({ projectId }) => {
   const [tasks, setTasks] = useState([]);
@@ -12,7 +12,10 @@ const Board = ({ projectId }) => {
   const [editingTask, setEditingTask] = useState(null);
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [showDeletedTasks, setShowDeletedTasks] = useState(false);
-  const [sortConfig, setSortConfig] = useState({ key: 'created_at', direction: 'desc' });
+  const [sortConfig, setSortConfig] = useState({
+    key: "created_at",
+    direction: "desc",
+  });
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState(null);
@@ -29,30 +32,30 @@ const Board = ({ projectId }) => {
   const handleDateValidation = (startDate, endDate) => {
     if (isValidating) return;
     setIsValidating(true);
-    
+
     if (!validateDates(startDate, endDate)) {
       setTimeout(() => setIsValidating(false), 300);
       return false;
     }
-    
+
     setIsValidating(false);
     return true;
   };
 
   const formatDate = (dateStr) => {
-    if (!dateStr) return '';
+    if (!dateStr) return "";
     const date = new Date(dateStr);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const isPastDue = date < today;
-    const formattedDate = date.toLocaleDateString('fr-FR');
+    const formattedDate = date.toLocaleDateString("fr-FR");
     return { formattedDate, isPastDue };
   };
 
   const parseDate = (dateStr) => {
     if (!dateStr) return null;
-    if (!dateStr.includes('/')) return dateStr;
-    const [day, month, year] = dateStr.split('/');
+    if (!dateStr.includes("/")) return dateStr;
+    const [day, month, year] = dateStr.split("/");
     return `${year}-${month}-${day}`;
   };
 
@@ -67,11 +70,11 @@ const Board = ({ projectId }) => {
       setError(null);
       setLoading(true);
       const response = await api.getProjectTasks(projectId);
-      setTasks(response.data.filter(task => !task.deleted_at));
-      setDeletedTasks(response.data.filter(task => task.deleted_at));
+      setTasks(response.data.filter((task) => !task.deleted_at));
+      setDeletedTasks(response.data.filter((task) => task.deleted_at));
     } catch (error) {
-      console.error('Error loading tasks:', error);
-      setError('Failed to load tasks');
+      console.error("Error loading tasks:", error);
+      setError("Failed to load tasks");
     } finally {
       setLoading(false);
     }
@@ -89,7 +92,7 @@ const Board = ({ projectId }) => {
 
       if (updatedData.due_date) {
         if (!validateDate(updatedData.due_date)) {
-          throw new Error('Invalid date format');
+          throw new Error("Invalid date format");
         }
         updatedData.due_date = parseDate(updatedData.due_date);
       }
@@ -100,8 +103,8 @@ const Board = ({ projectId }) => {
       }
       return true;
     } catch (error) {
-      console.error('Error updating task:', error);
-      setError('Failed to update task. Please try again.');
+      console.error("Error updating task:", error);
+      setError("Failed to update task. Please try again.");
       return false;
     } finally {
       setUpdating(false);
@@ -109,17 +112,19 @@ const Board = ({ projectId }) => {
   };
 
   const handleCommentEdit = async (taskId, currentValue) => {
-    const cell = document.querySelector(`td[data-task-id="${taskId}"][data-field="comment"]`);
+    const cell = document.querySelector(
+      `td[data-task-id="${taskId}"][data-field="comment"]`,
+    );
     if (!cell) return;
 
-    const textarea = document.createElement('textarea');
-    textarea.value = currentValue || '';
-    textarea.style.width = '100%';
-    textarea.style.minHeight = '100px';
-    textarea.style.resize = 'vertical';
+    const textarea = document.createElement("textarea");
+    textarea.value = currentValue || "";
+    textarea.style.width = "100%";
+    textarea.style.minHeight = "100px";
+    textarea.style.resize = "vertical";
 
     const originalContent = cell.innerHTML;
-    cell.innerHTML = '';
+    cell.innerHTML = "";
     cell.appendChild(textarea);
     textarea.focus();
 
@@ -136,39 +141,41 @@ const Board = ({ projectId }) => {
         }
       } catch (error) {
         cell.innerHTML = originalContent;
-        setError('Failed to update comment. Please try again.');
+        setError("Failed to update comment. Please try again.");
       }
-      textarea.removeEventListener('blur', handleBlur);
+      textarea.removeEventListener("blur", handleBlur);
     };
 
-    textarea.addEventListener('blur', handleBlur);
+    textarea.addEventListener("blur", handleBlur);
   };
 
   const handleDateEdit = async (taskId, currentValue, field) => {
-    const cell = document.querySelector(`td[data-task-id="${taskId}"][data-field="${field}"]`);
+    const cell = document.querySelector(
+      `td[data-task-id="${taskId}"][data-field="${field}"]`,
+    );
     if (!cell) return;
 
     // Get the current task
-    const task = tasks.find(t => t.id === taskId);
+    const task = tasks.find((t) => t.id === taskId);
     if (!task) return;
 
     // Remove any existing calendar popup
-    const existingPopup = document.querySelector('.calendar-popup');
+    const existingPopup = document.querySelector(".calendar-popup");
     if (existingPopup) {
       existingPopup.remove();
     }
 
     // Create calendar popup container
-    const popup = document.createElement('div');
-    popup.className = 'calendar-popup';
+    const popup = document.createElement("div");
+    popup.className = "calendar-popup";
 
     // Create calendar input
-    const calendar = document.createElement('input');
-    calendar.type = 'date';
-    
+    const calendar = document.createElement("input");
+    calendar.type = "date";
+
     // Set current value if exists
     if (currentValue) {
-      const [day, month, year] = currentValue.split('/');
+      const [day, month, year] = currentValue.split("/");
       calendar.value = `${year}-${month}-${day}`;
     }
 
@@ -176,10 +183,10 @@ const Board = ({ projectId }) => {
 
     // Position popup below the cell
     const cellRect = cell.getBoundingClientRect();
-    popup.style.position = 'absolute';
+    popup.style.position = "absolute";
     popup.style.top = `${cellRect.bottom + window.scrollY}px`;
     popup.style.left = `${cellRect.left + window.scrollX}px`;
-    
+
     document.body.appendChild(popup);
     calendar.focus();
 
@@ -188,32 +195,40 @@ const Board = ({ projectId }) => {
         if (calendar.value) {
           const newDate = new Date(calendar.value);
           const updatedDates = {
-            start_date: field === 'start_date' ? calendar.value : task.start_date,
-            end_date: field === 'end_date' ? calendar.value : task.end_date
+            start_date:
+              field === "start_date" ? calendar.value : task.start_date,
+            end_date: field === "end_date" ? calendar.value : task.end_date,
           };
 
-          if (!handleDateValidation(updatedDates.start_date, updatedDates.end_date)) {
-            cell.textContent = currentValue || '';
+          if (
+            !handleDateValidation(
+              updatedDates.start_date,
+              updatedDates.end_date,
+            )
+          ) {
+            cell.textContent = currentValue || "";
             popup.remove();
             return;
           }
 
-          const formattedDate = newDate.toLocaleDateString('fr-FR');
+          const formattedDate = newDate.toLocaleDateString("fr-FR");
           if (formattedDate !== currentValue) {
-            const success = await handleUpdateTask(taskId, { [field]: calendar.value });
+            const success = await handleUpdateTask(taskId, {
+              [field]: calendar.value,
+            });
             if (!success) {
-              cell.textContent = currentValue || '';
+              cell.textContent = currentValue || "";
             }
           }
         } else {
           const success = await handleUpdateTask(taskId, { [field]: null });
           if (!success) {
-            cell.textContent = currentValue || '';
+            cell.textContent = currentValue || "";
           }
         }
       } catch (error) {
-        console.error('Error updating date:', error);
-        cell.textContent = currentValue || '';
+        console.error("Error updating date:", error);
+        cell.textContent = currentValue || "";
       } finally {
         popup.remove();
       }
@@ -222,16 +237,16 @@ const Board = ({ projectId }) => {
     const handleClickOutside = (event) => {
       if (!popup.contains(event.target) && event.target !== cell) {
         handleChange();
-        document.removeEventListener('click', handleClickOutside);
+        document.removeEventListener("click", handleClickOutside);
       }
     };
 
     // Wait for next tick to add click outside listener
     setTimeout(() => {
-      document.addEventListener('click', handleClickOutside);
+      document.addEventListener("click", handleClickOutside);
     }, 0);
 
-    calendar.addEventListener('change', handleChange);
+    calendar.addEventListener("change", handleChange);
   };
 
   const handleExportTasks = async () => {
@@ -239,16 +254,19 @@ const Board = ({ projectId }) => {
       setError(null);
       await api.exportProjectTasks(projectId);
     } catch (error) {
-      console.error('Error exporting tasks:', error);
-      setError('Failed to export tasks. Please try again.');
+      console.error("Error exporting tasks:", error);
+      setError("Failed to export tasks. Please try again.");
     }
   };
 
-  const handleTaskCreated = useCallback((newTask) => {
-    setTasks(prevTasks => [newTask, ...prevTasks]);
-    setShowTaskForm(false);
-    loadTasks();
-  }, [loadTasks]);
+  const handleTaskCreated = useCallback(
+    (newTask) => {
+      setTasks((prevTasks) => [newTask, ...prevTasks]);
+      setShowTaskForm(false);
+      loadTasks();
+    },
+    [loadTasks],
+  );
 
   const handleDeleteTask = (taskId) => {
     setTaskToDelete(taskId);
@@ -261,8 +279,8 @@ const Board = ({ projectId }) => {
       setTaskToDelete(null);
       loadTasks();
     } catch (error) {
-      console.error('Error deleting task:', error);
-      setError('Failed to delete task. Please try again.');
+      console.error("Error deleting task:", error);
+      setError("Failed to delete task. Please try again.");
       loadTasks();
     }
   };
@@ -273,21 +291,27 @@ const Board = ({ projectId }) => {
       await api.restoreTask(taskId);
       loadTasks();
     } catch (error) {
-      console.error('Error restoring task:', error);
-      setError('Failed to restore task. Please try again.');
+      console.error("Error restoring task:", error);
+      setError("Failed to restore task. Please try again.");
       loadTasks();
     }
   };
 
   const handlePermanentDelete = async (taskId) => {
-    if (window.confirm('This action cannot be undone. Are you sure you want to permanently delete this task?')) {
+    if (
+      window.confirm(
+        "This action cannot be undone. Are you sure you want to permanently delete this task?",
+      )
+    ) {
       try {
         setError(null);
         await api.permanentlyDeleteTask(taskId);
-        setDeletedTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+        setDeletedTasks((prevTasks) =>
+          prevTasks.filter((task) => task.id !== taskId),
+        );
       } catch (error) {
-        console.error('Error permanently deleting task:', error);
-        setError('Failed to permanently delete task. Please try again.');
+        console.error("Error permanently deleting task:", error);
+        setError("Failed to permanently delete task. Please try again.");
       }
     }
   };
@@ -300,78 +324,88 @@ const Board = ({ projectId }) => {
         await loadTasks();
       }
     } catch (error) {
-      console.error('Error duplicating task:', error);
-      setError('Failed to duplicate task. Please try again.');
+      console.error("Error duplicating task:", error);
+      setError("Failed to duplicate task. Please try again.");
     }
   };
 
   const handleSort = (key) => {
-    setSortConfig(prevConfig => ({
+    setSortConfig((prevConfig) => ({
       key,
-      direction: prevConfig.key === key && prevConfig.direction === 'asc' ? 'desc' : 'asc'
+      direction:
+        prevConfig.key === key && prevConfig.direction === "asc"
+          ? "desc"
+          : "asc",
     }));
   };
 
   const handleAssigneeEdit = async (taskId, currentValue) => {
     try {
       setError(null);
-      const cell = document.querySelector(`td[data-task-id="${taskId}"][data-field="assignee"]`);
+      const cell = document.querySelector(
+        `td[data-task-id="${taskId}"][data-field="assignee"]`,
+      );
       if (!cell) return;
-      
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.value = currentValue || '';
-      input.style.width = '100%';
-      input.style.textAlign = 'center';
-      input.placeholder = 'Enter assignee name';
-      
+
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = currentValue || "";
+      input.style.width = "100%";
+      input.style.textAlign = "center";
+      input.placeholder = "Enter assignee name";
+
       const originalContent = cell.innerHTML;
-      cell.innerHTML = '';
+      cell.innerHTML = "";
       cell.appendChild(input);
       input.focus();
-      
+
       const handleUpdate = async () => {
         try {
           setUpdating(true);
           const newValue = input.value;
-          const assigneeValue = !newValue || newValue.trim() === '' ? null : newValue.trim();
-          
-          const response = await api.updateTask(taskId, { assignee: assigneeValue });
-          
+          const assigneeValue =
+            !newValue || newValue.trim() === "" ? null : newValue.trim();
+
+          const response = await api.updateTask(taskId, {
+            assignee: assigneeValue,
+          });
+
           if (response.data) {
             // Update local state
-            setTasks(prevTasks =>
-              prevTasks.map(task =>
+            setTasks((prevTasks) =>
+              prevTasks.map((task) =>
                 task.id === taskId
                   ? { ...task, assignee: response.data.assignee }
-                  : task
-              )
+                  : task,
+              ),
             );
             // Update cell content
-            cell.textContent = response.data.assignee || 'Unassigned';
+            cell.textContent = response.data.assignee || "Unassigned";
           } else {
             cell.innerHTML = originalContent;
-            setError('Failed to update assignee');
+            setError("Failed to update assignee");
           }
         } catch (error) {
-          console.error('Error updating assignee:', error);
+          console.error("Error updating assignee:", error);
           cell.innerHTML = originalContent;
-          const errorMessage = error.response?.data?.error || 'Failed to update assignee. Please try again.';
+          const errorMessage =
+            error.response?.data?.error ||
+            "Failed to update assignee. Please try again.";
           setError(errorMessage);
         } finally {
           setUpdating(false);
         }
       };
-      
-      input.addEventListener('blur', handleUpdate);
-      input.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
+
+      input.addEventListener("blur", handleUpdate);
+      input.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
           input.blur();
         }
       });
     } catch (error) {
-      console.error('Error setting up assignee edit:', error);
-      setError('Failed to initialize assignee editing');
+      console.error("Error setting up assignee edit:", error);
+      setError("Failed to initialize assignee editing");
     }
   };
 
@@ -384,8 +418,8 @@ const Board = ({ projectId }) => {
         await loadTasks();
       }
     } catch (error) {
-      console.error('Error undoing task change:', error);
-      setError('Failed to undo task change. Please try again.');
+      console.error("Error undoing task change:", error);
+      setError("Failed to undo task change. Please try again.");
     } finally {
       setUpdating(false);
     }
@@ -393,26 +427,26 @@ const Board = ({ projectId }) => {
 
   const sortedTasks = [...tasks].sort((a, b) => {
     if (a[sortConfig.key] < b[sortConfig.key]) {
-      return sortConfig.direction === 'asc' ? -1 : 1;
+      return sortConfig.direction === "asc" ? -1 : 1;
     }
     if (a[sortConfig.key] > b[sortConfig.key]) {
-      return sortConfig.direction === 'asc' ? 1 : -1;
+      return sortConfig.direction === "asc" ? 1 : -1;
     }
     return 0;
   });
 
   const getSortIcon = (key) => {
     if (sortConfig.key === key) {
-      return sortConfig.direction === 'asc' ? ' ↑' : ' ↓';
+      return sortConfig.direction === "asc" ? " ↑" : " ↓";
     }
-    return ' ↕';
+    return " ↕";
   };
 
   if (loading) {
     return <div className="loading">Loading tasks...</div>;
   }
 
-      return (
+  return (
     <div className="board">
       {dateValidationError && (
         <div className="date-validation-overlay">
@@ -433,7 +467,10 @@ const Board = ({ projectId }) => {
       {updating && <div className="loading">Updating task...</div>}
 
       <div className="board-actions">
-        <button className="add-task-button" onClick={() => setShowTaskForm(true)}>
+        <button
+          className="add-task-button"
+          onClick={() => setShowTaskForm(true)}
+        >
           ➕ Add New Task
         </button>
         <button className="export-button" onClick={handleExportTasks}>
@@ -453,37 +490,46 @@ const Board = ({ projectId }) => {
         <table className="task-table">
           <thead>
             <tr>
-              <th onClick={() => handleSort('title')}>
-                Title {getSortIcon('title')}
+              <th onClick={() => handleSort("title")}>
+                Title {getSortIcon("title")}
               </th>
-              <th onClick={() => handleSort('comment')}>
-                Notes {getSortIcon('comment')}
+              <th onClick={() => handleSort("comment")}>
+                Notes {getSortIcon("comment")}
               </th>
-              <th onClick={() => handleSort('status')}>
-                Status {getSortIcon('status')}
+              <th onClick={() => handleSort("status")}>
+                Status {getSortIcon("status")}
               </th>
-              <th onClick={() => handleSort('priority')}>
-                Priority {getSortIcon('priority')}
+              <th onClick={() => handleSort("priority")}>
+                Priority {getSortIcon("priority")}
               </th>
-              <th onClick={() => handleSort('start_date')} className="date-column">
-                Start Date {getSortIcon('start_date')}
+              <th
+                onClick={() => handleSort("start_date")}
+                className="date-column"
+              >
+                Start Date {getSortIcon("start_date")}
               </th>
-              <th onClick={() => handleSort('end_date')} className="date-column">
-                End Date {getSortIcon('end_date')}
+              <th
+                onClick={() => handleSort("end_date")}
+                className="date-column"
+              >
+                End Date {getSortIcon("end_date")}
               </th>
-              <th onClick={() => handleSort('updated_at')} className="date-column">
-                Last Update {getSortIcon('updated_at')}
+              <th
+                onClick={() => handleSort("updated_at")}
+                className="date-column"
+              >
+                Last Update {getSortIcon("updated_at")}
               </th>
-              <th onClick={() => handleSort('assignee')}>
-                Assigned To {getSortIcon('assignee')}
+              <th onClick={() => handleSort("assignee")}>
+                Assigned To {getSortIcon("assignee")}
               </th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {sortedTasks.map(task => (
+            {sortedTasks.map((task) => (
               <tr key={task.id} data-status={task.status}>
-                <td 
+                <td
                   onClick={() => setEditingTask(task.id)}
                   data-task-id={task.id}
                   data-field="title"
@@ -500,7 +546,7 @@ const Board = ({ projectId }) => {
                         setEditingTask(null);
                       }}
                       onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
+                        if (e.key === "Enter") {
                           e.target.blur();
                         }
                       }}
@@ -510,18 +556,20 @@ const Board = ({ projectId }) => {
                     task.title
                   )}
                 </td>
-                <td 
+                <td
                   onClick={() => handleCommentEdit(task.id, task.comment)}
                   data-task-id={task.id}
                   data-field="comment"
-                  style={{ whiteSpace: 'pre-wrap' }}
+                  style={{ whiteSpace: "pre-wrap" }}
                 >
-                  {task.comment || ''}
+                  {task.comment || ""}
                 </td>
                 <td>
                   <select
                     value={task.status}
-                    onChange={(e) => handleUpdateTask(task.id, { status: e.target.value })}
+                    onChange={(e) =>
+                      handleUpdateTask(task.id, { status: e.target.value })
+                    }
                   >
                     <option value="To Do">To Do</option>
                     <option value="In Progress">In Progress</option>
@@ -532,24 +580,38 @@ const Board = ({ projectId }) => {
                 <td data-priority={task.priority}>
                   <select
                     value={task.priority}
-                    onChange={(e) => handleUpdateTask(task.id, { priority: e.target.value })}
+                    onChange={(e) =>
+                      handleUpdateTask(task.id, { priority: e.target.value })
+                    }
                   >
                     <option value="Low">Low</option>
                     <option value="Medium">Medium</option>
                     <option value="High">High</option>
                   </select>
                 </td>
-                <td 
+                <td
                   className="date-column"
-                  onClick={() => handleDateEdit(task.id, formatDate(task.start_date).formattedDate, 'start_date')}
+                  onClick={() =>
+                    handleDateEdit(
+                      task.id,
+                      formatDate(task.start_date).formattedDate,
+                      "start_date",
+                    )
+                  }
                   data-task-id={task.id}
                   data-field="start_date"
                 >
                   {formatDate(task.start_date).formattedDate}
                 </td>
-                <td 
-                  className={`date-column ${formatDate(task.end_date).isPastDue ? 'past-due' : ''}`}
-                  onClick={() => handleDateEdit(task.id, formatDate(task.end_date).formattedDate, 'end_date')}
+                <td
+                  className={`date-column ${formatDate(task.end_date).isPastDue ? "past-due" : ""}`}
+                  onClick={() =>
+                    handleDateEdit(
+                      task.id,
+                      formatDate(task.end_date).formattedDate,
+                      "end_date",
+                    )
+                  }
                   data-task-id={task.id}
                   data-field="end_date"
                 >
@@ -563,11 +625,13 @@ const Board = ({ projectId }) => {
                   data-task-id={task.id}
                   data-field="assignee"
                 >
-                  {task.assignee || 'Unassigned'}
+                  {task.assignee || "Unassigned"}
                 </td>
                 <td className="actions-column">
                   <button
-                    onClick={() => setEditingTask(editingTask === task.id ? null : task.id)}
+                    onClick={() =>
+                      setEditingTask(editingTask === task.id ? null : task.id)
+                    }
                     className="edit-button"
                     title="Edit"
                   >
@@ -597,7 +661,7 @@ const Board = ({ projectId }) => {
                   {taskToDelete === task.id && (
                     <div className="delete-confirmation-overlay">
                       <div className="delete-confirmation">
-                        <p>Are you sure you want to delete this task? You can restore it later from the Deleted Tasks section.</p>
+                        <p>Are you sure you want to delete this task?</p>
                         <div className="confirmation-buttons">
                           <button
                             className="confirm-delete"
@@ -624,21 +688,27 @@ const Board = ({ projectId }) => {
 
       {deletedTasks.length > 0 && (
         <div className="deleted-tasks-section">
-          <div 
-            className="deleted-tasks-header" 
+          <div
+            className="deleted-tasks-header"
             onClick={() => setShowDeletedTasks(!showDeletedTasks)}
           >
             <h3>
               Deleted Tasks ({deletedTasks.length})
-              <span 
+              <span
                 className="toggle-icon"
-                style={{ transform: showDeletedTasks ? 'rotate(0deg)' : 'rotate(-90deg)' }}
+                style={{
+                  transform: showDeletedTasks
+                    ? "rotate(0deg)"
+                    : "rotate(-90deg)",
+                }}
               >
                 ▼
               </span>
             </h3>
           </div>
-          <div className={`deleted-tasks-content ${showDeletedTasks ? 'visible' : ''}`}>
+          <div
+            className={`deleted-tasks-content ${showDeletedTasks ? "visible" : ""}`}
+          >
             <div className="table-container">
               <table className="task-table deleted-tasks">
                 <thead>
@@ -654,17 +724,21 @@ const Board = ({ projectId }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {deletedTasks.map(task => (
+                  {deletedTasks.map((task) => (
                     <tr key={task.id} data-status={task.status}>
                       <td>{task.title}</td>
-                      <td>{task.comment || ''}</td>
+                      <td>{task.comment || ""}</td>
                       <td>
-                        <span className={`status-badge ${task.status.toLowerCase().replace(' ', '-')}`}>
+                        <span
+                          className={`status-badge ${task.status.toLowerCase().replace(" ", "-")}`}
+                        >
                           {task.status}
                         </span>
                       </td>
                       <td data-priority={task.priority}>
-                        <span className="priority-indicator">{task.priority}</span>
+                        <span className="priority-indicator">
+                          {task.priority}
+                        </span>
                       </td>
                       <td className="date-column">
                         {formatDate(task.due_date).formattedDate}
