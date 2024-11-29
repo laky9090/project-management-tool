@@ -8,12 +8,36 @@ const Board = ({ projectId }) => {
   const [tasks, setTasks] = useState([]);
   const [deletedTasks, setDeletedTasks] = useState([]);
   const [error, setError] = useState(null);
+  const [dateValidationError, setDateValidationError] = useState(null);
   const [editingTask, setEditingTask] = useState(null);
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [showDeletedTasks, setShowDeletedTasks] = useState(false);
   const [sortConfig, setSortConfig] = useState({ key: 'created_at', direction: 'desc' });
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState(null);
+  const [isValidating, setIsValidating] = useState(false);
+
+  const validateDates = (startDate, endDate) => {
+    if (new Date(startDate) > new Date(endDate)) {
+      setDateValidationError("Start date cannot be later than end date");
+      return false;
+    }
+    return true;
+  };
+
+  const handleDateValidation = (startDate, endDate) => {
+    if (isValidating) return;
+    setIsValidating(true);
+    
+    if (!validateDates(startDate, endDate)) {
+      setTimeout(() => setIsValidating(false), 300);
+      return false;
+    }
+    
+    setIsValidating(false);
+    return true;
+  };
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
@@ -163,27 +187,18 @@ const Board = ({ projectId }) => {
       try {
         if (calendar.value) {
           const newDate = new Date(calendar.value);
-          const formattedDate = newDate.toLocaleDateString('fr-FR');
-          
-          // Date validation
-          if (field === 'start_date') {
-            const endDate = task.end_date ? new Date(task.end_date) : null;
-            if (endDate && newDate > endDate) {
-              setError('Start date cannot be later than end date');
-              cell.textContent = currentValue || '';
-              popup.remove();
-              return;
-            }
-          } else if (field === 'end_date') {
-            const startDate = task.start_date ? new Date(task.start_date) : null;
-            if (startDate && newDate < startDate) {
-              setError('End date cannot be earlier than start date');
-              cell.textContent = currentValue || '';
-              popup.remove();
-              return;
-            }
+          const updatedDates = {
+            start_date: field === 'start_date' ? calendar.value : task.start_date,
+            end_date: field === 'end_date' ? calendar.value : task.end_date
+          };
+
+          if (!handleDateValidation(updatedDates.start_date, updatedDates.end_date)) {
+            cell.textContent = currentValue || '';
+            popup.remove();
+            return;
           }
 
+          const formattedDate = newDate.toLocaleDateString('fr-FR');
           if (formattedDate !== currentValue) {
             const success = await handleUpdateTask(taskId, { [field]: calendar.value });
             if (!success) {
@@ -235,10 +250,15 @@ const Board = ({ projectId }) => {
     loadTasks();
   }, [loadTasks]);
 
-  const handleDeleteTask = async (taskId) => {
+  const handleDeleteTask = (taskId) => {
+    setTaskToDelete(taskId);
+  };
+
+  const confirmDelete = async (taskId) => {
     try {
       setError(null);
       await api.deleteTask(taskId);
+      setTaskToDelete(null);
       loadTasks();
     } catch (error) {
       console.error('Error deleting task:', error);
@@ -392,8 +412,23 @@ const Board = ({ projectId }) => {
     return <div className="loading">Loading tasks...</div>;
   }
 
-  return (
+      return (
     <div className="board">
+      {dateValidationError && (
+        <div className="date-validation-overlay">
+          <div className="date-validation-dialog">
+            <p>{dateValidationError}</p>
+            <div className="date-validation-buttons">
+              <button
+                className="date-validation-ok"
+                onClick={() => setDateValidationError(null)}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {error && <div className="error-message">{error}</div>}
       {updating && <div className="loading">Updating task...</div>}
 
@@ -559,6 +594,27 @@ const Board = ({ projectId }) => {
                   >
                     🗑️
                   </button>
+                  {taskToDelete === task.id && (
+                    <div className="delete-confirmation-overlay">
+                      <div className="delete-confirmation">
+                        <p>Are you sure you want to delete this task? You can restore it later from the Deleted Tasks section.</p>
+                        <div className="confirmation-buttons">
+                          <button
+                            className="confirm-delete"
+                            onClick={() => confirmDelete(task.id)}
+                          >
+                            YES
+                          </button>
+                          <button
+                            className="cancel-delete"
+                            onClick={() => setTaskToDelete(null)}
+                          >
+                            NO
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}
