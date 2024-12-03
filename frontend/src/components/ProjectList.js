@@ -4,7 +4,6 @@ import './ProjectList.css';
 
 const ProjectList = ({ onSelectProject }) => {
   const [projects, setProjects] = useState([]);
-  const [deletedProjects, setDeletedProjects] = useState([]);
   const [editingProject, setEditingProject] = useState(null);
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [newProject, setNewProject] = useState({
@@ -12,7 +11,6 @@ const ProjectList = ({ onSelectProject }) => {
     description: '',
     deadline: new Date().toISOString().split('T')[0]
   });
-  const [showDeletedProjects, setShowDeletedProjects] = useState(false);
 
   useEffect(() => {
     loadProjects();
@@ -20,15 +18,10 @@ const ProjectList = ({ onSelectProject }) => {
 
   const loadProjects = async () => {
     try {
-      const [activeResponse, deletedResponse] = await Promise.all([
-        api.getProjects(),
-        api.getDeletedProjects()
-      ]);
-      setProjects(activeResponse.data || []);
-      setDeletedProjects(Array.isArray(deletedResponse.data) ? deletedResponse.data : []);
+      const response = await api.getProjects();
+      setProjects(response.data || []);
     } catch (error) {
       console.error('Error loading projects:', error);
-      setDeletedProjects([]);
     }
   };
 
@@ -61,37 +54,12 @@ const ProjectList = ({ onSelectProject }) => {
   const handleDeleteProject = async (projectId, e) => {
     e.preventDefault();
     e.stopPropagation();
-    try {
-      await api.deleteProject(projectId);
-      const deletedProject = projects.find(p => p.id === projectId);
-      setProjects(projects.filter(p => p.id !== projectId));
-      setDeletedProjects([...deletedProjects, { ...deletedProject, deleted_at: new Date() }]);
-    } catch (error) {
-      console.error('Error deleting project:', error);
-    }
-  };
-
-  const handleRestoreProject = async (projectId, e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    try {
-      await api.restoreProject(projectId);
-      setDeletedProjects(deletedProjects.filter(p => p.id !== projectId));
-      loadProjects();
-    } catch (error) {
-      console.error('Error restoring project:', error);
-    }
-  };
-
-  const handlePermanentDeleteProject = async (projectId, e) => {
-    e.preventDefault();
-    e.stopPropagation();
     if (window.confirm('This action cannot be undone. Are you sure you want to permanently delete this project and all its tasks?')) {
       try {
-        await api.permanentlyDeleteProject(projectId);
-        setDeletedProjects(deletedProjects.filter(p => p.id !== projectId));
+        await api.deleteProject(projectId);
+        setProjects(projects.filter(p => p.id !== projectId));
       } catch (error) {
-        console.error('Error permanently deleting project:', error);
+        console.error('Error deleting project:', error);
       }
     }
   };
@@ -197,50 +165,7 @@ const ProjectList = ({ onSelectProject }) => {
         ))}
       </div>
 
-      {deletedProjects.length > 0 && (
-        <div className="deleted-projects">
-          <div 
-            className="deleted-projects-header"
-            onClick={() => setShowDeletedProjects(!showDeletedProjects)}
-          >
-            <h3>
-              Deleted Projects ({deletedProjects.length})
-              <span className={`toggle-icon ${showDeletedProjects ? 'expanded' : ''}`}>
-                ▼
-              </span>
-            </h3>
-          </div>
-          <div className={`deleted-projects-content ${showDeletedProjects ? 'expanded' : ''}`}>
-            {deletedProjects.map(project => (
-              <div key={project.id} className="project-card deleted">
-                <div className="project-content">
-                  <h4>{project.name}</h4>
-                  <p>{project.description}</p>
-                  <span className="deadline">
-                    Deleted: {new Date(project.deleted_at).toLocaleDateString('fr-FR')}
-                  </span>
-                </div>
-                <div className="project-actions">
-                  <button
-                    onClick={(e) => handleRestoreProject(project.id, e)}
-                    className="restore-button"
-                    title="Restore project"
-                  >
-                    🔄
-                  </button>
-                  <button
-                    onClick={(e) => handlePermanentDeleteProject(project.id, e)}
-                    className="permanent-delete-button"
-                    title="Permanently delete project"
-                  >
-                    ⛔
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      
     </div>
   );
 };

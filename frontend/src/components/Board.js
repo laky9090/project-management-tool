@@ -254,7 +254,7 @@ const Board = ({ projectId }) => {
   const handleDeleteTask = async (taskId) => {
     try {
       setError(null);
-      if (window.confirm('Are you sure you want to permanently delete this task? This action cannot be undone.')) {
+      if (window.confirm('Are you sure you want to delete this task? This action cannot be undone.')) {
         await api.deleteTask(taskId);
         await loadTasks();
       }
