@@ -305,7 +305,7 @@ def list_projects():
                    COUNT(t.id) as total_tasks,
                    COUNT(CASE WHEN t.status = 'Done' THEN 1 END) as completed_tasks
             FROM projects p
-            LEFT JOIN tasks t ON p.id = t.project_id AND t.deleted_at IS NULL
+            LEFT JOIN tasks t ON p.id = t.project_id
             WHERE p.deleted_at IS NULL
             GROUP BY p.id
             ORDER BY p.created_at DESC
