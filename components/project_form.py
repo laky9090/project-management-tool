@@ -26,6 +26,124 @@ def convert_project_dates(project):
         logger.error(f"Error converting project dates: {str(e)}")
         return project
 
+def delete_project(project_id, permanent=False):
+    """Delete project and all its tasks"""
+    try:
+        # Start transaction
+        execute_query("BEGIN")
+        
+        if permanent:
+            # Delete task history first
+            execute_query("""
+                DELETE FROM task_history 
+                WHERE task_id IN (SELECT id FROM tasks WHERE project_id = %s)
+            """, (project_id,))
+            
+            # Delete task dependencies
+            execute_query("""
+                DELETE FROM task_dependencies 
+                WHERE task_id IN (SELECT id FROM tasks WHERE project_id = %s)
+                OR depends_on_id IN (SELECT id FROM tasks WHERE project_id = %s)
+            """, (project_id, project_id))
+            
+            # Delete subtasks
+            execute_query("""
+                DELETE FROM subtasks 
+                WHERE parent_task_id IN (SELECT id FROM tasks WHERE project_id = %s)
+            """, (project_id,))
+            
+            # Delete all tasks
+            execute_query("""
+                DELETE FROM tasks 
+                WHERE project_id = %s
+            """, (project_id,))
+            
+            # Finally delete the project
+            result = execute_query("""
+                DELETE FROM projects 
+                WHERE id = %s 
+                RETURNING id
+            """, (project_id,))
+        else:
+            # Soft delete project and its tasks
+            result = execute_query("""
+                UPDATE projects 
+                SET deleted_at = CURRENT_TIMESTAMP 
+                WHERE id = %s AND deleted_at IS NULL
+                RETURNING id
+            """, (project_id,))
+            
+            if result:
+                # Soft delete all associated tasks
+                execute_query("""
+                    UPDATE tasks 
+                    SET deleted_at = CURRENT_TIMESTAMP 
+                    WHERE project_id = %s AND deleted_at IS NULL
+                """, (project_id,))
+        
+        if result:
+            execute_query("COMMIT")
+            # Clear cache after successful deletion
+            if 'query_cache' in st.session_state:
+                st.session_state.query_cache.clear()
+            return True
+            
+        execute_query("ROLLBACK")
+        return False
+    except Exception as e:
+        execute_query("ROLLBACK")
+        logger.error(f"Error deleting project: {str(e)}")
+        return False
+
+def restore_project(project_id):
+    """Restore a soft-deleted project and its tasks"""
+    try:
+        execute_query("BEGIN")
+        result = execute_query("""
+            UPDATE projects 
+            SET deleted_at = NULL 
+            WHERE id = %s AND deleted_at IS NOT NULL
+            RETURNING id
+        """, (project_id,))
+        
+        if result:
+            # Restore all associated tasks
+            execute_query("""
+                UPDATE tasks 
+                SET deleted_at = NULL 
+                WHERE project_id = %s AND deleted_at IS NOT NULL
+            """, (project_id,))
+            
+            execute_query("COMMIT")
+            # Clear cache after successful restoration
+            if 'query_cache' in st.session_state:
+                st.session_state.query_cache.clear()
+            return True
+            
+        execute_query("ROLLBACK")
+        return False
+    except Exception as e:
+        execute_query("ROLLBACK")
+        logger.error(f"Error restoring project: {str(e)}")
+        return False
+
+def get_deleted_projects():
+    """Get list of deleted projects with task counts"""
+    try:
+        return execute_query('''
+            SELECT p.*,
+                   COUNT(t.id) as total_tasks,
+                   COUNT(CASE WHEN t.status = 'Done' THEN 1 END) as completed_tasks
+            FROM projects p
+            LEFT JOIN tasks t ON p.id = t.project_id
+            WHERE p.deleted_at IS NOT NULL
+            GROUP BY p.id
+            ORDER BY p.deleted_at DESC
+        ''')
+    except Exception as e:
+        logger.error(f"Error fetching deleted projects: {str(e)}")
+        return []
+
 def create_project_form():
     """Create new project form"""
     # Initialize show_form in session state if not exists
@@ -90,41 +208,6 @@ def create_project_form():
                 st.error(f"Error creating project: {str(e)}")
                 return False
     return False
-
-def delete_project(project_id):
-    """Delete project and all its tasks permanently"""
-    try:
-        # Start transaction
-        execute_query("BEGIN")
-        
-        # Delete all tasks first
-        execute_query("""
-            DELETE FROM tasks 
-            WHERE project_id = %s
-        """, (project_id,))
-        
-        # Then delete the project
-        result = execute_query("""
-            DELETE FROM projects 
-            WHERE id = %s 
-            RETURNING id
-        """, (project_id,))
-        
-        if result:
-            # Commit transaction
-            execute_query("COMMIT")
-            logger.info(f"Project {project_id} and its tasks deleted successfully")
-            return True
-        
-        # Rollback if no rows affected
-        execute_query("ROLLBACK")
-        return False
-    except Exception as e:
-        execute_query("ROLLBACK")
-        logger.error(f"Error deleting project: {str(e)}")
-        return False
-
-# Removed restore_project and get_deleted_projects functions as part of removing soft deletion functionality
 
 def edit_project_form(project_id):
     """Edit project form"""
@@ -257,8 +340,15 @@ def list_projects():
                             
                     with col4:
                         if st.button("🗑️", key=f"delete_project_{project['id']}", help="Delete project"):
-                            if delete_project(project['id']):
-                                st.success(f"Project '{project['name']}' deleted")
+                            if st.button("⛔", key=f"confirm_delete_{project['id']}", help="Permanently delete"):
+                                if delete_project(project['id'], permanent=True):
+                                    st.success(f"Project '{project['name']}' permanently deleted")
+                                    time.sleep(0.5)
+                                    st.rerun()
+                                else:
+                                    st.error("Failed to delete project")
+                            elif delete_project(project['id']):
+                                st.success(f"Project '{project['name']}' moved to trash")
                                 time.sleep(0.5)
                                 st.rerun()
                             else:
@@ -271,7 +361,45 @@ def list_projects():
         else:
             st.info("No active projects found. Create one to get started!")
         
-        # Removed deleted projects section as part of removing soft deletion functionality
+        # Display deleted projects section
+        deleted_projects = get_deleted_projects()
+        if deleted_projects:
+            st.write("### Deleted Projects")
+            deleted_projects = [convert_project_dates(project) for project in deleted_projects]
+            
+            # Add deleted projects count
+            st.write(f"({len(deleted_projects)} projects)")
+            
+            # Add expand/collapse functionality
+            if st.checkbox("Show deleted projects", key="show_deleted_projects"):
+                for project in deleted_projects:
+                    with st.container():
+                        col1, col2, col3, col4 = st.columns([6, 2, 1, 1])
+                        
+                        with col1:
+                            st.write(f"{project['name']} ({project['completed_tasks']}/{project['total_tasks']} tasks)")
+                            
+                        with col2:
+                            deadline_str = datetime.fromisoformat(project['deadline']).strftime('%d/%m/%Y') if project['deadline'] else 'No deadline'
+                            st.write(f"Due: {deadline_str}")
+                            
+                        with col3:
+                            if st.button("🔄", key=f"restore_project_{project['id']}", help="Restore project"):
+                                if restore_project(project['id']):
+                                    st.success(f"Project '{project['name']}' restored")
+                                    time.sleep(0.5)
+                                    st.rerun()
+                                else:
+                                    st.error("Failed to restore project")
+                                    
+                        with col4:
+                            if st.button("⛔", key=f"permanent_delete_{project['id']}", help="Permanently delete"):
+                                if delete_project(project['id'], permanent=True):
+                                    st.success(f"Project '{project['name']}' permanently deleted")
+                                    time.sleep(0.5)
+                                    st.rerun()
+                                else:
+                                    st.error("Failed to permanently delete project")
                                     
         return selected_project
         
