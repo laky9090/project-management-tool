@@ -339,3 +339,36 @@ button[title="Restore project"]:hover {
   gap: 12px;
   margin-top: 16px;
 }
+
+/* Success and error messages */
+.success-message,
+.error-message {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 12px 24px;
+  border-radius: 4px;
+  color: white;
+  font-weight: 500;
+  animation: slideIn 0.3s ease-out;
+  z-index: 1000;
+}
+
+.success-message {
+  background-color: #10B981;
+}
+
+.error-message {
+  background-color: #EF4444;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}

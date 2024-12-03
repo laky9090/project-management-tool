@@ -54,12 +54,28 @@ const ProjectList = ({ onSelectProject }) => {
   const handleDeleteProject = async (projectId, e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (window.confirm('This action cannot be undone. Are you sure you want to permanently delete this project and all its tasks?')) {
+    
+    // Use custom styled confirmation dialog
+    const confirmDelete = window.confirm('This action cannot be undone. Are you sure you want to permanently delete this project and all its tasks?');
+    
+    if (confirmDelete) {
       try {
         await api.deleteProject(projectId);
         setProjects(projects.filter(p => p.id !== projectId));
+        // Show success feedback
+        const successMessage = document.createElement('div');
+        successMessage.className = 'success-message';
+        successMessage.textContent = 'Project deleted successfully';
+        document.body.appendChild(successMessage);
+        setTimeout(() => successMessage.remove(), 3000);
       } catch (error) {
         console.error('Error deleting project:', error);
+        // Show error feedback
+        const errorMessage = document.createElement('div');
+        errorMessage.className = 'error-message';
+        errorMessage.textContent = 'Failed to delete project. Please try again.';
+        document.body.appendChild(errorMessage);
+        setTimeout(() => errorMessage.remove(), 3000);
       }
     }
   };
