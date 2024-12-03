@@ -29,70 +29,98 @@ def convert_project_dates(project):
 def delete_project(project_id, permanent=False):
     """Delete project and all its tasks"""
     try:
+        # Verify project exists
+        project = execute_query("""
+            SELECT name FROM projects WHERE id = %s
+        """, (project_id,))
+        
+        if not project:
+            logger.error(f"Project {project_id} not found")
+            return False
+            
+        project_name = project[0]['name']
+        logger.info(f"Attempting to {'permanently delete' if permanent else 'move to trash'} project {project_id}: {project_name}")
+        
         # Start transaction
         execute_query("BEGIN")
         
-        if permanent:
-            # Delete task history first
-            execute_query("""
-                DELETE FROM task_history 
-                WHERE task_id IN (SELECT id FROM tasks WHERE project_id = %s)
-            """, (project_id,))
-            
-            # Delete task dependencies
-            execute_query("""
-                DELETE FROM task_dependencies 
-                WHERE task_id IN (SELECT id FROM tasks WHERE project_id = %s)
-                OR depends_on_id IN (SELECT id FROM tasks WHERE project_id = %s)
-            """, (project_id, project_id))
-            
-            # Delete subtasks
-            execute_query("""
-                DELETE FROM subtasks 
-                WHERE parent_task_id IN (SELECT id FROM tasks WHERE project_id = %s)
-            """, (project_id,))
-            
-            # Delete all tasks
-            execute_query("""
-                DELETE FROM tasks 
-                WHERE project_id = %s
-            """, (project_id,))
-            
-            # Finally delete the project
-            result = execute_query("""
-                DELETE FROM projects 
-                WHERE id = %s 
-                RETURNING id
-            """, (project_id,))
-        else:
-            # Soft delete project and its tasks
-            result = execute_query("""
-                UPDATE projects 
-                SET deleted_at = CURRENT_TIMESTAMP 
-                WHERE id = %s AND deleted_at IS NULL
-                RETURNING id
-            """, (project_id,))
+        try:
+            if permanent:
+                # Delete task history first
+                logger.info(f"Deleting task history for project {project_id}")
+                execute_query("""
+                    DELETE FROM task_history 
+                    WHERE task_id IN (SELECT id FROM tasks WHERE project_id = %s)
+                """, (project_id,))
+                
+                # Delete task dependencies
+                logger.info(f"Deleting task dependencies for project {project_id}")
+                execute_query("""
+                    DELETE FROM task_dependencies 
+                    WHERE task_id IN (SELECT id FROM tasks WHERE project_id = %s)
+                    OR depends_on_id IN (SELECT id FROM tasks WHERE project_id = %s)
+                """, (project_id, project_id))
+                
+                # Delete subtasks
+                logger.info(f"Deleting subtasks for project {project_id}")
+                execute_query("""
+                    DELETE FROM subtasks 
+                    WHERE parent_task_id IN (SELECT id FROM tasks WHERE project_id = %s)
+                """, (project_id,))
+                
+                # Delete all tasks
+                logger.info(f"Deleting tasks for project {project_id}")
+                execute_query("""
+                    DELETE FROM tasks 
+                    WHERE project_id = %s
+                """, (project_id,))
+                
+                # Finally delete the project
+                logger.info(f"Permanently deleting project {project_id}")
+                result = execute_query("""
+                    DELETE FROM projects 
+                    WHERE id = %s 
+                    RETURNING id, name
+                """, (project_id,))
+            else:
+                # Soft delete project and its tasks
+                logger.info(f"Soft deleting project {project_id}")
+                result = execute_query("""
+                    UPDATE projects 
+                    SET deleted_at = CURRENT_TIMESTAMP 
+                    WHERE id = %s AND deleted_at IS NULL
+                    RETURNING id, name
+                """, (project_id,))
+                
+                if result:
+                    # Soft delete all associated tasks
+                    logger.info(f"Soft deleting tasks for project {project_id}")
+                    execute_query("""
+                        UPDATE tasks 
+                        SET deleted_at = CURRENT_TIMESTAMP 
+                        WHERE project_id = %s AND deleted_at IS NULL
+                    """, (project_id,))
             
             if result:
-                # Soft delete all associated tasks
-                execute_query("""
-                    UPDATE tasks 
-                    SET deleted_at = CURRENT_TIMESTAMP 
-                    WHERE project_id = %s AND deleted_at IS NULL
-                """, (project_id,))
-        
-        if result:
-            execute_query("COMMIT")
-            # Clear cache after successful deletion
-            if 'query_cache' in st.session_state:
-                st.session_state.query_cache.clear()
-            return True
+                execute_query("COMMIT")
+                # Clear cache after successful deletion
+                if 'query_cache' in st.session_state:
+                    st.session_state.query_cache.clear()
+                action = 'permanently deleted' if permanent else 'moved to trash'
+                logger.info(f"Project {project_id} successfully {action}")
+                return True
+                
+            logger.warning(f"No changes made for project {project_id}")
+            execute_query("ROLLBACK")
+            return False
             
-        execute_query("ROLLBACK")
-        return False
+        except Exception as e:
+            execute_query("ROLLBACK")
+            logger.error(f"Database error while deleting project {project_id}: {str(e)}")
+            raise
+            
     except Exception as e:
-        execute_query("ROLLBACK")
-        logger.error(f"Error deleting project: {str(e)}")
+        logger.error(f"Error deleting project {project_id}: {str(e)}")
         return False
 
 def restore_project(project_id):
@@ -361,29 +389,35 @@ def list_projects():
         else:
             st.info("No active projects found. Create one to get started!")
         
-        # Display deleted projects section
+        # Display deleted projects section with improved visibility
         deleted_projects = get_deleted_projects()
         if deleted_projects:
-            # Section header with count
             st.markdown("""
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                    <h3 style="margin: 0;">Deleted Projects</h3>
-                    <span style="color: #666; font-size: 0.9em;">({} projects)</span>
+                <div style="margin-top: 2rem; border-top: 1px solid #eee; padding-top: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="margin: 0; color: #666;">Deleted Projects</h3>
+                        <span style="color: #666; font-size: 0.9em; background: #f1f5f9; padding: 2px 8px; border-radius: 4px;">
+                            {} project{} in trash
+                        </span>
+                    </div>
                 </div>
-            """.format(len(deleted_projects)), unsafe_allow_html=True)
+            """.format(len(deleted_projects), 's' if len(deleted_projects) != 1 else ''), unsafe_allow_html=True)
             
             # Add expand/collapse functionality with styled checkbox
             if st.checkbox("📂 Show deleted projects", key="show_deleted_projects", help="Click to show/hide deleted projects"):
-                st.markdown('<div class="deleted-projects-section">', unsafe_allow_html=True)
+                st.markdown("""
+                    <div class="deleted-projects-section" style="background: #f8fafc; border: 1px solid #eee; border-radius: 4px; padding: 1rem; margin-top: 0.5rem;">
+                """, unsafe_allow_html=True)
+                
                 for project in deleted_projects:
                     with st.container():
                         col1, col2, col3, col4 = st.columns([6, 2, 1, 1])
                         
                         with col1:
                             st.markdown(f"""
-                                <div class="project-title">
-                                    {project['name']} 
-                                    <span class="task-count">
+                                <div class="project-title" style="color: #4b5563;">
+                                    {project['name']}
+                                    <span class="task-count" style="color: #6b7280; font-size: 0.9em; margin-left: 0.5rem;">
                                         ({project['completed_tasks']}/{project['total_tasks']} tasks)
                                     </span>
                                 </div>
@@ -392,13 +426,14 @@ def list_projects():
                         with col2:
                             deadline_str = datetime.fromisoformat(project['deadline']).strftime('%d/%m/%Y') if project['deadline'] else 'No deadline'
                             st.markdown(f"""
-                                <div class="project-deadline">
+                                <div class="project-deadline" style="color: #6b7280; text-align: center;">
                                     Due: {deadline_str}
                                 </div>
                             """, unsafe_allow_html=True)
                             
                         with col3:
-                            if st.button("🔄", key=f"restore_project_{project['id']}", help="Restore project"):
+                            restore_key = f"restore_project_{project['id']}"
+                            if st.button("🔄", key=restore_key, help="Restore project"):
                                 try:
                                     if restore_project(project['id']):
                                         st.success(f"Project '{project['name']}' restored successfully")
@@ -411,20 +446,51 @@ def list_projects():
                                     st.error("An error occurred while restoring the project")
                                     
                         with col4:
-                            if st.button("⛔", key=f"permanent_delete_{project['id']}", help="Permanently delete"):
-                                if st.button("Confirm Delete", key=f"confirm_delete_{project['id']}"):
-                                    try:
-                                        if delete_project(project['id'], permanent=True):
-                                            st.success(f"Project '{project['name']}' permanently deleted")
-                                            time.sleep(0.5)
-                                            st.rerun()
-                                        else:
-                                            st.error("Failed to delete project. Please try again.")
-                                    except Exception as e:
-                                        logger.error(f"Error deleting project {project['id']}: {str(e)}")
-                                        st.error("An error occurred while deleting the project")
+                            delete_key = f"delete_project_{project['id']}"
+                            confirm_key = f"confirm_delete_{project['id']}"
+                            
+                            if delete_key not in st.session_state:
+                                st.session_state[delete_key] = False
+                                
+                            if st.button("⛔", key=delete_key, help="Permanently delete"):
+                                st.session_state[delete_key] = True
+                                
+                            if st.session_state[delete_key]:
+                                st.markdown("""
+                                    <div style="background: #fee2e2; border: 1px solid #ef4444; border-radius: 4px; padding: 0.5rem; margin: 0.5rem 0;">
+                                        <p style="color: #991b1b; margin: 0; font-size: 0.9em;">This action cannot be undone.</p>
+                                    </div>
+                                """, unsafe_allow_html=True)
+                                
+                                col1, col2 = st.columns(2)
+                                with col1:
+                                    if st.button("✓ Confirm", key=f"confirm_{confirm_key}"):
+                                        try:
+                                            if delete_project(project['id'], permanent=True):
+                                                st.success(f"Project '{project['name']}' permanently deleted")
+                                                st.session_state[delete_key] = False
+                                                time.sleep(0.5)
+                                                st.rerun()
+                                            else:
+                                                st.error("Failed to delete project. Please try again.")
+                                        except Exception as e:
+                                            logger.error(f"Error deleting project {project['id']}: {str(e)}")
+                                            st.error("An error occurred while deleting the project")
+                                with col2:
+                                    if st.button("✗ Cancel", key=f"cancel_{confirm_key}"):
+                                        st.session_state[delete_key] = False
+                                        st.rerun()
                 
                 st.markdown('</div>', unsafe_allow_html=True)
+                
+                # Add a note about permanent deletion
+                st.markdown("""
+                    <div style="margin-top: 1rem; padding: 0.5rem; border-left: 3px solid #cbd5e1; background: #f8fafc;">
+                        <p style="color: #64748b; margin: 0; font-size: 0.9em;">
+                            ℹ️ Permanently deleted projects cannot be recovered.
+                        </p>
+                    </div>
+                """, unsafe_allow_html=True)
                                     
         return selected_project
         
