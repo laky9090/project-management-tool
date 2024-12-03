@@ -364,14 +364,14 @@ def list_projects():
         # Display deleted projects section
         deleted_projects = get_deleted_projects()
         if deleted_projects:
-            st.write("### Deleted Projects")
-            deleted_projects = [convert_project_dates(project) for project in deleted_projects]
+            col1, col2 = st.columns([6, 4])
+            with col1:
+                st.write("### Deleted Projects")
+            with col2:
+                st.write(f"<p style='text-align: right; color: #666;'>({len(deleted_projects)} projects)</p>", unsafe_allow_html=True)
             
-            # Add deleted projects count
-            st.write(f"({len(deleted_projects)} projects)")
-            
-            # Add expand/collapse functionality
-            if st.checkbox("Show deleted projects", key="show_deleted_projects"):
+            # Add expand/collapse functionality with styled checkbox
+            if st.checkbox("📂 Show deleted projects", key="show_deleted_projects", help="Click to show/hide deleted projects"):
                 for project in deleted_projects:
                     with st.container():
                         col1, col2, col3, col4 = st.columns([6, 2, 1, 1])
