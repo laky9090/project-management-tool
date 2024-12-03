@@ -364,42 +364,67 @@ def list_projects():
         # Display deleted projects section
         deleted_projects = get_deleted_projects()
         if deleted_projects:
-            col1, col2 = st.columns([6, 4])
-            with col1:
-                st.write("### Deleted Projects")
-            with col2:
-                st.write(f"<p style='text-align: right; color: #666;'>({len(deleted_projects)} projects)</p>", unsafe_allow_html=True)
+            # Section header with count
+            st.markdown("""
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h3 style="margin: 0;">Deleted Projects</h3>
+                    <span style="color: #666; font-size: 0.9em;">({} projects)</span>
+                </div>
+            """.format(len(deleted_projects)), unsafe_allow_html=True)
             
             # Add expand/collapse functionality with styled checkbox
             if st.checkbox("📂 Show deleted projects", key="show_deleted_projects", help="Click to show/hide deleted projects"):
+                st.markdown('<div class="deleted-projects-section">', unsafe_allow_html=True)
                 for project in deleted_projects:
                     with st.container():
                         col1, col2, col3, col4 = st.columns([6, 2, 1, 1])
                         
                         with col1:
-                            st.write(f"{project['name']} ({project['completed_tasks']}/{project['total_tasks']} tasks)")
+                            st.markdown(f"""
+                                <div class="project-title">
+                                    {project['name']} 
+                                    <span class="task-count">
+                                        ({project['completed_tasks']}/{project['total_tasks']} tasks)
+                                    </span>
+                                </div>
+                            """, unsafe_allow_html=True)
                             
                         with col2:
                             deadline_str = datetime.fromisoformat(project['deadline']).strftime('%d/%m/%Y') if project['deadline'] else 'No deadline'
-                            st.write(f"Due: {deadline_str}")
+                            st.markdown(f"""
+                                <div class="project-deadline">
+                                    Due: {deadline_str}
+                                </div>
+                            """, unsafe_allow_html=True)
                             
                         with col3:
                             if st.button("🔄", key=f"restore_project_{project['id']}", help="Restore project"):
-                                if restore_project(project['id']):
-                                    st.success(f"Project '{project['name']}' restored")
-                                    time.sleep(0.5)
-                                    st.rerun()
-                                else:
-                                    st.error("Failed to restore project")
+                                try:
+                                    if restore_project(project['id']):
+                                        st.success(f"Project '{project['name']}' restored successfully")
+                                        time.sleep(0.5)
+                                        st.rerun()
+                                    else:
+                                        st.error("Failed to restore project. Please try again.")
+                                except Exception as e:
+                                    logger.error(f"Error restoring project {project['id']}: {str(e)}")
+                                    st.error("An error occurred while restoring the project")
                                     
                         with col4:
                             if st.button("⛔", key=f"permanent_delete_{project['id']}", help="Permanently delete"):
-                                if delete_project(project['id'], permanent=True):
-                                    st.success(f"Project '{project['name']}' permanently deleted")
-                                    time.sleep(0.5)
-                                    st.rerun()
-                                else:
-                                    st.error("Failed to permanently delete project")
+                                if st.button("Confirm Delete", key=f"confirm_delete_{project['id']}"):
+                                    try:
+                                        if delete_project(project['id'], permanent=True):
+                                            st.success(f"Project '{project['name']}' permanently deleted")
+                                            time.sleep(0.5)
+                                            st.rerun()
+                                        else:
+                                            st.error("Failed to delete project. Please try again.")
+                                    except Exception as e:
+                                        logger.error(f"Error deleting project {project['id']}: {str(e)}")
+                                        st.error("An error occurred while deleting the project")
+                
+                st.markdown('</div>', unsafe_allow_html=True)
                                     
         return selected_project
         
