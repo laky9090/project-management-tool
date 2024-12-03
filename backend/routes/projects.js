@@ -70,34 +70,76 @@ router.patch('/:id', async (req, res) => {
   }
 });
 
-// Delete project
+// Soft delete project
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
+  const { permanent } = req.query;
 
   try {
     await db.query('BEGIN');
     
-    // First delete all associated tasks
-    await db.query('DELETE FROM tasks WHERE project_id = $1', [id]);
-    
-    // Then delete the project
-    const { rows } = await db.query(
-      'DELETE FROM projects WHERE id = $1 RETURNING id',
-      [id]
-    );
+    if (permanent === 'true') {
+      // First delete all associated tasks
+      await db.query('DELETE FROM tasks WHERE project_id = $1', [id]);
+      
+      // Then delete the project permanently
+      const { rows } = await db.query(
+        'DELETE FROM projects WHERE id = $1 RETURNING id',
+        [id]
+      );
 
-    if (rows.length === 0) {
-      await db.query('ROLLBACK');
-      return res.status(404).json({ error: 'Project not found' });
+      if (rows.length === 0) {
+        await db.query('ROLLBACK');
+        return res.status(404).json({ error: 'Project not found' });
+      }
+    } else {
+      // Soft delete the project
+      const { rows } = await db.query(
+        'UPDATE projects SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1 AND deleted_at IS NULL RETURNING id',
+        [id]
+      );
+
+      if (rows.length === 0) {
+        await db.query('ROLLBACK');
+        return res.status(404).json({ error: 'Project not found or already deleted' });
+      }
     }
 
     await db.query('COMMIT');
-    res.json({ message: 'Project and associated tasks deleted successfully' });
+    res.json({ 
+      message: permanent === 'true' 
+        ? 'Project and associated tasks permanently deleted' 
+        : 'Project moved to trash'
+    });
   } catch (err) {
     await db.query('ROLLBACK');
     console.error('Error deleting project:', err);
     res.status(500).json({ 
       error: 'Failed to delete project',
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+  }
+});
+
+// Restore project
+router.post('/:id/restore', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const { rows } = await db.query(
+      'UPDATE projects SET deleted_at = NULL WHERE id = $1 AND deleted_at IS NOT NULL RETURNING *',
+      [id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Project not found or not deleted' });
+    }
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('Error restoring project:', err);
+    res.status(500).json({ 
+      error: 'Failed to restore project',
       details: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
   }

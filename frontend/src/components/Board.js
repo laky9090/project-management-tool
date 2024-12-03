@@ -256,7 +256,7 @@ const Board = ({ projectId }) => {
       setError(null);
       if (window.confirm('Are you sure you want to delete this task? This action cannot be undone.')) {
         await api.deleteTask(taskId);
-        await loadTasks();
+        setTasks(tasks.filter(task => task.id !== taskId));
       }
     } catch (error) {
       console.error("Error deleting task:", error);

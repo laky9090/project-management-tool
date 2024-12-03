@@ -8,11 +8,17 @@ import time
 logger = logging.getLogger(__name__)
 
 def delete_task(task_id):
-    """Delete task permanently"""
+    """Delete task and its associated data permanently"""
     try:
         execute_query("BEGIN")
         
-        # Delete task dependencies first
+        # Delete from task_history first
+        execute_query("""
+            DELETE FROM task_history 
+            WHERE task_id = %s
+        """, (task_id,))
+        
+        # Delete task dependencies
         execute_query("""
             DELETE FROM task_dependencies 
             WHERE task_id = %s OR depends_on_id = %s
