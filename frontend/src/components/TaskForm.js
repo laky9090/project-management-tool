@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import api from '../api/api';
 import './TaskForm.css';
+import { useEffect } from 'react';
 
 const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
   const [formData, setFormData] = useState({
@@ -10,8 +11,21 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
     priority: 'Medium',
     assignee: '',
     start_date: new Date().toISOString().split('T')[0],
-    end_date: new Date().toISOString().split('T')[0]
+    end_date: new Date().toISOString().split('T')[0],
+    dependencies: []
   });
+  const [availableTasks, setAvailableTasks] = useState([]);
+  useEffect(() => {
+    const fetchAvailableTasks = async () => {
+      try {
+        const response = await api.getProjectTasks(projectId);
+        setAvailableTasks(response.data || []);
+      } catch (error) {
+        console.error('Error fetching available tasks:', error);
+      }
+    };
+    fetchAvailableTasks();
+  }, [projectId]);
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -29,7 +43,8 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
 
       const taskData = {
         ...formData,
-        project_id: projectId
+        project_id: projectId,
+        dependencies: formData.dependencies.map(id => parseInt(id))
       };
 
       const response = await api.createTask(taskData);
@@ -114,6 +129,29 @@ const TaskForm = ({ projectId, onCancel, onTaskCreated }) => {
               <option value="High">High</option>
             </select>
           </div>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="dependencies">Dependencies</label>
+          <select
+            id="dependencies"
+            name="dependencies"
+            multiple
+            value={formData.dependencies}
+            onChange={(e) => {
+              const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+              setFormData(prevData => ({
+                ...prevData,
+                dependencies: selectedOptions
+              }));
+            }}
+          >
+            {availableTasks.map(task => (
+              <option key={task.id} value={task.id}>
+                {task.title} ({task.status})
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="form-row">

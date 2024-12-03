@@ -29,9 +29,8 @@
   --priority-low-text: #475569;
 }
 
-/* Priority column styling - for both active and deleted tasks */
-.task-table td[data-priority],
-.deleted-tasks td[data-priority] {
+/* Priority column styling */
+.task-table td[data-priority] {
   transition: background-color 0.2s ease;
   text-align: center !important;
   padding: 8px 12px;
@@ -39,30 +38,24 @@
 
 /* Base table cell alignment */
 .task-table td,
-.deleted-tasks td,
-.task-table th,
-.deleted-tasks th {
+.task-table th {
   text-align: center !important;
 }
 
 /* Title column alignment */
 .task-table td:first-child,
-.deleted-tasks td:first-child,
-.task-table th:first-child,
-.deleted-tasks th:first-child {
+.task-table th:first-child {
   text-align: left !important;
 }
 
-/* Priority styles for both active and deleted tasks */
+/* Priority styles */
 .task-table td[data-priority="High"],
-.deleted-tasks td[data-priority="High"],
 .priority-indicator.high {
   background-color: var(--priority-high-bg) !important;
   color: var(--priority-high-text) !important;
 }
 
 .task-table td[data-priority="Medium"],
-.deleted-tasks td[data-priority="Medium"],
 .priority-indicator.medium {
   background-color: var(--priority-medium-bg) !important;
   color: var(--priority-medium-text) !important;
@@ -72,34 +65,12 @@
 .priority-indicator.low,
 td[data-priority="Low"],
 .task-table td[data-priority="Low"],
-.deleted-tasks td[data-priority="Low"],
 tr td[data-priority="Low"] {
     background-color: #f1f5f9 !important;
     color: #475569 !important;
 }
 
-/* Priority indicators for deleted tasks */
-.deleted-tasks .priority-indicator {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-weight: 500;
-  width: 100%;
-  justify-content: center;
-}
 
-/* Status indicators for deleted tasks */
-.deleted-tasks .status-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  width: 100%;
-  justify-content: center;
-}
 
 .status-badge.to-do {
   background-color: var(--status-todo-bg);

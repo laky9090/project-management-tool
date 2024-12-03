@@ -47,7 +47,7 @@ router.get('/project/:projectId/export', async (req, res) => {
       `SELECT t.*, 
           COALESCE(t.updated_at, t.created_at) as last_update
        FROM tasks t
-       WHERE t.project_id = $1 AND t.deleted_at IS NULL
+       WHERE t.project_id = $1
        ORDER BY t.created_at DESC`,
       [projectId]
     );
@@ -110,7 +110,6 @@ router.get('/project/:projectId/export', async (req, res) => {
 
   } catch (err) {
     console.error('Error exporting tasks:', err);
-
     if (!res.headersSent) {
       res.status(500).json({ 
         error: 'Failed to export tasks',
@@ -131,52 +130,6 @@ router.get('/project/:projectId/export', async (req, res) => {
         console.error('Error cleaning up workbook:', cleanupError);
       }
     }
-  }
-});
-
-// Duplicate task
-router.post('/:taskId/duplicate', async (req, res) => {
-  const { taskId } = req.params;
-
-  try {
-    await db.query('BEGIN');
-    
-    // Get the task to duplicate
-    const { rows: [task] } = await db.query(
-      `SELECT title, comment, status, priority, project_id, assignee, due_date
-       FROM tasks
-       WHERE id = $1 AND deleted_at IS NULL`,
-      [taskId]
-    );
-
-    if (!task) {
-      await db.query('ROLLBACK');
-      return res.status(404).json({ error: 'Task not found' });
-    }
-
-    // Create the duplicated task with "(Copy)" suffix
-    const { rows: [newTask] } = await db.query(
-      `INSERT INTO tasks 
-       (project_id, title, comment, status, priority, assignee, due_date, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-       RETURNING *, COALESCE(updated_at, created_at) as last_update`,
-      [
-        task.project_id,
-        `${task.title} (Copy)`,
-        task.comment,
-        task.status,
-        task.priority,
-        task.assignee,
-        task.due_date
-      ]
-    );
-
-    await db.query('COMMIT');
-    res.status(201).json(newTask);
-  } catch (err) {
-    await db.query('ROLLBACK');
-    console.error('Error duplicating task:', err);
-    res.status(500).json({ error: 'Failed to duplicate task' });
   }
 });
 
@@ -201,7 +154,7 @@ router.get('/project/:projectId', async (req, res) => {
        LEFT JOIN task_dependencies d ON t.id = d.task_id
        LEFT JOIN tasks dt ON d.depends_on_id = dt.id
        LEFT JOIN subtasks s ON t.id = s.parent_task_id
-       WHERE t.project_id = $1 AND t.deleted_at IS NULL
+       WHERE t.project_id = $1
        GROUP BY t.id
        ORDER BY t.created_at DESC`,
       [req.params.projectId]
@@ -285,7 +238,7 @@ router.patch('/:taskId', async (req, res) => {
     const query = `
       UPDATE tasks 
       SET ${updateFields.join(', ')}
-      WHERE id = $${values.length + 1} AND deleted_at IS NULL
+      WHERE id = $${values.length + 1}
       RETURNING *, COALESCE(updated_at, created_at) as last_update
     `;
 
@@ -306,76 +259,37 @@ router.patch('/:taskId', async (req, res) => {
   }
 });
 
-// Delete task (soft delete)
+// Delete task
 router.delete('/:taskId', async (req, res) => {
-  const { taskId } = req.params;
-
-  try {
-    const { rows } = await db.query(
-      'UPDATE tasks SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND deleted_at IS NULL RETURNING *',
-      [taskId]
-    );
-
-    if (rows.length === 0) {
-      return res.status(404).json({ error: 'Task not found' });
-    }
-
-    res.json(rows[0]);
-  } catch (err) {
-    console.error('Error deleting task:', err);
-    res.status(500).json({ error: 'Failed to delete task' });
-  }
-});
-
-// Permanently delete task
-router.delete('/:taskId/permanent', async (req, res) => {
   const { taskId } = req.params;
 
   try {
     await db.query('BEGIN');
     
-    // First delete related records
+    // Delete task history first
+    await db.query('DELETE FROM task_history WHERE task_id = $1', [taskId]);
+    
+    // Delete dependencies and subtasks
     await db.query('DELETE FROM task_dependencies WHERE task_id = $1 OR depends_on_id = $1', [taskId]);
     await db.query('DELETE FROM subtasks WHERE parent_task_id = $1', [taskId]);
     
-    // Then delete the task
+    // Finally delete the task
     const { rows } = await db.query(
-      'DELETE FROM tasks WHERE id = $1 AND deleted_at IS NOT NULL RETURNING id',
+      'DELETE FROM tasks WHERE id = $1 RETURNING id',
       [taskId]
     );
 
     if (rows.length === 0) {
       await db.query('ROLLBACK');
-      return res.status(404).json({ error: 'Deleted task not found' });
+      return res.status(404).json({ error: 'Task not found' });
     }
 
     await db.query('COMMIT');
-    res.json({ message: 'Task permanently deleted' });
+    res.json({ message: 'Task deleted' });
   } catch (err) {
     await db.query('ROLLBACK');
-    console.error('Error permanently deleting task:', err);
-    res.status(500).json({ error: 'Failed to permanently delete task' });
-  }
-});
-
-// Restore task
-router.patch('/:taskId/restore', async (req, res) => {
-  const { taskId } = req.params;
-
-  try {
-    const { rows } = await db.query(
-      'UPDATE tasks SET deleted_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND deleted_at IS NOT NULL RETURNING *',
-      [taskId]
-    );
-
-    if (rows.length === 0) {
-      return res.status(404).json({ error: 'Task not found or already restored' });
-    }
-
-    res.json(rows[0]);
-  } catch (err) {
-    console.error('Error restoring task:', err);
-    res.status(500).json({ error: 'Failed to restore task' });
+    console.error('Error deleting task:', err);
+    res.status(500).json({ error: 'Failed to delete task' });
   }
 });
 
@@ -386,7 +300,7 @@ router.patch('/:taskId/status', async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      'UPDATE tasks SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND deleted_at IS NULL RETURNING *',
+      'UPDATE tasks SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
       [status, taskId]
     );
 
@@ -408,7 +322,7 @@ router.patch('/:taskId/assign', async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      'UPDATE tasks SET assignee = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND deleted_at IS NULL RETURNING *',
+      'UPDATE tasks SET assignee = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
       [assignee, taskId]
     );
 
@@ -420,68 +334,6 @@ router.patch('/:taskId/assign', async (req, res) => {
   } catch (err) {
     console.error('Error assigning task:', err);
     res.status(500).json({ error: 'Failed to assign task' });
-  }
-});
-
-// Undo last task change
-router.post('/:taskId/undo', async (req, res) => {
-  const { taskId } = req.params;
-
-  try {
-    // Start transaction
-    await db.query('BEGIN');
-
-    // Get the most recent history entry for this task
-    const { rows: historyRows } = await db.query(
-      `SELECT * FROM task_history 
-       WHERE task_id = $1 
-       ORDER BY changed_at DESC 
-       LIMIT 1`,
-      [taskId]
-    );
-
-    if (historyRows.length === 0) {
-      await db.query('ROLLBACK');
-      return res.status(404).json({ error: 'No history found for this task' });
-    }
-
-    const previousState = historyRows[0];
-
-    // Update task with previous state
-    const { rows } = await db.query(
-      `UPDATE tasks 
-       SET title = $1, comment = $2, status = $3, priority = $4, due_date = $5, assignee = $6,
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = $7 AND deleted_at IS NULL 
-       RETURNING *, COALESCE(updated_at, created_at) as last_update`,
-      [
-        previousState.title,
-        previousState.comment,
-        previousState.status,
-        previousState.priority,
-        previousState.due_date,
-        previousState.assignee,
-        taskId
-      ]
-    );
-
-    if (rows.length === 0) {
-      await db.query('ROLLBACK');
-      return res.status(404).json({ error: 'Task not found' });
-    }
-
-    // Delete the used history entry
-    await db.query(
-      'DELETE FROM task_history WHERE id = $1',
-      [previousState.id]
-    );
-
-    await db.query('COMMIT');
-    res.json(rows[0]);
-  } catch (err) {
-    await db.query('ROLLBACK');
-    console.error('Error undoing task change:', err);
-    res.status(500).json({ error: 'Failed to undo task change' });
   }
 });
 

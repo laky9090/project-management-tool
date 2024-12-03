@@ -6,19 +6,16 @@ import "./task.css";
 
 const Board = ({ projectId }) => {
   const [tasks, setTasks] = useState([]);
-  const [deletedTasks, setDeletedTasks] = useState([]);
   const [error, setError] = useState(null);
   const [dateValidationError, setDateValidationError] = useState(null);
   const [editingTask, setEditingTask] = useState(null);
   const [showTaskForm, setShowTaskForm] = useState(false);
-  const [showDeletedTasks, setShowDeletedTasks] = useState(false);
   const [sortConfig, setSortConfig] = useState({
     key: "created_at",
     direction: "desc",
   });
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
-  const [taskToDelete, setTaskToDelete] = useState(null);
   const [isValidating, setIsValidating] = useState(false);
 
   const validateDates = (startDate, endDate) => {
@@ -70,8 +67,7 @@ const Board = ({ projectId }) => {
       setError(null);
       setLoading(true);
       const response = await api.getProjectTasks(projectId);
-      setTasks(response.data.filter((task) => !task.deleted_at));
-      setDeletedTasks(response.data.filter((task) => task.deleted_at));
+      setTasks(response.data);
     } catch (error) {
       console.error("Error loading tasks:", error);
       setError("Failed to load tasks");
@@ -155,25 +151,20 @@ const Board = ({ projectId }) => {
     );
     if (!cell) return;
 
-    // Get the current task
     const task = tasks.find((t) => t.id === taskId);
     if (!task) return;
 
-    // Remove any existing calendar popup
     const existingPopup = document.querySelector(".calendar-popup");
     if (existingPopup) {
       existingPopup.remove();
     }
 
-    // Create calendar popup container
     const popup = document.createElement("div");
     popup.className = "calendar-popup";
 
-    // Create calendar input
     const calendar = document.createElement("input");
     calendar.type = "date";
 
-    // Set current value if exists
     if (currentValue) {
       const [day, month, year] = currentValue.split("/");
       calendar.value = `${year}-${month}-${day}`;
@@ -181,7 +172,6 @@ const Board = ({ projectId }) => {
 
     popup.appendChild(calendar);
 
-    // Position popup below the cell
     const cellRect = cell.getBoundingClientRect();
     popup.style.position = "absolute";
     popup.style.top = `${cellRect.bottom + window.scrollY}px`;
@@ -195,17 +185,11 @@ const Board = ({ projectId }) => {
         if (calendar.value) {
           const newDate = new Date(calendar.value);
           const updatedDates = {
-            start_date:
-              field === "start_date" ? calendar.value : task.start_date,
+            start_date: field === "start_date" ? calendar.value : task.start_date,
             end_date: field === "end_date" ? calendar.value : task.end_date,
           };
 
-          if (
-            !handleDateValidation(
-              updatedDates.start_date,
-              updatedDates.end_date,
-            )
-          ) {
+          if (!handleDateValidation(updatedDates.start_date, updatedDates.end_date)) {
             cell.textContent = currentValue || "";
             popup.remove();
             return;
@@ -241,7 +225,6 @@ const Board = ({ projectId }) => {
       }
     };
 
-    // Wait for next tick to add click outside listener
     setTimeout(() => {
       document.addEventListener("click", handleClickOutside);
     }, 0);
@@ -268,51 +251,16 @@ const Board = ({ projectId }) => {
     [loadTasks],
   );
 
-  const handleDeleteTask = (taskId) => {
-    setTaskToDelete(taskId);
-  };
-
-  const confirmDelete = async (taskId) => {
+  const handleDeleteTask = async (taskId) => {
     try {
       setError(null);
-      await api.deleteTask(taskId);
-      setTaskToDelete(null);
-      loadTasks();
+      if (window.confirm('Are you sure you want to permanently delete this task? This action cannot be undone.')) {
+        await api.deleteTask(taskId);
+        await loadTasks();
+      }
     } catch (error) {
       console.error("Error deleting task:", error);
       setError("Failed to delete task. Please try again.");
-      loadTasks();
-    }
-  };
-
-  const handleRestoreTask = async (taskId) => {
-    try {
-      setError(null);
-      await api.restoreTask(taskId);
-      loadTasks();
-    } catch (error) {
-      console.error("Error restoring task:", error);
-      setError("Failed to restore task. Please try again.");
-      loadTasks();
-    }
-  };
-
-  const handlePermanentDelete = async (taskId) => {
-    if (
-      window.confirm(
-        "This action cannot be undone. Are you sure you want to permanently delete this task?",
-      )
-    ) {
-      try {
-        setError(null);
-        await api.permanentlyDeleteTask(taskId);
-        setDeletedTasks((prevTasks) =>
-          prevTasks.filter((task) => task.id !== taskId),
-        );
-      } catch (error) {
-        console.error("Error permanently deleting task:", error);
-        setError("Failed to permanently delete task. Please try again.");
-      }
     }
   };
 
@@ -371,7 +319,6 @@ const Board = ({ projectId }) => {
           });
 
           if (response.data) {
-            // Update local state
             setTasks((prevTasks) =>
               prevTasks.map((task) =>
                 task.id === taskId
@@ -379,7 +326,6 @@ const Board = ({ projectId }) => {
                   : task,
               ),
             );
-            // Update cell content
             cell.textContent = response.data.assignee || "Unassigned";
           } else {
             cell.innerHTML = originalContent;
@@ -658,121 +604,12 @@ const Board = ({ projectId }) => {
                   >
                     🗑️
                   </button>
-                  {taskToDelete === task.id && (
-                    <div className="delete-confirmation-overlay">
-                      <div className="delete-confirmation">
-                        <p>Are you sure you want to delete this task?</p>
-                        <div className="confirmation-buttons">
-                          <button
-                            className="confirm-delete"
-                            onClick={() => confirmDelete(task.id)}
-                          >
-                            YES
-                          </button>
-                          <button
-                            className="cancel-delete"
-                            onClick={() => setTaskToDelete(null)}
-                          >
-                            NO
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-
-      {deletedTasks.length > 0 && (
-        <div className="deleted-tasks-section">
-          <div
-            className="deleted-tasks-header"
-            onClick={() => setShowDeletedTasks(!showDeletedTasks)}
-          >
-            <h3>
-              Deleted Tasks ({deletedTasks.length})
-              <span
-                className="toggle-icon"
-                style={{
-                  transform: showDeletedTasks
-                    ? "rotate(0deg)"
-                    : "rotate(-90deg)",
-                }}
-              >
-                ▼
-              </span>
-            </h3>
-          </div>
-          <div
-            className={`deleted-tasks-content ${showDeletedTasks ? "visible" : ""}`}
-          >
-            <div className="table-container">
-              <table className="task-table deleted-tasks">
-                <thead>
-                  <tr>
-                    <th>Title</th>
-                    <th>Comment</th>
-                    <th>Status</th>
-                    <th>Priority</th>
-                    <th className="date-column">Due Date</th>
-                    <th className="date-column">Last Update</th>
-                    <th className="date-column">Deleted Date</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {deletedTasks.map((task) => (
-                    <tr key={task.id} data-status={task.status}>
-                      <td>{task.title}</td>
-                      <td>{task.comment || ""}</td>
-                      <td>
-                        <span
-                          className={`status-badge ${task.status.toLowerCase().replace(" ", "-")}`}
-                        >
-                          {task.status}
-                        </span>
-                      </td>
-                      <td data-priority={task.priority}>
-                        <span className="priority-indicator">
-                          {task.priority}
-                        </span>
-                      </td>
-                      <td className="date-column">
-                        {formatDate(task.due_date).formattedDate}
-                      </td>
-                      <td className="date-column">
-                        {formatDate(task.updated_at).formattedDate}
-                      </td>
-                      <td className="date-column">
-                        {formatDate(task.deleted_at).formattedDate}
-                      </td>
-                      <td className="actions-column">
-                        <button
-                          onClick={() => handleRestoreTask(task.id)}
-                          className="restore-button"
-                          title="Restore"
-                        >
-                          🔄
-                        </button>
-                        <button
-                          onClick={() => handlePermanentDelete(task.id)}
-                          className="permanent-delete-button"
-                          title="Delete Permanently"
-                        >
-                          🗑️
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

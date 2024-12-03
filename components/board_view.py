@@ -8,55 +8,41 @@ import time
 logger = logging.getLogger(__name__)
 
 def delete_task(task_id):
+    """Delete task permanently"""
     try:
-        # Clear cache before deleting
-        if 'query_cache' in st.session_state:
-            st.session_state.query_cache.clear()
+        execute_query("BEGIN")
+        
+        # Delete task dependencies first
+        execute_query("""
+            DELETE FROM task_dependencies 
+            WHERE task_id = %s OR depends_on_id = %s
+        """, (task_id, task_id))
+        
+        # Delete subtasks
+        execute_query("""
+            DELETE FROM subtasks 
+            WHERE parent_task_id = %s
+        """, (task_id,))
+        
+        # Finally delete the task
+        result = execute_query("""
+            DELETE FROM tasks 
+            WHERE id = %s 
+            RETURNING id
+        """, (task_id,))
+        
+        if result:
+            execute_query("COMMIT")
+            # Clear cache after successful deletion
+            if 'query_cache' in st.session_state:
+                st.session_state.query_cache.clear()
+            return True
             
-        result = execute_query(
-            "UPDATE tasks SET deleted_at = CURRENT_TIMESTAMP WHERE id = %s RETURNING id",
-            (task_id,)
-        )
-        return bool(result)
-    except Exception as e:
-        logger.error(f"Error deleting task: {str(e)}")
+        execute_query("ROLLBACK")
         return False
-
-def get_deleted_tasks(project_id):
-    try:
-        # Use a different cache key for deleted tasks
-        if 'deleted_tasks_cache' not in st.session_state:
-            st.session_state.deleted_tasks_cache = {}
-            
-        cache_key = f"deleted_tasks_{project_id}"
-        if cache_key in st.session_state.deleted_tasks_cache:
-            return st.session_state.deleted_tasks_cache[cache_key]
-            
-        tasks = execute_query(
-            "SELECT * FROM tasks WHERE project_id = %s AND deleted_at IS NOT NULL",
-            (project_id,)
-        )
-        st.session_state.deleted_tasks_cache[cache_key] = tasks
-        return tasks
     except Exception as e:
-        logger.error(f"Error fetching deleted tasks: {str(e)}")
-        return []
-
-def restore_task(task_id):
-    try:
-        # Clear cache before restoring
-        if 'query_cache' in st.session_state:
-            st.session_state.query_cache.clear()
-        if 'deleted_tasks_cache' in st.session_state:
-            st.session_state.deleted_tasks_cache.clear()
-            
-        result = execute_query(
-            "UPDATE tasks SET deleted_at = NULL WHERE id = %s RETURNING id",
-            (task_id,)
-        )
-        return bool(result)
-    except Exception as e:
-        logger.error(f"Error restoring task: {str(e)}")
+        execute_query("ROLLBACK")
+        logger.error(f"Error deleting task: {str(e)}")
         return False
 
 def delete_subtask(subtask_id):
@@ -137,16 +123,13 @@ def render_task_card(task, is_deleted=False):
         with col3:
             if not is_deleted:
                 if st.button("🗑️", key=f"delete_{task['id']}", help="Delete task"):
-                    if delete_task(task['id']):
-                        st.success("Task deleted!")
-                        time.sleep(0.5)
-                        st.rerun()
-            else:
-                if st.button("🔄", key=f"restore_{task['id']}", help="Restore task"):
-                    if restore_task(task['id']):
-                        st.success("Task restored!")
-                        time.sleep(0.5)
-                        st.rerun()
+                    if st.button("Confirm Delete", key=f"confirm_delete_{task['id']}"):
+                        if delete_task(task['id']):
+                            st.warning("Task deleted permanently")
+                            time.sleep(0.5)
+                            st.rerun()
+                        else:
+                            st.error("Failed to delete task")
 
         if task['comment']:
             st.write(task['comment'])
@@ -336,23 +319,7 @@ def render_board(project_id):
         else:
             st.info("No active tasks found. Create your first task to get started!")
 
-        # Display deleted tasks
-        deleted_tasks = get_deleted_tasks(project_id)
-        
-        if deleted_tasks:
-            st.write("## Deleted Tasks")
-            # Initialize show_deleted_tasks in session state if not exists
-            if 'show_deleted_tasks' not in st.session_state:
-                st.session_state.show_deleted_tasks = False
-            
-            # Add expander with count
-            with st.expander(f"Show Deleted Tasks ({len(deleted_tasks)})", expanded=st.session_state.show_deleted_tasks):
-                for task in deleted_tasks:
-                    with st.container():
-                        render_task_card(task, is_deleted=True)
-                        
-        else:
-            st.info("No deleted tasks found.")
+        # Removed deleted tasks section as part of removing soft deletion functionality
             
     except Exception as e:
         logger.error(f"Error rendering board: {str(e)}")

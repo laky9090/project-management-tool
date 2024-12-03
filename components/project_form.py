@@ -92,28 +92,25 @@ def create_project_form():
     return False
 
 def delete_project(project_id):
-    """Delete project (soft delete) and all its tasks"""
+    """Delete project and all its tasks permanently"""
     try:
         # Start transaction
         execute_query("BEGIN")
         
-        # Update project
+        # Delete all tasks first
+        execute_query("""
+            DELETE FROM tasks 
+            WHERE project_id = %s
+        """, (project_id,))
+        
+        # Then delete the project
         result = execute_query("""
-            UPDATE projects 
-            SET deleted_at = CURRENT_TIMESTAMP, 
-                updated_at = CURRENT_TIMESTAMP 
-            WHERE id = %s AND deleted_at IS NULL 
+            DELETE FROM projects 
+            WHERE id = %s 
             RETURNING id
         """, (project_id,))
         
         if result:
-            # Also mark all project tasks as deleted
-            execute_query("""
-                UPDATE tasks 
-                SET deleted_at = CURRENT_TIMESTAMP 
-                WHERE project_id = %s AND deleted_at IS NULL
-            """, (project_id,))
-            
             # Commit transaction
             execute_query("COMMIT")
             logger.info(f"Project {project_id} and its tasks deleted successfully")
@@ -127,63 +124,7 @@ def delete_project(project_id):
         logger.error(f"Error deleting project: {str(e)}")
         return False
 
-def restore_project(project_id):
-    """Restore deleted project and optionally its tasks"""
-    try:
-        # Start transaction
-        execute_query("BEGIN")
-        
-        # Restore project
-        result = execute_query("""
-            UPDATE projects 
-            SET deleted_at = NULL, 
-                updated_at = CURRENT_TIMESTAMP 
-            WHERE id = %s AND deleted_at IS NOT NULL 
-            RETURNING id
-        """, (project_id,))
-        
-        if result:
-            # Also restore project tasks
-            execute_query("""
-                UPDATE tasks 
-                SET deleted_at = NULL 
-                WHERE project_id = %s AND deleted_at IS NOT NULL
-            """, (project_id,))
-            
-            # Commit transaction
-            execute_query("COMMIT")
-            logger.info(f"Project {project_id} and its tasks restored successfully")
-            return True
-            
-        # Rollback if no rows affected
-        execute_query("ROLLBACK")
-        return False
-    except Exception as e:
-        execute_query("ROLLBACK")
-        logger.error(f"Error restoring project: {str(e)}")
-        return False
-
-def get_deleted_projects():
-    """Get all deleted projects with task counts"""
-    try:
-        projects = execute_query("""
-            SELECT p.*, 
-                COUNT(t.id) as total_tasks,
-                COUNT(CASE WHEN t.status = 'Done' THEN 1 END) as completed_tasks
-            FROM projects p
-            LEFT JOIN tasks t ON p.id = t.project_id
-            WHERE p.deleted_at IS NOT NULL
-            GROUP BY p.id
-            ORDER BY p.deleted_at DESC
-        """)
-        
-        if projects:
-            projects = [convert_project_dates(project) for project in projects]
-            logger.info(f"Successfully retrieved and converted {len(projects)} deleted projects")
-        return projects
-    except Exception as e:
-        logger.error(f"Error getting deleted projects: {str(e)}")
-        return []
+# Removed restore_project and get_deleted_projects functions as part of removing soft deletion functionality
 
 def edit_project_form(project_id):
     """Edit project form"""
@@ -330,31 +271,7 @@ def list_projects():
         else:
             st.info("No active projects found. Create one to get started!")
         
-        # Display deleted projects in a collapsible section
-        deleted_projects = get_deleted_projects()
-        if deleted_projects:
-            deleted_count = len(deleted_projects)
-            with st.expander(f"Deleted Projects ({deleted_count})", expanded=st.session_state.show_deleted_projects):
-                for project in deleted_projects:
-                    with st.container():
-                        col1, col2 = st.columns([6, 1])
-                        
-                        with col1:
-                            try:
-                                deleted_date = datetime.fromisoformat(project['deleted_at']).strftime('%d/%m/%Y') if project['deleted_at'] else 'Unknown'
-                                st.write(f"{project['name']} (Deleted on: {deleted_date})")
-                            except Exception as e:
-                                logger.error(f"Error formatting deleted date for project {project.get('id')}: {str(e)}")
-                                st.write(f"{project['name']} (Deleted on: Unknown)")
-                            
-                        with col2:
-                            if st.button("🔄", key=f"restore_project_{project['id']}", help="Restore project"):
-                                if restore_project(project['id']):
-                                    st.success(f"Project '{project['name']}' restored")
-                                    time.sleep(0.5)
-                                    st.rerun()
-                                else:
-                                    st.error("Failed to restore project")
+        # Removed deleted projects section as part of removing soft deletion functionality
                                     
         return selected_project
         

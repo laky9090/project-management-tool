@@ -82,111 +82,55 @@
 }
 
 /* Priority column styling */
-.task-table td[data-priority],
-.deleted-tasks td[data-priority] {
+.task-table td[data-priority] {
   transition: background-color 0.2s ease;
   text-align: center;
   padding: 8px 12px;
 }
 
 /* Priority styles */
-.task-table td[data-priority="High"],
-.deleted-tasks td[data-priority="High"] {
+.task-table td[data-priority="High"] {
   background-color: var(--priority-high-bg) !important;
   color: var(--priority-high-text) !important;
 }
 
-.task-table td[data-priority="Medium"],
-.deleted-tasks td[data-priority="Medium"] {
+.task-table td[data-priority="Medium"] {
   background-color: var(--priority-medium-bg) !important;
   color: var(--priority-medium-text) !important;
 }
 
-.task-table td[data-priority="Low"],
-.deleted-tasks td[data-priority="Low"] {
+.task-table td[data-priority="Low"] {
   background-color: var(--priority-low-bg) !important;
   color: var(--priority-low-text) !important;
 }
 
 /* Status column styling */
-.task-table td:nth-child(3),
-.deleted-tasks td:nth-child(3) {
+.task-table td:nth-child(3) {
   text-align: center;
 }
 
 /* Status colors - only apply to status column */
-.task-table tr[data-status="To Do"] td:nth-child(3),
-.deleted-tasks tr[data-status="To Do"] td:nth-child(3) {
+.task-table tr[data-status="To Do"] td:nth-child(3) {
   background-color: var(--status-todo-bg) !important;
   color: var(--status-todo-text) !important;
 }
 
-.task-table tr[data-status="In Progress"] td:nth-child(3),
-.deleted-tasks tr[data-status="In Progress"] td:nth-child(3) {
+.task-table tr[data-status="In Progress"] td:nth-child(3) {
   background-color: var(--status-inprogress-bg) !important;
   color: var(--status-inprogress-text) !important;
 }
 
-.task-table tr[data-status="Done"] td:nth-child(3),
-.deleted-tasks tr[data-status="Done"] td:nth-child(3) {
+.task-table tr[data-status="Done"] td:nth-child(3) {
   background-color: var(--status-done-bg) !important;
   color: var(--status-done-text) !important;
 }
 
-.task-table tr[data-status="Canceled"] td:nth-child(3),
-.deleted-tasks tr[data-status="Canceled"] td:nth-child(3) {
+.task-table tr[data-status="Canceled"] td:nth-child(3) {
   background-color: var(--status-canceled-bg) !important;
   color: var(--status-canceled-text) !important;
 }
 
-/* Deleted tasks section */
-.deleted-tasks-section {
-  margin-top: 2rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-color);
-}
 
-.deleted-tasks-header {
-  cursor: pointer;
-  padding: 0.5rem 0;
-  user-select: none;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.deleted-tasks-header h3 {
-  color: var(--text-secondary);
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.toggle-icon {
-  display: inline-block;
-  transition: transform 0.3s ease;
-  font-size: 0.8em;
-}
-
-/* Deleted tasks content */
-.deleted-tasks-content {
-  max-height: 0;
-  overflow: hidden;
-  opacity: 0;
-  width: 100%;
-  transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
-}
-
-.deleted-tasks-content.visible {
-  max-height: 2000px;
-  opacity: 1;
-  margin-top: 1rem;
-  overflow: visible;
-  transition: max-height 0.5s ease-in, opacity 0.3s ease-in;
-}
 
 /* Action buttons */
 .actions-column {
@@ -266,60 +210,7 @@
   font-weight: 600 !important;
 }
 
-/* Deleted Tasks Table Styles */
-.deleted-tasks {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--base-font-size);
-  background: white;
-}
 
-.deleted-tasks th,
-.deleted-tasks td {
-  padding: 12px 16px;
-  border: 1px solid var(--border-color);
-  vertical-align: middle;
-}
-
-.deleted-tasks th {
-  background: var(--background-light);
-  font-weight: 600;
-  color: var(--text-secondary);
-  text-align: left;
-  white-space: nowrap;
-}
-
-.deleted-tasks td:nth-child(6),
-.deleted-tasks td:nth-child(7),
-.deleted-tasks th:nth-child(6),
-.deleted-tasks th:nth-child(7) {
-  text-align: center !important;
-  white-space: nowrap;
-  min-width: 120px;
-}
-
-/* Priority indicators for deleted tasks (moved here for better organization) */
-.deleted-tasks .priority-indicator {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-weight: 500;
-  width: 100%;
-  justify-content: center;
-}
-
-/* Status styles for deleted tasks (moved here for better organization) */
-.deleted-tasks td .status-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  width: 100%;
-  justify-content: center;
-}
 
 /* Additional priority low styles to ensure consistency */
 td[data-priority="Low"],
