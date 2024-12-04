@@ -29,17 +29,33 @@ def convert_project_dates(project):
 def delete_project(project_id, permanent=False):
     """Delete project and all its tasks"""
     try:
-        # Verify project exists
+        # Verify project exists and get its current state
         project = execute_query("""
-            SELECT name FROM projects WHERE id = %s
+            SELECT p.*, COUNT(t.id) as task_count 
+            FROM projects p 
+            LEFT JOIN tasks t ON p.id = t.project_id 
+            WHERE p.id = %s 
+            GROUP BY p.id
         """, (project_id,))
         
         if not project:
-            logger.error(f"Project {project_id} not found")
-            return False
+            logger.error(f"Project {project_id} not found in database")
+            return False, "Project not found"
             
-        project_name = project[0]['name']
-        logger.info(f"Attempting to {'permanently delete' if permanent else 'move to trash'} project {project_id}: {project_name}")
+        project = project[0]
+        project_name = project['name']
+        
+        # Validate project state
+        if not permanent and project.get('deleted_at'):
+            logger.error(f"Project {project_id} is already in trash")
+            return False, "Project is already in trash"
+        
+        if permanent and not project.get('deleted_at'):
+            logger.error(f"Cannot permanently delete active project {project_id}")
+            return False, "Cannot permanently delete an active project"
+            
+        action_type = 'permanently delete' if permanent else 'move to trash'
+        logger.info(f"Attempting to {action_type} project {project_id}: {project_name} with {project['task_count']} tasks")
         
         # Start transaction
         execute_query("BEGIN")
@@ -48,32 +64,40 @@ def delete_project(project_id, permanent=False):
             if permanent:
                 # Delete task history first
                 logger.info(f"Deleting task history for project {project_id}")
-                execute_query("""
+                history_result = execute_query("""
                     DELETE FROM task_history 
                     WHERE task_id IN (SELECT id FROM tasks WHERE project_id = %s)
+                    RETURNING id
                 """, (project_id,))
+                logger.info(f"Deleted {len(history_result) if history_result else 0} task history records")
                 
                 # Delete task dependencies
                 logger.info(f"Deleting task dependencies for project {project_id}")
-                execute_query("""
+                dep_result = execute_query("""
                     DELETE FROM task_dependencies 
                     WHERE task_id IN (SELECT id FROM tasks WHERE project_id = %s)
                     OR depends_on_id IN (SELECT id FROM tasks WHERE project_id = %s)
+                    RETURNING id
                 """, (project_id, project_id))
+                logger.info(f"Deleted {len(dep_result) if dep_result else 0} task dependencies")
                 
                 # Delete subtasks
                 logger.info(f"Deleting subtasks for project {project_id}")
-                execute_query("""
+                subtask_result = execute_query("""
                     DELETE FROM subtasks 
                     WHERE parent_task_id IN (SELECT id FROM tasks WHERE project_id = %s)
+                    RETURNING id
                 """, (project_id,))
+                logger.info(f"Deleted {len(subtask_result) if subtask_result else 0} subtasks")
                 
                 # Delete all tasks
                 logger.info(f"Deleting tasks for project {project_id}")
-                execute_query("""
+                task_result = execute_query("""
                     DELETE FROM tasks 
                     WHERE project_id = %s
+                    RETURNING id
                 """, (project_id,))
+                logger.info(f"Deleted {len(task_result) if task_result else 0} tasks")
                 
                 # Finally delete the project
                 logger.info(f"Permanently deleting project {project_id}")
@@ -95,11 +119,13 @@ def delete_project(project_id, permanent=False):
                 if result:
                     # Soft delete all associated tasks
                     logger.info(f"Soft deleting tasks for project {project_id}")
-                    execute_query("""
+                    task_result = execute_query("""
                         UPDATE tasks 
                         SET deleted_at = CURRENT_TIMESTAMP 
                         WHERE project_id = %s AND deleted_at IS NULL
+                        RETURNING id
                     """, (project_id,))
+                    logger.info(f"Soft deleted {len(task_result) if task_result else 0} tasks")
             
             if result:
                 execute_query("COMMIT")
@@ -107,21 +133,24 @@ def delete_project(project_id, permanent=False):
                 if 'query_cache' in st.session_state:
                     st.session_state.query_cache.clear()
                 action = 'permanently deleted' if permanent else 'moved to trash'
-                logger.info(f"Project {project_id} successfully {action}")
-                return True
+                success_msg = f"Project '{project_name}' successfully {action}"
+                logger.info(success_msg)
+                return True, success_msg
                 
-            logger.warning(f"No changes made for project {project_id}")
+            logger.warning(f"No changes made for project {project_id} - project might be in invalid state")
             execute_query("ROLLBACK")
-            return False
+            return False, "Failed to delete project - no changes made"
             
         except Exception as e:
             execute_query("ROLLBACK")
-            logger.error(f"Database error while deleting project {project_id}: {str(e)}")
-            raise
+            error_msg = f"Database error while deleting project: {str(e)}"
+            logger.error(f"{error_msg}\nProject ID: {project_id}\nProject Name: {project_name}")
+            return False, error_msg
             
     except Exception as e:
-        logger.error(f"Error deleting project {project_id}: {str(e)}")
-        return False
+        error_msg = f"Error accessing project: {str(e)}"
+        logger.error(f"{error_msg}\nProject ID: {project_id}")
+        return False, error_msg
 
 def restore_project(project_id):
     """Restore a soft-deleted project and its tasks"""
@@ -367,20 +396,65 @@ def list_projects():
                             st.session_state.editing_project = project['id']
                             
                     with col4:
-                        if st.button("🗑️", key=f"delete_project_{project['id']}", help="Delete project"):
-                            if st.button("⛔", key=f"confirm_delete_{project['id']}", help="Permanently delete"):
-                                if delete_project(project['id'], permanent=True):
-                                    st.success(f"Project '{project['name']}' permanently deleted")
-                                    time.sleep(0.5)
+                        delete_key = f"delete_project_{project['id']}"
+                        if delete_key not in st.session_state:
+                            st.session_state[delete_key] = {'show_confirm': False, 'show_permanent': False}
+
+                        if st.button("🗑️", key=delete_key, help="Delete project"):
+                            st.session_state[delete_key]['show_confirm'] = True
+                            st.rerun()
+
+                        if st.session_state[delete_key].get('show_confirm'):
+                            st.markdown("""
+                                <div style="background: #fee2e2; border: 1px solid #ef4444; border-radius: 4px; padding: 0.5rem; margin: 0.5rem 0;">
+                                    <p style="color: #991b1b; margin: 0; font-size: 0.9em;">Are you sure you want to delete this project?</p>
+                                </div>
+                            """, unsafe_allow_html=True)
+
+                            col1, col2, col3 = st.columns([2, 2, 2])
+                            with col1:
+                                if st.button("✓ Move to Trash", key=f"confirm_soft_delete_{project['id']}"):
+                                    success, message = delete_project(project['id'])
+                                    if success:
+                                        st.success(message)
+                                        st.session_state[delete_key]['show_confirm'] = False
+                                        time.sleep(0.5)
+                                        st.rerun()
+                                    else:
+                                        st.error(message)
+                            with col2:
+                                if st.button("⛔ Delete Permanently", key=f"confirm_permanent_{project['id']}"):
+                                    st.session_state[delete_key]['show_permanent'] = True
                                     st.rerun()
-                                else:
-                                    st.error("Failed to delete project")
-                            elif delete_project(project['id']):
-                                st.success(f"Project '{project['name']}' moved to trash")
-                                time.sleep(0.5)
-                                st.rerun()
-                            else:
-                                st.error("Failed to delete project")
+                            with col3:
+                                if st.button("✗ Cancel", key=f"cancel_delete_{project['id']}"):
+                                    st.session_state[delete_key]['show_confirm'] = False
+                                    st.session_state[delete_key]['show_permanent'] = False
+                                    st.rerun()
+
+                        if st.session_state[delete_key].get('show_permanent'):
+                            st.markdown("""
+                                <div style="background: #dc2626; color: white; border-radius: 4px; padding: 0.5rem; margin: 0.5rem 0;">
+                                    <p style="margin: 0; font-size: 0.9em;">⚠️ This action cannot be undone!</p>
+                                </div>
+                            """, unsafe_allow_html=True)
+
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                if st.button("✓ Confirm Permanent Delete", key=f"confirm_permanent_final_{project['id']}"):
+                                    success, message = delete_project(project['id'], permanent=True)
+                                    if success:
+                                        st.success(message)
+                                        st.session_state[delete_key]['show_confirm'] = False
+                                        st.session_state[delete_key]['show_permanent'] = False
+                                        time.sleep(0.5)
+                                        st.rerun()
+                                    else:
+                                        st.error(message)
+                            with col2:
+                                if st.button("✗ Cancel", key=f"cancel_permanent_{project['id']}"):
+                                    st.session_state[delete_key]['show_permanent'] = False
+                                    st.rerun()
                                 
                     # Show edit form if this project is being edited
                     if st.session_state.get('editing_project') == project['id']:
