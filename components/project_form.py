@@ -356,6 +356,33 @@ def list_projects():
         if 'show_deleted_projects' not in st.session_state:
             st.session_state.show_deleted_projects = False
             
+        # Update page styling
+        st.markdown("""
+            <style>
+            .stButton>button {
+                background-color: #3b82f6;
+                color: white;
+                font-weight: 500;
+                padding: 0.5rem 1rem;
+                border-radius: 0.375rem;
+                border: none;
+            }
+            .info-message {
+                background-color: #dbeafe;
+                padding: 1rem;
+                border-radius: 0.375rem;
+                margin: 1rem 0;
+            }
+            .project-item {
+                padding: 0.75rem;
+                margin: 0.5rem 0;
+                border-radius: 0.375rem;
+                background-color: white;
+                border: 1px solid #e5e7eb;
+            }
+            </style>
+        """, unsafe_allow_html=True)
+            
         # Get active projects with task counts
         projects = execute_query('''
             SELECT p.*,
@@ -370,14 +397,23 @@ def list_projects():
         
         selected_project = None
         
+        # Display clean project management title
+        st.markdown("<h1 style='margin-bottom: 1.5rem;'>Project Management</h1>", unsafe_allow_html=True)
+        
+        # Blue Create New Project button
+        if st.button("Create New Project", type="primary"):
+            st.session_state.show_project_form = True
+            st.rerun()
+            
         # Process datetime fields and display active projects
         if projects:
             logger.info(f"Processing {len(projects)} active projects")
             projects = [convert_project_dates(project) for project in projects]
             
-            st.write("### Active Projects")
+            st.markdown("### Select Project")
             for project in projects:
                 with st.container():
+                    st.markdown(f"<div class='project-item'>", unsafe_allow_html=True)
                     col1, col2, col3, col4 = st.columns([6, 2, 1, 1])
                     
                     with col1:
@@ -410,8 +446,13 @@ def list_projects():
                     if st.session_state.get('editing_project') == project['id']:
                         if edit_project_form(project['id']):
                             st.rerun()
+                    st.markdown("</div>", unsafe_allow_html=True)
         else:
-            st.info("No active projects found. Create one to get started!")
+            st.markdown("""
+                <div class="info-message">
+                    Please select or create a project to get started!
+                </div>
+            """, unsafe_allow_html=True)
         
         # Display deleted projects section
         deleted_projects = get_deleted_projects()
