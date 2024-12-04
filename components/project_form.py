@@ -396,65 +396,15 @@ def list_projects():
                             st.session_state.editing_project = project['id']
                             
                     with col4:
-                        delete_key = f"delete_project_{project['id']}"
-                        if delete_key not in st.session_state:
-                            st.session_state[delete_key] = {'show_confirm': False, 'show_permanent': False}
-
-                        if st.button("🗑️", key=delete_key, help="Delete project"):
-                            st.session_state[delete_key]['show_confirm'] = True
-                            st.rerun()
-
-                        if st.session_state[delete_key].get('show_confirm'):
-                            st.markdown("""
-                                <div style="background: #fee2e2; border: 1px solid #ef4444; border-radius: 4px; padding: 0.5rem; margin: 0.5rem 0;">
-                                    <p style="color: #991b1b; margin: 0; font-size: 0.9em;">Are you sure you want to delete this project?</p>
-                                </div>
-                            """, unsafe_allow_html=True)
-
-                            col1, col2, col3 = st.columns([2, 2, 2])
-                            with col1:
-                                if st.button("✓ Move to Trash", key=f"confirm_soft_delete_{project['id']}"):
-                                    success, message = delete_project(project['id'])
-                                    if success:
-                                        st.success(message)
-                                        st.session_state[delete_key]['show_confirm'] = False
-                                        time.sleep(0.5)
-                                        st.rerun()
-                                    else:
-                                        st.error(message)
-                            with col2:
-                                if st.button("⛔ Delete Permanently", key=f"confirm_permanent_{project['id']}"):
-                                    st.session_state[delete_key]['show_permanent'] = True
+                        if st.button("🗑️", key=f"delete_project_{project['id']}", help="Delete project"):
+                            if st.button("Confirm Delete", key=f"confirm_delete_{project['id']}"):
+                                success, message = delete_project(project['id'])
+                                if success:
+                                    st.success(message)
+                                    time.sleep(0.5)
                                     st.rerun()
-                            with col3:
-                                if st.button("✗ Cancel", key=f"cancel_delete_{project['id']}"):
-                                    st.session_state[delete_key]['show_confirm'] = False
-                                    st.session_state[delete_key]['show_permanent'] = False
-                                    st.rerun()
-
-                        if st.session_state[delete_key].get('show_permanent'):
-                            st.markdown("""
-                                <div style="background: #dc2626; color: white; border-radius: 4px; padding: 0.5rem; margin: 0.5rem 0;">
-                                    <p style="margin: 0; font-size: 0.9em;">⚠️ This action cannot be undone!</p>
-                                </div>
-                            """, unsafe_allow_html=True)
-
-                            col1, col2 = st.columns(2)
-                            with col1:
-                                if st.button("✓ Confirm Permanent Delete", key=f"confirm_permanent_final_{project['id']}"):
-                                    success, message = delete_project(project['id'], permanent=True)
-                                    if success:
-                                        st.success(message)
-                                        st.session_state[delete_key]['show_confirm'] = False
-                                        st.session_state[delete_key]['show_permanent'] = False
-                                        time.sleep(0.5)
-                                        st.rerun()
-                                    else:
-                                        st.error(message)
-                            with col2:
-                                if st.button("✗ Cancel", key=f"cancel_permanent_{project['id']}"):
-                                    st.session_state[delete_key]['show_permanent'] = False
-                                    st.rerun()
+                                else:
+                                    st.error(message)
                                 
                     # Show edit form if this project is being edited
                     if st.session_state.get('editing_project') == project['id']:
