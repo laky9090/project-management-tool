@@ -413,47 +413,25 @@ def list_projects():
         else:
             st.info("No active projects found. Create one to get started!")
         
-        # Display deleted projects section with improved visibility
+        # Display deleted projects section
         deleted_projects = get_deleted_projects()
         if deleted_projects:
-            st.markdown("""
-                <div style="margin-top: 2rem; border-top: 1px solid #eee; padding-top: 1rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                        <h3 style="margin: 0; color: #666;">Deleted Projects</h3>
-                        <span style="color: #666; font-size: 0.9em; background: #f1f5f9; padding: 2px 8px; border-radius: 4px;">
-                            {} project{} in trash
-                        </span>
-                    </div>
-                </div>
-            """.format(len(deleted_projects), 's' if len(deleted_projects) != 1 else ''), unsafe_allow_html=True)
+            st.write("### Deleted Projects")
+            st.write(f"{len(deleted_projects)} project{'s' if len(deleted_projects) != 1 else ''} in trash")
             
-            # Add expand/collapse functionality with styled checkbox
-            if st.checkbox("📂 Show deleted projects", key="show_deleted_projects", help="Click to show/hide deleted projects"):
-                st.markdown("""
-                    <div class="deleted-projects-section" style="background: #f8fafc; border: 1px solid #eee; border-radius: 4px; padding: 1rem; margin-top: 0.5rem;">
-                """, unsafe_allow_html=True)
+            # Add expand/collapse functionality
+            if st.checkbox("Show deleted projects", key="show_deleted_projects"):
                 
                 for project in deleted_projects:
                     with st.container():
                         col1, col2, col3, col4 = st.columns([6, 2, 1, 1])
                         
                         with col1:
-                            st.markdown(f"""
-                                <div class="project-title" style="color: #4b5563;">
-                                    {project['name']}
-                                    <span class="task-count" style="color: #6b7280; font-size: 0.9em; margin-left: 0.5rem;">
-                                        ({project['completed_tasks']}/{project['total_tasks']} tasks)
-                                    </span>
-                                </div>
-                            """, unsafe_allow_html=True)
+                            st.write(f"{project['name']} ({project['completed_tasks']}/{project['total_tasks']} tasks)")
                             
                         with col2:
                             deadline_str = datetime.fromisoformat(project['deadline']).strftime('%d/%m/%Y') if project['deadline'] else 'No deadline'
-                            st.markdown(f"""
-                                <div class="project-deadline" style="color: #6b7280; text-align: center;">
-                                    Due: {deadline_str}
-                                </div>
-                            """, unsafe_allow_html=True)
+                            st.write(f"Due: {deadline_str}")
                             
                         with col3:
                             restore_key = f"restore_project_{project['id']}"
@@ -480,11 +458,7 @@ def list_projects():
                                 st.session_state[delete_key] = True
                                 
                             if st.session_state[delete_key]:
-                                st.markdown("""
-                                    <div style="background: #fee2e2; border: 1px solid #ef4444; border-radius: 4px; padding: 0.5rem; margin: 0.5rem 0;">
-                                        <p style="color: #991b1b; margin: 0; font-size: 0.9em;">This action cannot be undone.</p>
-                                    </div>
-                                """, unsafe_allow_html=True)
+                                st.warning("This action cannot be undone.")
                                 
                                 col1, col2 = st.columns(2)
                                 with col1:
