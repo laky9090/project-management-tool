@@ -411,217 +411,62 @@ button.delete-button:hover {
     table-layout: fixed !important;
 }
 
-/* Table container with scroll */
-.table-container {
-    width: 100%;
-    overflow-x: auto;
-    margin: 1rem 0;
+/* Notes column - strict constraints */
+.task-list-table th:nth-child(2),
+.task-list-table td:nth-child(2) {
+    width: 300px !important;
+    max-width: 300px !important;
+    min-width: 300px !important;
+    word-break: break-all !important; /* Force break anywhere if needed */
 }
 
-/* Fixed column widths */
+/* Notes column content */
+.task-list-table td:nth-child(2) {
+    white-space: normal !important; /* Allow natural wrapping */
+    overflow-wrap: anywhere !important;
+    height: auto;
+    vertical-align: top;
+    padding: 12px;
+}
+
+/* Column widths for other columns */
 .task-list-table th:nth-child(1) { width: 15%; }
-.task-list-table th:nth-child(2) { width: 300px !important; } /* Notes */
 .task-list-table th:nth-child(3) { width: 10%; }
 .task-list-table th:nth-child(4) { width: 10%; }
 .task-list-table th:nth-child(5) { width: 10%; }
 .task-list-table th:nth-child(6) { width: 10%; }
 .task-list-table th:nth-child(7) { width: 10%; }
-.task-list-table th:nth-child(8) { width: auto; }
+.task-list-table th:nth-child(8) { width: 10%; }
 
-/* Notes column specific styles */
-.task-list-table td:nth-child(2) {
-    width: 300px !important;
-    max-width: 300px !important;
-    overflow: hidden !important;
-    white-space: pre-wrap !important;
-    word-wrap: break-word !important;
+/* Table container */
+.table-container {
+    width: 100%;
+    overflow-x: auto;
 }
 
-/* Standard cell styling */
+/* Base cell styles */
 .task-list-table th,
 .task-list-table td {
     padding: 12px;
     border: 1px solid var(--border-color);
-    vertical-align: top;
+    vertical-align: middle;
 }
 
+/* Status colors */
+tr[data-status="To Do"] { background-color: var(--status-todo-bg); }
+tr[data-status="In Progress"] { background-color: var(--status-inprogress-bg); }
+tr[data-status="Done"] { background-color: var(--status-done-bg); }
+tr[data-status="Canceled"] { background-color: var(--status-canceled-bg); }
 
-/* Date columns center alignment */
-.task-list-table td.date-column,
-.task-list-table th.date-column {
-    text-align: center !important;
-}
-
-/* Override any potential conflicting styles */
-.task-list-table td:nth-child(2) * {
-    max-width: 100% !important;
-    overflow-wrap: break-word !important;
-}
-
-
-/* Date cell alignment for dates */
-.task-table td.date,
-.streamlit-table td.date,
-[data-testid="stTable"] td.date {
-    text-align: center !important;
-    min-width: 120px;
-}
-
-/* Header alignment for date columns */
-.task-table th.date-header,
-.streamlit-table th.date-header,
-[data-testid="stTable"] th:nth-child(4) {
-    text-align: center !important;
-}
-
-/* Inline editing styles */
-.editable {
-    cursor: text;
-    transition: all 0.2s ease;
-    padding: 8px !important;
-}
-
-.editable:hover {
-    background-color: var(--background-light);
-}
-
-.editable:focus {
-    outline: 2px solid var(--primary-color);
-    background-color: white;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
-}
-
-/* Date field specific styling */
-.date-cell {
-    text-align: center !important;
-    white-space: nowrap;
-    min-width: 120px;
-}
-
-/* Calendar popup styles */
-.calendar-popup {
-  position: absolute;
-  z-index: 1000;
-  background: white;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  padding: 8px;
-  display: none;
-}
-
-.calendar-popup.visible {
-  display: block;
-}
-
-.calendar-popup input[type="date"] {
-  padding: 8px;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  font-size: var(--base-font-size);
-  width: 100%;
-}
-
-.calendar-popup input[type="date"]:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
-}
-
-/* Date cell hover state */
-td.date-cell:hover {
-  background-color: var(--background-light);
-  cursor: pointer;
-}
-
-/* Calendar trigger icon */
-.calendar-trigger {
-  cursor: pointer;
-  opacity: 0.7;
-  transition: opacity 0.2s;
-}
-
-.calendar-trigger:hover {
-  opacity: 1;
-}
-
-/* Make sure the date input is properly styled */
-input[type="date"] {
-  font-family: var(--font-family);
-  color: var(--text-primary);
-}
-
-/* Past due date styling */
-.past-due {
-  color: #dc2626 !important;
-  font-weight: 600 !important;
-}
-
-/* Priority indicator styles in table */
-.task-list-table .priority-indicator {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-weight: 500;
-}
-
-/* Status badge styles in table */
-.task-list-table .status-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-/* Status-based row coloring */
-tr[data-status="To Do"] {
-  background-color: var(--status-todo-bg) !important;
-  color: var(--status-todo-text) !important;
-}
-
-tr[data-status="In Progress"] {
-  background-color: var(--status-inprogress-bg) !important;
-  color: var(--status-inprogress-text) !important;
-}
-
-tr[data-status="Done"] {
-  background-color: var(--status-done-bg) !important;
-  color: var(--status-done-text) !important;
-}
-
-tr[data-status="Canceled"] {
-  background-color: var(--status-canceled-bg) !important;
-  color: var(--status-canceled-text) !important;
-}
-
-/* Hover effects for status-based rows */
-tr[data-status="To Do"]:hover {
-  background-color: #e2e8f0 !important;
-}
-
-tr[data-status="In Progress"]:hover {
-  background-color: #fde68a !important;
-}
-
-tr[data-status="Done"]:hover {
-  background-color: #bbf7d0 !important;
-}
-
-tr[data-status="Canceled"]:hover {
-  background-color: #fce2e2 !important;
-}
-
-/* Override even row styling */
-.task-list-table tr:nth-child(even) {
-  background-color: inherit;
-}
-
-/* Date column alignment */
+/* Date columns alignment */
+.date-column,
 .task-list-table td:nth-child(5),
 .task-list-table th:nth-child(5) {
-  text-align: center !important;
+    text-align: center !important;
+}
+
+/* Past due dates */
+.past-due {
+    color: #dc2626 !important;
+    font-weight: 600 !important;
 }
