@@ -190,6 +190,7 @@ button {
   gap: var(--spacing-base);
   padding: var(--spacing-base);
   overflow-x: auto;
+  min-height: calc(100vh - 200px);
 }
 
 .board-column {
@@ -404,71 +405,59 @@ button.delete-button:hover {
 }
 
 
-/* Task List Table Styles */
-.task-list-table {
-    width: 100%;
-    border-collapse: collapse;
-    table-layout: fixed !important;
+/* Table layout */
+.task-table {
+  width: 100%;
+  table-layout: fixed !important;
+  border-collapse: collapse;
 }
 
-/* Notes column - strict constraints */
-.task-list-table th:nth-child(2),
-.task-list-table td:nth-child(2) {
-    width: 300px !important;
-    max-width: 300px !important;
-    min-width: 300px !important;
-    word-break: break-all !important; /* Force break anywhere if needed */
+/* Notes cell specific styling */
+.notes-cell {
+  width: 300px !important;
+  max-width: 300px !important;
+  min-width: 300px !important;
+  padding: 8px !important;
+  vertical-align: top !important;
+  position: relative !important;
 }
 
-/* Notes column content */
-.task-list-table td:nth-child(2) {
-    white-space: normal !important; /* Allow natural wrapping */
-    overflow-wrap: anywhere !important;
-    height: auto;
-    vertical-align: top;
-    padding: 12px;
+.notes-content {
+  max-height: 80px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+  white-space: pre-wrap !important;
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+  border: 1px solid #e5e7eb !important;
+  padding: 4px !important;
+  background-color: white !important;
 }
 
-/* Column widths for other columns */
-.task-list-table th:nth-child(1) { width: 15%; }
-.task-list-table th:nth-child(3) { width: 10%; }
-.task-list-table th:nth-child(4) { width: 10%; }
-.task-list-table th:nth-child(5) { width: 10%; }
-.task-list-table th:nth-child(6) { width: 10%; }
-.task-list-table th:nth-child(7) { width: 10%; }
-.task-list-table th:nth-child(8) { width: 10%; }
-
-/* Base cell styles */
-.task-list-table th,
-.task-list-table td {
-    padding: 12px;
-    border: 1px solid var(--border-color);
-    vertical-align: middle;
-}
-
-/* Status colors */
-tr[data-status="To Do"] { background-color: var(--status-todo-bg); }
-tr[data-status="In Progress"] { background-color: var(--status-inprogress-bg); }
-tr[data-status="Done"] { background-color: var(--status-done-bg); }
-tr[data-status="Canceled"] { background-color: var(--status-canceled-bg); }
-
-/* Date columns alignment */
-.date-column,
-.task-list-table td:nth-child(5),
-.task-list-table th:nth-child(5) {
-    text-align: center !important;
-}
-
-/* Past due dates */
-.past-due {
-    color: #dc2626 !important;
-    font-weight: 600 !important;
-}
-
-/* Force table container behavior */
+/* Ensure table stays within bounds */
 .table-container {
-    width: 100% !important;
-    max-width: 100% !important;
-    overflow-x: auto !important;
-    display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  padding-bottom: 8px !important;
+}
+
+/* Add scrollbar styling */
+.notes-content::-webkit-scrollbar {
+  width: 6px !important;
+}
+
+.notes-content::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+}
+
+.notes-content::-webkit-scrollbar-thumb {
+  background: #888 !important;
+  border-radius: 3px !important;
+}
+
+.notes-content::-webkit-scrollbar-thumb:hover {
+  background: #555 !important;
 }
