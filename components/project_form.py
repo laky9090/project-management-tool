@@ -1,3 +1,4 @@
+<replit_final_file>
 import streamlit as st
 from database.connection import execute_query
 import logging
@@ -414,14 +415,14 @@ def list_projects():
             for project in projects:
                 with st.container():
                     col1, col2 = st.columns([8, 2])
-
+                    
                     with col1:
                         if st.button(
                             f"{project['name']} ({project['completed_tasks']}/{project['total_tasks']} tasks)",
                             key=f"select_project_{project['id']}"
                         ):
                             selected_project = project['id']
-
+                            
                     with col2:
                         st.markdown(f"Due: {datetime.fromisoformat(project['deadline']).strftime('%d/%m/%Y') if project['deadline'] else 'No deadline'}")
         else:
@@ -518,4 +519,6 @@ def list_projects():
 if __name__ == "__main__":
     selected_project = list_projects()
     if selected_project:
+        edit_project_form(selected_project)
+    else:
         create_project_form()

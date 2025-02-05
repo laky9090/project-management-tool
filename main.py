@@ -1,7 +1,5 @@
 import streamlit as st
-import streamlit.components.v1 as components
 import logging
-import os
 from database.schema import init_database
 from database.connection import get_connection
 from components.project_form import create_project_form, list_projects
@@ -20,52 +18,12 @@ st.set_page_config(
     layout="wide"
 )
 
-# Load custom CSS
-def load_css():
-    try:
-        # Create a single combined CSS string for better performance
-        css_content = ""
-
-        # Load in specific order: variables -> main -> task
-        css_files = ['styles/variables.css', 'styles/main.css', 'styles/task.css']
-
-        for file_path in css_files:
-            try:
-                with open(file_path) as f:
-                    css_content += f.read() + "\n"
-            except Exception as e:
-                logger.error(f"Error reading CSS file {file_path}: {str(e)}")
-
-        # Apply all styles at once
-        if css_content:
-            st.markdown(f"""
-                <style>
-                    {css_content}
-                </style>
-            """, unsafe_allow_html=True)
-            logger.info("CSS files loaded successfully")
-        else:
-            logger.error("No CSS content was loaded")
-
-    except Exception as e:
-        logger.error(f"Error loading CSS files: {str(e)}")
-
 # Initialize session states
 if 'current_view' not in st.session_state:
     st.session_state.current_view = 'Board'
 if 'selected_project' not in st.session_state:
     st.session_state.selected_project = None
 
-# Load CSS before any other components
-load_css()
-
-# Test database connection
-conn = get_connection()
-if not conn:
-    st.error("Failed to connect to the database. Please check your database configuration.")
-    st.stop()
-else:
-    conn.close()
 
 try:
     # Initialize database
