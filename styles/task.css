@@ -190,102 +190,65 @@ button {
   gap: var(--spacing-base);
   padding: var(--spacing-base);
   overflow-x: auto;
-  min-height: calc(100vh - 200px);
 }
 
-.column {
+.board-column {
   flex: 1;
   min-width: 300px;
-  background-color: var(--background-light);
+  background: var(--background-light);
   border-radius: 8px;
   border: 1px solid var(--border-color);
 }
 
-.column h3 {
+.board-column-header {
   padding: var(--spacing-base);
-  margin: 0;
-  font-size: calc(var(--base-font-size) * 1.1);
   font-weight: 600;
-  color: var(--text-primary);
   border-bottom: 1px solid var(--border-color);
+  background: white;
+  border-radius: 8px 8px 0 0;
 }
 
-.task-list {
-  padding: calc(var(--spacing-base) * 0.5);
-  min-height: 100px;
+/* Error message */
+.error-message {
+  background: #fee2e2;
+  color: #991b1b;
+  padding: var(--spacing-base);
+  border-radius: 6px;
+  margin-bottom: var(--spacing-base);
+  border: 1px solid #fecaca;
 }
 
-/* Description */
-.task-description {
-    color: var(--text-secondary);
-    font-size: var(--base-font-size);
-    line-height: 1.5;
-    margin: calc(var(--spacing-base) * 1.5) 0;
+/* Streamlit specific overrides */
+div[data-testid="stVerticalBlock"] {
+  gap: var(--spacing-base) !important;
 }
 
-
-/* Task List Table Styles */
-.task-list-table {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
+div[data-testid="stHorizontalBlock"] {
+  gap: calc(var(--spacing-base) * 1.5) !important;
 }
 
-.table-container {
-  width: 100%;
-  overflow-x: auto;
+/* Make Streamlit buttons consistent with React buttons */
+.stButton > button {
+  background-color: var(--primary-color) !important;
+  color: white !important;
+  border: none !important;
+  padding: calc(var(--spacing-base) * 0.75) var(--spacing-base) !important;
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
 }
 
-/* Force column widths */
-.task-list-table th:nth-child(1),
-.task-list-table td:nth-child(1) { width: 15%; }
-
-.task-list-table th:nth-child(2),
-.task-list-table td:nth-child(2) { 
-  width: 300px !important;
-  max-width: 300px !important;
-  min-width: 300px !important;
+.stButton > button:hover {
+  background-color: #2563eb !important;
+  transform: translateY(-1px) !important;
 }
 
-.task-list-table th:nth-child(3),
-.task-list-table td:nth-child(3),
-.task-list-table th:nth-child(4),
-.task-list-table td:nth-child(4),
-.task-list-table th:nth-child(5),
-.task-list-table td:nth-child(5),
-.task-list-table th:nth-child(6),
-.task-list-table td:nth-child(6),
-.task-list-table th:nth-child(7),
-.task-list-table td:nth-child(7),
-.task-list-table th:nth-child(8),
-.task-list-table td:nth-child(8) { 
-  width: 10%; 
-}
-
-.task-list-table th:nth-child(9),
-.task-list-table td:nth-child(9) { 
-  width: 15%; 
-}
-
-/* Notes column content */
-.task-list-table td[data-field="comment"] {
-  padding: 0 !important;
-  vertical-align: top;
-}
-
-.task-list-table td[data-field="comment"] > div {
-  max-height: 100px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  white-space: pre-wrap;
-  word-break: break-word;
-  padding: 8px;
+/* Global styles */
+.stMarkdown, .task-form, .board {
+  font-family: var(--font-family);
+  font-size: var(--base-font-size);
+  color: var(--text-primary);
   line-height: 1.5;
-}
-
-/* Hide horizontal scrollbar for notes content */
-.task-list-table td[data-field="comment"] > div::-webkit-scrollbar-horizontal {
-  display: none;
 }
 
 /* Task header */
@@ -432,48 +395,74 @@ button.delete-button:hover {
   min-height: 100px;
 }
 
-/* Error message */
-.error-message {
-  background: #fee2e2;
-  color: #991b1b;
-  padding: var(--spacing-base);
-  border-radius: 6px;
-  margin-bottom: var(--spacing-base);
-  border: 1px solid #fecaca;
+/* Description */
+.task-description {
+    color: var(--text-secondary);
+    font-size: var(--base-font-size);
+    line-height: 1.5;
+    margin: calc(var(--spacing-base) * 1.5) 0;
 }
 
-/* Streamlit specific overrides */
-div[data-testid="stVerticalBlock"] {
-  gap: var(--spacing-base) !important;
+
+/* Task List Table Styles */
+.task-list-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
 }
 
-div[data-testid="stHorizontalBlock"] {
-  gap: calc(var(--spacing-base) * 1.5) !important;
+/* Notes column width */
+.task-list-table th:nth-child(2) {
+    width: 300px;
 }
 
-/* Make Streamlit buttons consistent with React buttons */
-.stButton > button {
-  background-color: var(--primary-color) !important;
-  color: white !important;
-  border: none !important;
-  padding: calc(var(--spacing-base) * 0.75) var(--spacing-base) !important;
-  border-radius: 6px !important;
-  font-weight: 500 !important;
-  transition: all 0.2s ease !important;
+/* Notes column content */
+.task-list-table td:nth-child(2),
+.task-list-table td[data-field="notes"] {
+    width: 300px;
+    max-width: 300px;
+    min-width: 300px;
+    height: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    vertical-align: top;
+    padding: 12px;
+    line-height: 1.5;
 }
 
-.stButton > button:hover {
-  background-color: #2563eb !important;
-  transform: translateY(-1px) !important;
+/* Text area for notes editing */
+td[data-field="notes"] textarea {
+    width: 100%;
+    min-height: 60px;
+    height: auto;
+    resize: vertical;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
-/* Global styles */
-.stMarkdown, .task-form, .board {
-  font-family: var(--font-family);
-  font-size: var(--base-font-size);
-  color: var(--text-primary);
-  line-height: 1.5;
+/* Table container */
+.table-container {
+    width: 100%;
+    overflow-x: auto;
 }
+
+/* Column widths */
+.task-list-table th:nth-child(1) { width: 15%; } /* Title */
+.task-list-table th:nth-child(3) { width: 10%; } /* Status */
+.task-list-table th:nth-child(4) { width: 10%; } /* Priority */
+.task-list-table th:nth-child(5) { width: 10%; } /* Due Date */
+.task-list-table th:nth-child(6) { width: 10%; } /* Last Update */
+.task-list-table th:nth-child(7) { width: 10%; } /* Assignee */
+.task-list-table th:nth-child(8) { width: 10%; } /* Actions */
 
 
 /* Cell padding and borders */
@@ -523,6 +512,7 @@ div[data-testid="stHorizontalBlock"] {
     white-space: nowrap;
     min-width: 120px;
 }
+
 
 /* Calendar popup styles */
 .calendar-popup {

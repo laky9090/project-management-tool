@@ -446,31 +446,40 @@ const Board = ({ projectId }) => {
         <table className="task-table">
           <thead>
             <tr>
-              <th onClick={() => handleSort("title")} style={{width: "15%"}}>
+              <th onClick={() => handleSort("title")}>
                 Title {getSortIcon("title")}
               </th>
-              <th onClick={() => handleSort("comment")} style={{width: "300px"}}>
+              <th onClick={() => handleSort("comment")}>
                 Notes {getSortIcon("comment")}
               </th>
-              <th onClick={() => handleSort("status")} style={{width: "10%"}}>
+              <th onClick={() => handleSort("status")}>
                 Status {getSortIcon("status")}
               </th>
-              <th onClick={() => handleSort("priority")} style={{width: "10%"}}>
+              <th onClick={() => handleSort("priority")}>
                 Priority {getSortIcon("priority")}
               </th>
-              <th onClick={() => handleSort("start_date")} style={{width: "10%"}} className="date-column">
+              <th
+                onClick={() => handleSort("start_date")}
+                className="date-column"
+              >
                 Start Date {getSortIcon("start_date")}
               </th>
-              <th onClick={() => handleSort("end_date")} style={{width: "10%"}} className="date-column">
+              <th
+                onClick={() => handleSort("end_date")}
+                className="date-column"
+              >
                 End Date {getSortIcon("end_date")}
               </th>
-              <th onClick={() => handleSort("updated_at")} style={{width: "10%"}} className="date-column">
+              <th
+                onClick={() => handleSort("updated_at")}
+                className="date-column"
+              >
                 Last Update {getSortIcon("updated_at")}
               </th>
-              <th onClick={() => handleSort("assignee")} style={{width: "10%"}}>
+              <th onClick={() => handleSort("assignee")}>
                 Assigned To {getSortIcon("assignee")}
               </th>
-              <th style={{width: "15%"}}>Actions</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -507,21 +516,9 @@ const Board = ({ projectId }) => {
                   onClick={() => handleCommentEdit(task.id, task.comment)}
                   data-task-id={task.id}
                   data-field="comment"
-                  style={{ width: "300px", position: "relative" }}
+                  style={{ whiteSpace: "pre-wrap" }}
                 >
-                  <div 
-                    title={task.comment || ""}
-                    style={{ 
-                      maxHeight: "100px",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                      padding: "8px",
-                      cursor: "pointer"
-                    }}
-                  >
-                    {task.comment || ""}
-                  </div>
+                  {task.comment || ""}
                 </td>
                 <td>
                   <select
