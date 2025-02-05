@@ -438,12 +438,6 @@ button.delete-button:hover {
 .task-list-table th:nth-child(7) { width: 10%; }
 .task-list-table th:nth-child(8) { width: 10%; }
 
-/* Table container */
-.table-container {
-    width: 100%;
-    overflow-x: auto;
-}
-
 /* Base cell styles */
 .task-list-table th,
 .task-list-table td {
@@ -469,4 +463,12 @@ tr[data-status="Canceled"] { background-color: var(--status-canceled-bg); }
 .past-due {
     color: #dc2626 !important;
     font-weight: 600 !important;
+}
+
+/* Force table container behavior */
+.table-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    display: block !important;
 }
