@@ -32,24 +32,23 @@ def create_project_form():
         st.session_state.show_project_form = False
 
     if not st.session_state.show_project_form:
-        # Add unique key to the create project button
-        if st.button("➕ Create New Project", key="create_project_button_main"):
+        if st.button("Create New Project", key="create_new_project"):
             st.session_state.show_project_form = True
             st.rerun()
         return False
 
-    with st.form("project_form"):
+    with st.form(key="new_project_form"):
         st.write("### Create Project")
 
-        name = st.text_input("Project Name", key="project_name_input")
-        description = st.text_area("Description", key="project_description_input")
-        deadline = st.date_input("Deadline", key="project_deadline_input")
+        name = st.text_input("Project Name", key="new_project_name")
+        description = st.text_area("Description", key="new_project_description")
+        deadline = st.date_input("Deadline", key="new_project_deadline")
 
         col1, col2 = st.columns(2)
         with col1:
-            submitted = st.form_submit_button("Create Project")
+            submitted = st.form_submit_button("Create Project", key="submit_new_project")
         with col2:
-            cancelled = st.form_submit_button("Cancel")
+            cancelled = st.form_submit_button("Cancel", key="cancel_new_project")
 
         if cancelled:
             st.session_state.show_project_form = False
@@ -105,23 +104,19 @@ def list_projects():
 
         selected_project = None
 
-        # Add unique key to the header button
-        if st.button("Create New Project", key="create_project_button_header"):
-            st.session_state.show_project_form = True
-            st.rerun()
+        st.title("Project Management")
 
+        st.markdown("### Active Projects")
         if projects:
-            st.markdown("### Active Projects")
             for project in projects:
                 project = convert_project_dates(project)
                 with st.container():
                     col1, col2 = st.columns([8, 2])
 
                     with col1:
-                        # Each project button already has a unique key
                         if st.button(
                             f"{project['name']} ({project['completed_tasks']}/{project['total_tasks']} tasks)",
-                            key=f"select_project_{project['id']}"
+                            key=f"project_{project['id']}"
                         ):
                             selected_project = project['id']
 

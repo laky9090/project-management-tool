@@ -13,6 +13,10 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
+args = "Project"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
 args = "Backend Server"
 
 [[workflows.workflow.tasks]]
@@ -22,6 +26,21 @@ args = "Streamlit App"
 [[workflows.workflow.tasks]]
 task = "workflow.run"
 args = "React Frontend"
+
+[[workflows.workflow]]
+name = "Project"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
+waitForPort = 3001
 
 [[workflows.workflow]]
 name = "Backend Server"
