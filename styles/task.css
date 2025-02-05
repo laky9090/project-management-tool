@@ -190,110 +190,65 @@ button {
   gap: var(--spacing-base);
   padding: var(--spacing-base);
   overflow-x: auto;
-  min-height: calc(100vh - 200px);
 }
 
-.column {
+.board-column {
   flex: 1;
   min-width: 300px;
-  background-color: var(--background-light);
+  background: var(--background-light);
   border-radius: 8px;
   border: 1px solid var(--border-color);
 }
 
-.column h3 {
+.board-column-header {
   padding: var(--spacing-base);
-  margin: 0;
-  font-size: calc(var(--base-font-size) * 1.1);
   font-weight: 600;
-  color: var(--text-primary);
   border-bottom: 1px solid var(--border-color);
+  background: white;
+  border-radius: 8px 8px 0 0;
 }
 
-.task-list {
-  padding: calc(var(--spacing-base) * 0.5);
-  min-height: 100px;
+/* Error message */
+.error-message {
+  background: #fee2e2;
+  color: #991b1b;
+  padding: var(--spacing-base);
+  border-radius: 6px;
+  margin-bottom: var(--spacing-base);
+  border: 1px solid #fecaca;
 }
 
-/* Description */
-.task-description {
-   color: var(--text-secondary);
-   font-size: var(--base-font-size);
-   line-height: 1.5;
-   margin: calc(var(--spacing-base) * 1.5) 0;
+/* Streamlit specific overrides */
+div[data-testid="stVerticalBlock"] {
+  gap: var(--spacing-base) !important;
 }
 
-
-/* Base table styles */
-.task-list-table {
-    width: 100%;
-    table-layout: fixed !important;
-    border-collapse: collapse;
+div[data-testid="stHorizontalBlock"] {
+  gap: calc(var(--spacing-base) * 1.5) !important;
 }
 
-/* Table container to enable horizontal scroll if needed */
-.table-container {
-    width: 100%;
-    overflow-x: auto;
+/* Make Streamlit buttons consistent with React buttons */
+.stButton > button {
+  background-color: var(--primary-color) !important;
+  color: white !important;
+  border: none !important;
+  padding: calc(var(--spacing-base) * 0.75) var(--spacing-base) !important;
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
 }
 
-/* Notes column styles */
-.notes-cell {
-    width: 300px !important;
-    max-width: 300px !important;
-    min-width: 300px !important;
-    height: 100px !important;
-    max-height: 100px !important;
-    position: relative !important;
-    padding: 8px !important;
-    vertical-align: top !important;
+.stButton > button:hover {
+  background-color: #2563eb !important;
+  transform: translateY(-1px) !important;
 }
 
-.notes-content {
-    width: 100% !important;
-    height: 100% !important;
-    overflow-y: auto !important;
-    white-space: pre-wrap !important;
-    word-wrap: break-word !important;
-    word-break: break-word !important;
-    overflow-wrap: break-word !important;
-    line-height: 1.5 !important;
-    padding-right: 8px !important;
-}
-
-/* Custom scrollbar for notes */
-.notes-content::-webkit-scrollbar {
-    width: 8px;
-}
-
-.notes-content::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 4px;
-}
-
-.notes-content::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 4px;
-}
-
-.notes-content::-webkit-scrollbar-thumb:hover {
-    background: #555;
-}
-
-/* When editing notes */
-.notes-cell textarea {
-    width: 100% !important;
-    height: 100% !important;
-    resize: none !important;
-    padding: 4px !important;
-    border: 1px solid var(--border-color) !important;
-    border-radius: 4px !important;
-    font-family: inherit !important;
-    font-size: inherit !important;
-    line-height: inherit !important;
-    white-space: pre-wrap !important;
-    word-wrap: break-word !important;
-    word-break: break-word !important;
+/* Global styles */
+.stMarkdown, .task-form, .board {
+  font-family: var(--font-family);
+  font-size: var(--base-font-size);
+  color: var(--text-primary);
+  line-height: 1.5;
 }
 
 /* Task header */
@@ -440,47 +395,64 @@ button.delete-button:hover {
   min-height: 100px;
 }
 
-/* Error message */
-.error-message {
-  background: #fee2e2;
-  color: #991b1b;
-  padding: var(--spacing-base);
-  border-radius: 6px;
-  margin-bottom: var(--spacing-base);
-  border: 1px solid #fecaca;
+/* Description */
+.task-description {
+    color: var(--text-secondary);
+    font-size: var(--base-font-size);
+    line-height: 1.5;
+    margin: calc(var(--spacing-base) * 1.5) 0;
 }
 
-/* Streamlit specific overrides */
-div[data-testid="stVerticalBlock"] {
-  gap: var(--spacing-base) !important;
+
+/* Task List Table Styles */
+.task-list-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
 }
 
-div[data-testid="stHorizontalBlock"] {
-  gap: calc(var(--spacing-base) * 1.5) !important;
+/* Notes column width */
+.task-list-table th:nth-child(2) {
+    width: 300px;
 }
 
-/* Make Streamlit buttons consistent with React buttons */
-.stButton > button {
-  background-color: var(--primary-color) !important;
-  color: white !important;
-  border: none !important;
-  padding: calc(var(--spacing-base) * 0.75) var(--spacing-base) !important;
-  border-radius: 6px !important;
-  font-weight: 500 !important;
-  transition: all 0.2s ease !important;
+/* Notes column content */
+.task-list-table td:nth-child(2),
+.task-list-table td[data-field="notes"] {
+    width: 300px;
+    max-width: 300px;
+    min-width: 300px;
+    height: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    vertical-align: top;
+    padding: 12px;
+    line-height: 1.5;
 }
 
-.stButton > button:hover {
-  background-color: #2563eb !important;
-  transform: translateY(-1px) !important;
+/* Text area for notes editing */
+td[data-field="notes"] textarea {
+    width: 100%;
+    min-height: 60px;
+    height: auto;
+    resize: vertical;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
-/* Global styles */
-.stMarkdown, .task-form, .board {
-  font-family: var(--font-family);
-  font-size: var(--base-font-size);
-  color: var(--text-primary);
-  line-height: 1.5;
+/* Table container */
+.table-container {
+    width: 100%;
+    overflow-x: auto;
 }
 
 /* Column widths */
@@ -491,6 +463,7 @@ div[data-testid="stHorizontalBlock"] {
 .task-list-table th:nth-child(6) { width: 10%; } /* Last Update */
 .task-list-table th:nth-child(7) { width: 10%; } /* Assignee */
 .task-list-table th:nth-child(8) { width: 10%; } /* Actions */
+
 
 /* Cell padding and borders */
 .task-list-table th,
@@ -539,6 +512,7 @@ div[data-testid="stHorizontalBlock"] {
     white-space: nowrap;
     min-width: 120px;
 }
+
 
 /* Calendar popup styles */
 .calendar-popup {

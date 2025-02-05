@@ -443,17 +443,7 @@ const Board = ({ projectId }) => {
       )}
 
       <div className="table-container">
-        <table className="task-list-table">
-          <colgroup>
-            <col style={{ width: '15%' }} />
-            <col style={{ width: '300px' }} />
-            <col style={{ width: '10%' }} />
-            <col style={{ width: '10%' }} />
-            <col style={{ width: '10%' }} />
-            <col style={{ width: '10%' }} />
-            <col style={{ width: '10%' }} />
-            <col style={{ width: 'auto' }} />
-          </colgroup>
+        <table className="task-table">
           <thead>
             <tr>
               <th onClick={() => handleSort("title")}>
@@ -526,11 +516,9 @@ const Board = ({ projectId }) => {
                   onClick={() => handleCommentEdit(task.id, task.comment)}
                   data-task-id={task.id}
                   data-field="comment"
-                  className="notes-cell"
+                  style={{ whiteSpace: "pre-wrap" }}
                 >
-                  <div className="notes-content">
-                    {task.comment || ""}
-                  </div>
+                  {task.comment || ""}
                 </td>
                 <td>
                   <select
