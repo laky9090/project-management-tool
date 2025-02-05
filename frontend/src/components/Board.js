@@ -185,11 +185,17 @@ const Board = ({ projectId }) => {
         if (calendar.value) {
           const newDate = new Date(calendar.value);
           const updatedDates = {
-            start_date: field === "start_date" ? calendar.value : task.start_date,
+            start_date:
+              field === "start_date" ? calendar.value : task.start_date,
             end_date: field === "end_date" ? calendar.value : task.end_date,
           };
 
-          if (!handleDateValidation(updatedDates.start_date, updatedDates.end_date)) {
+          if (
+            !handleDateValidation(
+              updatedDates.start_date,
+              updatedDates.end_date,
+            )
+          ) {
             cell.textContent = currentValue || "";
             popup.remove();
             return;
@@ -254,9 +260,13 @@ const Board = ({ projectId }) => {
   const handleDeleteTask = async (taskId) => {
     try {
       setError(null);
-      if (window.confirm('Are you sure you want to delete this task? This action cannot be undone.')) {
+      if (
+        window.confirm(
+          "Are you sure you want to delete this task? This action cannot be undone.",
+        )
+      ) {
         await api.deleteTask(taskId);
-        setTasks(tasks.filter(task => task.id !== taskId));
+        setTasks(tasks.filter((task) => task.id !== taskId));
       }
     } catch (error) {
       console.error("Error deleting task:", error);
