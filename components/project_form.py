@@ -32,7 +32,8 @@ def create_project_form():
         st.session_state.show_project_form = False
 
     if not st.session_state.show_project_form:
-        if st.button("➕ Create New Project"):
+        # Add unique key to the create project button
+        if st.button("➕ Create New Project", key="create_project_button_main"):
             st.session_state.show_project_form = True
             st.rerun()
         return False
@@ -40,9 +41,9 @@ def create_project_form():
     with st.form("project_form"):
         st.write("### Create Project")
 
-        name = st.text_input("Project Name")
-        description = st.text_area("Description")
-        deadline = st.date_input("Deadline")
+        name = st.text_input("Project Name", key="project_name_input")
+        description = st.text_area("Description", key="project_description_input")
+        deadline = st.date_input("Deadline", key="project_deadline_input")
 
         col1, col2 = st.columns(2)
         with col1:
@@ -104,9 +105,8 @@ def list_projects():
 
         selected_project = None
 
-        st.markdown("<h1>Project Management</h1>", unsafe_allow_html=True)
-
-        if st.button("Create New Project"):
+        # Add unique key to the header button
+        if st.button("Create New Project", key="create_project_button_header"):
             st.session_state.show_project_form = True
             st.rerun()
 
@@ -118,6 +118,7 @@ def list_projects():
                     col1, col2 = st.columns([8, 2])
 
                     with col1:
+                        # Each project button already has a unique key
                         if st.button(
                             f"{project['name']} ({project['completed_tasks']}/{project['total_tasks']} tasks)",
                             key=f"select_project_{project['id']}"
