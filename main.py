@@ -17,8 +17,7 @@ logger = logging.getLogger(__name__)
 st.set_page_config(
     page_title="Project Management Tool",
     page_icon="📋",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    layout="wide"
 )
 
 # Load custom CSS
@@ -60,6 +59,14 @@ if 'selected_project' not in st.session_state:
 # Load CSS before any other components
 load_css()
 
+# Test database connection
+conn = get_connection()
+if not conn:
+    st.error("Failed to connect to the database. Please check your database configuration.")
+    st.stop()
+else:
+    conn.close()
+
 try:
     # Initialize database
     init_database()
@@ -72,7 +79,7 @@ except Exception as e:
 with st.sidebar:
     st.title("Project Management")
 
-    if st.button("Create New Project", type="primary"):
+    if st.button("Create New Project"):
         st.session_state.current_view = 'create_project'
         st.rerun()
 
@@ -108,9 +115,3 @@ try:
 except Exception as e:
     logger.error(f"Application error: {str(e)}")
     st.error("An error occurred. Please try again.")
-
-if __name__ == "__main__":
-    # Force Streamlit to run on port 5000
-    import sys
-    if len(sys.argv) == 1:
-        sys.argv.extend(["--server.port", "5000", "--server.address", "0.0.0.0"])
