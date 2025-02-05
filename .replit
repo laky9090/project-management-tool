@@ -17,26 +17,7 @@ args = "Backend Server"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Backend Server"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
 args = "Streamlit App"
-
-[[workflows.workflow]]
-name = "Backend Server"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd backend && node server.js"
-waitForPort = 3001
 
 [[workflows.workflow]]
 name = "Backend Server"
