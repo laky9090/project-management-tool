@@ -389,7 +389,7 @@ def list_projects():
                    COUNT(t.id) as total_tasks,
                    COUNT(CASE WHEN t.status = 'Done' THEN 1 END) as completed_tasks
             FROM projects p
-            LEFT JOIN tasks t ON p.id = t.project_id
+            LEFT JOIN tasks t ON p.id = t.project_id AND t.deleted_at IS NULL
             WHERE p.deleted_at IS NULL
             GROUP BY p.id
             ORDER BY p.created_at DESC
@@ -410,43 +410,20 @@ def list_projects():
             logger.info(f"Processing {len(projects)} active projects")
             projects = [convert_project_dates(project) for project in projects]
             
-            st.markdown("### Select Project")
+            st.markdown("### Active Projects")
             for project in projects:
                 with st.container():
-                    st.markdown(f"<div class='project-item'>", unsafe_allow_html=True)
-                    col1, col2, col3, col4 = st.columns([6, 2, 1, 1])
-                    
+                    col1, col2 = st.columns([8, 2])
+
                     with col1:
                         if st.button(
                             f"{project['name']} ({project['completed_tasks']}/{project['total_tasks']} tasks)",
                             key=f"select_project_{project['id']}"
                         ):
                             selected_project = project['id']
-                            
+
                     with col2:
-                        deadline_str = datetime.fromisoformat(project['deadline']).strftime('%d/%m/%Y') if project['deadline'] else 'No deadline'
-                        st.write(f"Due: {deadline_str}")
-                            
-                    with col3:
-                        if st.button("✏️", key=f"edit_project_{project['id']}", help="Edit project"):
-                            st.session_state.editing_project = project['id']
-                            
-                    with col4:
-                        if st.button("🗑️", key=f"delete_project_{project['id']}", help="Delete project"):
-                            if st.button("Confirm Delete", key=f"confirm_delete_{project['id']}"):
-                                success, message = delete_project(project['id'])
-                                if success:
-                                    st.success(message)
-                                    time.sleep(0.5)
-                                    st.rerun()
-                                else:
-                                    st.error(message)
-                                
-                    # Show edit form if this project is being edited
-                    if st.session_state.get('editing_project') == project['id']:
-                        if edit_project_form(project['id']):
-                            st.rerun()
-                    st.markdown("</div>", unsafe_allow_html=True)
+                        st.markdown(f"Due: {datetime.fromisoformat(project['deadline']).strftime('%d/%m/%Y') if project['deadline'] else 'No deadline'}")
         else:
             st.markdown("""
                 <div class="info-message">
