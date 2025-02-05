@@ -674,39 +674,6 @@ tr[data-status="Canceled"]:hover {
   background-color: inherit;
 }
 
-/* Base styles */
-/*These styles are already defined above, removing duplicates */
-
-
-/* Task List Table Styles */
-/*These styles are already defined above, removing duplicates */
-
-
-/* Priority column styling */
-/*These styles are already defined above, removing duplicates */
-
-
-/* Priority-specific colors only in priority column */
-/*These styles are already defined above, removing duplicates */
-
-
-/* Status column styling */
-/*These styles are already defined above, removing duplicates */
-
-
-
-/* Due date styling */
-/*These styles are already defined above, removing duplicates */
-
-
-/* Last Update column styling */
-/*These styles are already defined above, removing duplicates */
-
-
-
-/* Maintain consistency with Due Date column */
-/*These styles are already defined above, removing duplicates */
-
 
 /* Calendar popup styles */
 .calendar-popup {
@@ -785,36 +752,39 @@ input[type="date"] {
 }
 
 /* Base table styles */
+/* Notes column styles */
+.task-list-table {
+    table-layout: fixed;
+    width: 100%;
+}
+
 .task-list-table td[data-field="notes"] {
+    width: 300px;
+    height: auto;
     white-space: pre-wrap;
     word-wrap: break-word;
-    min-height: 24px;
-    height: auto;
-    max-width: 300px;
     vertical-align: top;
     padding: 12px;
     line-height: 1.5;
-}
-
-/* Notes cell specific styling */
-td[data-field="notes"] {
-    position: relative;
     overflow: visible;
-    text-overflow: clip;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    min-height: 24px;
-    height: auto !important;
-    transition: all 0.2s ease;
 }
 
-/* Ensure table cells expand with content */
+/* Table container */
 .table-container {
     overflow-x: auto;
     overflow-y: visible;
 }
 
-.task-list-table {
-    table-layout: fixed;
+/* Text area for notes editing */
+td[data-field="notes"] textarea {
     width: 100%;
+    min-height: 60px;
+    height: auto;
+    resize: vertical;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
 }
