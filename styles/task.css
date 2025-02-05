@@ -217,10 +217,10 @@ button {
 
 /* Description */
 .task-description {
-    color: var(--text-secondary);
-    font-size: var(--base-font-size);
-    line-height: 1.5;
-    margin: calc(var(--spacing-base) * 1.5) 0;
+   color: var(--text-secondary);
+   font-size: var(--base-font-size);
+   line-height: 1.5;
+   margin: calc(var(--spacing-base) * 1.5) 0;
 }
 
 
@@ -242,27 +242,50 @@ button {
     width: 300px !important;
     max-width: 300px !important;
     min-width: 300px !important;
+    height: 100px !important;
+    max-height: 100px !important;
     position: relative !important;
-    padding: 12px !important;
+    padding: 8px !important;
     vertical-align: top !important;
 }
 
 .notes-content {
     width: 100% !important;
-    height: auto !important;
+    height: 100% !important;
+    overflow-y: auto !important;
     white-space: pre-wrap !important;
     word-wrap: break-word !important;
     word-break: break-word !important;
     overflow-wrap: break-word !important;
     line-height: 1.5 !important;
+    padding-right: 8px !important;
+}
+
+/* Custom scrollbar for notes */
+.notes-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.notes-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.notes-content::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.notes-content::-webkit-scrollbar-thumb:hover {
+    background: #555;
 }
 
 /* When editing notes */
 .notes-cell textarea {
     width: 100% !important;
-    min-height: 60px !important;
-    resize: vertical !important;
-    padding: 8px !important;
+    height: 100% !important;
+    resize: none !important;
+    padding: 4px !important;
     border: 1px solid var(--border-color) !important;
     border-radius: 4px !important;
     font-family: inherit !important;
@@ -272,7 +295,6 @@ button {
     word-wrap: break-word !important;
     word-break: break-word !important;
 }
-
 
 /* Task header */
 .task-header {
