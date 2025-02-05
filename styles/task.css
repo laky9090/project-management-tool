@@ -411,17 +411,19 @@ button.delete-button:hover {
     table-layout: fixed;
 }
 
-/* Notes column width */
+/* Notes column fixed width */
 .task-list-table th:nth-child(2) {
-    width: 300px;
+    width: 300px !important;
+    max-width: 300px !important;
+    min-width: 300px !important;
 }
 
 /* Notes column content */
 .task-list-table td:nth-child(2),
 .task-list-table td[data-field="notes"] {
-    width: 300px;
-    max-width: 300px;
-    min-width: 300px;
+    width: 300px !important;
+    max-width: 300px !important;
+    min-width: 300px !important;
     height: auto;
     white-space: pre-wrap;
     word-wrap: break-word;
@@ -432,27 +434,36 @@ button.delete-button:hover {
     line-height: 1.5;
 }
 
-/* Text area for notes editing */
-td[data-field="notes"] textarea {
-    width: 100%;
-    min-height: 60px;
-    height: auto;
-    resize: vertical;
-    padding: 8px;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    font-family: inherit;
-    font-size: inherit;
-    line-height: inherit;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
+/* Other columns relative widths */
+.task-list-table th:not(:nth-child(2)) {
+    width: auto;
 }
 
-/* Table container */
+/* Table container with horizontal scroll */
 .table-container {
     width: 100%;
     overflow-x: auto;
+}
+
+/* Cell padding and borders */
+.task-list-table th,
+.task-list-table td {
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    line-height: 1.5;
+    vertical-align: middle;
+}
+
+/* Date columns center alignment */
+.task-list-table td.date-column,
+.task-list-table th.date-column {
+    text-align: center !important;
+}
+
+/* Override any potential conflicting styles */
+.task-list-table td:nth-child(2) * {
+    max-width: 100% !important;
+    overflow-wrap: break-word !important;
 }
 
 /* Column widths */
@@ -464,15 +475,6 @@ td[data-field="notes"] textarea {
 .task-list-table th:nth-child(7) { width: 10%; } /* Assignee */
 .task-list-table th:nth-child(8) { width: 10%; } /* Actions */
 
-
-/* Cell padding and borders */
-.task-list-table th,
-.task-list-table td {
-    padding: 12px;
-    border: 1px solid var(--border-color);
-    line-height: 1.5;
-    vertical-align: middle;
-}
 
 /* Date cell alignment for dates */
 .task-table td.date,
@@ -512,7 +514,6 @@ td[data-field="notes"] textarea {
     white-space: nowrap;
     min-width: 120px;
 }
-
 
 /* Calendar popup styles */
 .calendar-popup {
