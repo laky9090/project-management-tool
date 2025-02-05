@@ -408,51 +408,43 @@ button.delete-button:hover {
 .task-list-table {
     width: 100%;
     border-collapse: collapse;
-    table-layout: fixed;
+    table-layout: fixed !important;
 }
 
-/* Notes column fixed width */
-.task-list-table th:nth-child(2) {
-    width: 300px !important;
-    max-width: 300px !important;
-    min-width: 300px !important;
-}
-
-/* Notes column content */
-.task-list-table td:nth-child(2),
-.task-list-table td[data-field="notes"] {
-    width: 300px !important;
-    max-width: 300px !important;
-    min-width: 300px !important;
-    height: auto;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    word-break: break-word;
-    vertical-align: top;
-    padding: 12px;
-    line-height: 1.5;
-}
-
-/* Other columns relative widths */
-.task-list-table th:not(:nth-child(2)) {
-    width: auto;
-}
-
-/* Table container with horizontal scroll */
+/* Table container with scroll */
 .table-container {
     width: 100%;
     overflow-x: auto;
+    margin: 1rem 0;
 }
 
-/* Cell padding and borders */
+/* Fixed column widths */
+.task-list-table th:nth-child(1) { width: 15%; }
+.task-list-table th:nth-child(2) { width: 300px !important; } /* Notes */
+.task-list-table th:nth-child(3) { width: 10%; }
+.task-list-table th:nth-child(4) { width: 10%; }
+.task-list-table th:nth-child(5) { width: 10%; }
+.task-list-table th:nth-child(6) { width: 10%; }
+.task-list-table th:nth-child(7) { width: 10%; }
+.task-list-table th:nth-child(8) { width: auto; }
+
+/* Notes column specific styles */
+.task-list-table td:nth-child(2) {
+    width: 300px !important;
+    max-width: 300px !important;
+    overflow: hidden !important;
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+}
+
+/* Standard cell styling */
 .task-list-table th,
 .task-list-table td {
     padding: 12px;
     border: 1px solid var(--border-color);
-    line-height: 1.5;
-    vertical-align: middle;
+    vertical-align: top;
 }
+
 
 /* Date columns center alignment */
 .task-list-table td.date-column,
@@ -465,15 +457,6 @@ button.delete-button:hover {
     max-width: 100% !important;
     overflow-wrap: break-word !important;
 }
-
-/* Column widths */
-.task-list-table th:nth-child(1) { width: 15%; } /* Title */
-.task-list-table th:nth-child(3) { width: 10%; } /* Status */
-.task-list-table th:nth-child(4) { width: 10%; } /* Priority */
-.task-list-table th:nth-child(5) { width: 10%; } /* Due Date */
-.task-list-table th:nth-child(6) { width: 10%; } /* Last Update */
-.task-list-table th:nth-child(7) { width: 10%; } /* Assignee */
-.task-list-table th:nth-child(8) { width: 10%; } /* Actions */
 
 
 /* Date cell alignment for dates */
