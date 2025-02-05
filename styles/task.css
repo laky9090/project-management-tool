@@ -760,6 +760,7 @@ input[type="date"] {
 
 .task-list-table td[data-field="notes"] {
     width: 300px;
+    max-width: 300px;
     height: auto;
     white-space: pre-wrap;
     word-wrap: break-word;
@@ -787,4 +788,12 @@ td[data-field="notes"] textarea {
     font-family: inherit;
     font-size: inherit;
     line-height: inherit;
+}
+
+/* Notes column specific styles */
+.task-list-table th:nth-of-type(2),
+.task-list-table td:nth-of-type(2) {
+    width: 300px;
+    max-width: 300px;
+    min-width: 300px;
 }
