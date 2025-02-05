@@ -17,7 +17,8 @@ logger = logging.getLogger(__name__)
 st.set_page_config(
     page_title="Project Management Tool",
     page_icon="📋",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 # Load custom CSS
@@ -25,17 +26,17 @@ def load_css():
     try:
         # Create a single combined CSS string for better performance
         css_content = ""
-        
+
         # Load in specific order: variables -> main -> task
         css_files = ['styles/variables.css', 'styles/main.css', 'styles/task.css']
-        
+
         for file_path in css_files:
             try:
                 with open(file_path) as f:
                     css_content += f.read() + "\n"
             except Exception as e:
                 logger.error(f"Error reading CSS file {file_path}: {str(e)}")
-                
+
         # Apply all styles at once
         if css_content:
             st.markdown(f"""
@@ -46,7 +47,7 @@ def load_css():
             logger.info("CSS files loaded successfully")
         else:
             logger.error("No CSS content was loaded")
-            
+
     except Exception as e:
         logger.error(f"Error loading CSS files: {str(e)}")
 
@@ -59,14 +60,6 @@ if 'selected_project' not in st.session_state:
 # Load CSS before any other components
 load_css()
 
-# Test database connection
-conn = get_connection()
-if not conn:
-    st.error("Failed to connect to the database. Please check your database configuration.")
-    st.stop()
-else:
-    conn.close()
-
 try:
     # Initialize database
     init_database()
@@ -78,18 +71,18 @@ except Exception as e:
 # Sidebar
 with st.sidebar:
     st.title("Project Management")
-    
-    if st.button("Create New Project"):
+
+    if st.button("Create New Project", type="primary"):
         st.session_state.current_view = 'create_project'
         st.rerun()
-    
+
     st.write("---")
     st.write("## Select Project")
     selected_project = list_projects()
-    
+
     if selected_project:
         st.session_state.selected_project = selected_project
-        
+
         # View selection
         st.write("## Project Views")
         view_options = ["Board", "Analytics"]
@@ -115,3 +108,9 @@ try:
 except Exception as e:
     logger.error(f"Application error: {str(e)}")
     st.error("An error occurred. Please try again.")
+
+if __name__ == "__main__":
+    # Force Streamlit to run on port 5000
+    import sys
+    if len(sys.argv) == 1:
+        sys.argv.extend(["--server.port", "5000", "--server.address", "0.0.0.0"])
