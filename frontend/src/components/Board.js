@@ -513,12 +513,14 @@ const Board = ({ projectId }) => {
                   )}
                 </td>
                 <td
+                  className="notes-cell"
                   onClick={() => handleCommentEdit(task.id, task.comment)}
                   data-task-id={task.id}
                   data-field="comment"
-                  style={{ whiteSpace: "pre-wrap" }}
                 >
-                  {task.comment || ""}
+                  <div className="notes-content">
+                    {task.comment || ""}
+                  </div>
                 </td>
                 <td>
                   <select

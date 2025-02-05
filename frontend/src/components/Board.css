@@ -19,7 +19,6 @@
   --text-secondary: #4b5563;
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
   --spacing-base: 1rem;
-  
   /* Status Colors */
   --status-todo-bg: #f1f5f9;
   --status-todo-text: #475569;
@@ -56,16 +55,71 @@
   border-radius: 8px;
   box-shadow: var(--shadow-sm);
   overflow-x: auto;
+  width: 100%;
+  max-width: 100%;
+  position: relative;
 }
 
 /* Table styles */
 .task-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed !important;
   font-size: var(--base-font-size);
   background: white;
 }
 
+/* Notes cell specific styling */
+.notes-cell {
+  width: 300px !important;
+  max-width: 300px !important;
+  min-width: 300px !important;
+  padding: 8px !important;
+  vertical-align: top !important;
+  position: relative !important;
+}
+
+.notes-content {
+  max-height: 80px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+  white-space: pre-wrap !important;
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+  border: 1px solid #e5e7eb !important;
+  padding: 4px !important;
+  background-color: white !important;
+}
+
+/* Ensure table stays within bounds */
+.table-container {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  padding-bottom: 8px !important;
+}
+
+/* Add scrollbar styling */
+.notes-content::-webkit-scrollbar {
+  width: 6px !important;
+}
+
+.notes-content::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+}
+
+.notes-content::-webkit-scrollbar-thumb {
+  background: #888 !important;
+  border-radius: 3px !important;
+}
+
+.notes-content::-webkit-scrollbar-thumb:hover {
+  background: #555 !important;
+}
+
+/* Base table cell styles */
 .task-table th,
 .task-table td {
   padding: 12px 16px;
@@ -73,11 +127,9 @@
   vertical-align: middle;
 }
 
-.task-table th {
-  background: var(--background-light);
-  font-weight: 600;
-  color: var(--text-secondary);
-  text-align: left;
+/* Column sizes */
+.task-table th:not(:nth-child(2)),
+.task-table td:not(:nth-child(2)) {
   white-space: nowrap;
 }
 
@@ -129,7 +181,6 @@
   background-color: var(--status-canceled-bg) !important;
   color: var(--status-canceled-text) !important;
 }
-
 
 
 /* Action buttons */
@@ -210,8 +261,6 @@
   font-weight: 600 !important;
 }
 
-
-
 /* Additional priority low styles to ensure consistency */
 td[data-priority="Low"],
 .task-table td[data-priority="Low"],
@@ -220,7 +269,6 @@ td[data-priority="Low"],
   background-color: #f1f5f9 !important;
   color: #475569 !important;
 }
-
 
 /* Calendar popup styles */
 .calendar-popup {
